@@ -1,0 +1,38 @@
+{% extends "Base.html" %}
+
+{% block tabs %}
+<li class="tab">
+	<a class="active" href="#Settings"><h6>Settings</h6></a>
+</li>
+{% endblock %}
+
+{% block content %}
+<div id="Settings" class="container">
+	<div class="section no-pad-bot">
+		<div class="container">
+			<div class="row center">
+				<h5 class="header col s12 light">Change here the synchronization details</h5>
+			</div>
+		</div>
+	</div>
+	<p>
+		<label>
+			<input id="GdriveSync" type="checkbox" />
+			<span style="color: black;">Sync to Google Drive</span>
+		</label>
+	</p>
+	<p>
+		<label>
+			<input id="GdriveKeepLoggedIn" type="checkbox" disabled="disabled" />
+			<span id="GdriveKeepLoggedInSpan">Keep me logged in (not working on Apple products)</span>
+		</label>
+	  </p>
+</div>
+{% endblock %}
+{% block script %}
+<script src="static/js/icons.js"></script>
+<script src="static/js/gui.js"></script>
+<script src="static/js/orm.js"></script>
+<script src="static/js/settings.js"></script>
+<script>initSettings()</script>
+{% endblock %}
