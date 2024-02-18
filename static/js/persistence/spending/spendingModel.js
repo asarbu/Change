@@ -1,6 +1,5 @@
-class Spending {
+export default class Spending {
 	/**
-	 * 
 	 * @param {id} id Unique identifier of this spending
 	 * @param {string} type Spending type (Expense, Saving)
 	 * @param {string} category Spending category (Taken from planning)
