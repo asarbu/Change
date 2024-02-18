@@ -1,5 +1,5 @@
-import PlanningCache from '../persistence/planning/planningCache.js';
-import PlanningScreen from '../gui/planningScreen.js';
+import PlanningCache from '../persistence/planning/planningCache';
+import PlanningScreen from '../gui/planningScreen';
 
 export default class PlanningController {
 	/**

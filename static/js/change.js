@@ -1354,7 +1354,7 @@ class PlanningController {
 	}
 
 	async init(forYear) {
-		const year = forYear || new Date().toLocaleString('en-US', { year: 'numeric' });
+		const year = forYear || new Date().getFullYear();
 		this.#caches = await PlanningCache.getAll();
 
 		let defaultYearCache;

@@ -1,11 +1,11 @@
 class SpendingCache {
 	static SPENDINGS_DATABASE_NAME = 'Spendings';
+
 	/**
 	 * @type {Idb}
 	 */
 	idb = undefined;
-    constructor() {
-		this.year = new Date().getFullYear();
+    constructor(year) {
 		this.idb = new Idb(SpendingCache.SPENDINGS_DATABASE_NAME, this.year, this.upgradeSpendingsDb);
     }
 
