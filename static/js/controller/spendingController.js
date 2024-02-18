@@ -34,8 +34,8 @@ class SpendingController {
 		this.#tabs = new Map();
 		
 		const now = new Date();
-		this.currentYear =  now.toLocaleString("en-US", {year: "numeric"});
-		this.currentMonth = now.toLocaleString("en-US", {month: "short"});
+		this.currentYear =  now.getFullYear();
+		this.currentMonth = now.getMonth();
 	}
 
 	async init() {
