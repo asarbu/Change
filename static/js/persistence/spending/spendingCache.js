@@ -57,7 +57,7 @@ export default class SpendingCache {
 	 */
 	async updateAll(spendings) {
 		await this.idb.updateAll(this.year, spendings);
-		this.reportEdit(this.month);
+		this.onChange(this.month);
 	}
 
 	/**
@@ -67,7 +67,7 @@ export default class SpendingCache {
 	 */
 	async insert(key, spending) {
 		await this.idb.put(this.year, spending, key);
-		this.reportEdit(spending.month);
+		this.onChange(spending.month);
 	}
 
 	/**
@@ -76,15 +76,15 @@ export default class SpendingCache {
 	 */
 	async delete(spending) {
 		await this.idb.delete(this.year, spending.id);
-		this.reportEdit(spending.value.month);
+		this.onChange(spending.value.month);
 	}
 
 	/**
-	 * Returns the timestamp when this cache was edited last time. Defaults to 0 epoch time.
-	 * @param {number} forMonth Month for which to check when the cache was last updated
-	 * @returns {number} time when this cache was edit
+	 * Returns the timestamp when this cache was modified last time. Defaults to 0 epoch time.
+	 * @param {number} forMonth Month for which to check when the cache was last modified
+	 * @returns {number} time when this cache was modified
 	 */
-	lastEditTime(forMonth) {
+	timeOfChange(forMonth) {
 		const storageKey = `Cache_modified_${this.year}_${forMonth}`;
 		if (localStorage.getItem(storageKey)) {
 			return localStorage.getItem(storageKey);
@@ -97,7 +97,7 @@ export default class SpendingCache {
 	 * @param {number} month Month for which to record the edit
 	 * @param {number} time Timestamp to store in storage
 	 */
-	reportEdit(month, time) {
+	onChange(month, time) {
 		if (!month) {
 			throw new Error(`Illegal arguments!${this.year}${month}${time}`);
 		}
