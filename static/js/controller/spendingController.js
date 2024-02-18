@@ -23,7 +23,8 @@ class SpendingController {
 	 */
 	#planningCache = undefined;
 	constructor() {
-		this.#spendingCache = new SpendingCache();
+		const currentYear = new Date().getFullYear();
+		this.#spendingCache = new SpendingCache(currentYear);
 		this.#planningCache = new PlanningCache();
 		
 		if(gdriveSync) {
