@@ -1,75 +1,127 @@
-class SpendingCache {
-	static SPENDINGS_DATABASE_NAME = 'Spendings';
+import Spending from './spendingModel';
+import Idb from '../idb';
+
+export default class SpendingCache {
+	static DATABASE_NAME = 'Spendings';
+
+	static DATABASE_VERSION = 1;
 
 	/**
 	 * @type {Idb}
 	 */
 	idb = undefined;
-    constructor(year) {
-		this.idb = new Idb(SpendingCache.SPENDINGS_DATABASE_NAME, this.year, this.upgradeSpendingsDb);
-    }
 
-    async init() {
+	/**
+	 * @param {number} year Year for which to initialize current cache
+	 */
+	constructor(year) {
+		this.year = year;
+		this.idb = new Idb(
+			SpendingCache.DATABASE_NAME,
+			SpendingCache.DATABASE_VERSION,
+			SpendingCache.upgradeSpendingsDb,
+		);
+	}
+
+	/**
+	 * Initialize current instance of PlanningCache
+	 */
+	async init() {
 		await this.idb.init();
-    }
+	}
 
+	/**
+	 * Read spending from the cache
+	 * @param {number} key Identifier for the desired spending
+	 * @returns {Promise<Spending>}
+	 */
 	async read(key) {
-		return await this.idb.get(this.year, key);
+		return this.idb.get(this.year, key);
 	}
 
-	async readAll(year, month) {
-		//Hack from https://stackoverflow.com/questions/9791219/indexeddb-search-using-wildcards
-		const keyRange = IDBKeyRange.bound(month, month + '\uffff');
-		return await this.idb.getAllByIndex(year, 'byBoughtDate', keyRange)
+	/**
+	 * Read all spendings associated with a month
+	 * @param {number} month Month for which to read Spendings
+	 * @returns {Promise<Array<Spending>>}
+	 */
+	async readAll(month) {
+		// TODO redo this
+		// Hack from https://stackoverflow.com/questions/9791219/indexeddb-search-using-wildcards
+		const keyRange = IDBKeyRange.bound(month, `${month}\uffff`);
+		return this.idb.getAllByIndex(this.year, 'byBoughtDate', keyRange);
 	}
 
-	async readAllDeleted() {
-		//We have to use integer here because idnexedbb does not allow boolean indeces
-		const keyRange = IDBKeyRange.only(1);
-		return await this.idb.getAllByIndex(this.year, 'byDeleteStatus', keyRange);
+	/**
+	 * Update all spendings in the cache
+	 * @param {Array<Spending>} spendings Spendings to update
+	 */
+	async updateAll(spendings) {
+		await this.idb.updateAll(this.year, spendings);
+		this.reportEdit(this.month);
 	}
 
-	async updateAll(year, spendings) {
-		// for(const [key, spending] of spendings) {
-		// 	await this.insert(year, key, spending);
-		// }
-		await this.idb.updateAll(year, spendings);
+	/**
+	 * Persist a spending in cache at a certain key
+	 * @param {number} key Key to identfy the spending in cache
+	 * @param {Spending} spending Spending to persist
+	 */
+	async insert(key, spending) {
+		await this.idb.put(this.year, spending, key);
+		this.reportEdit(spending.month);
 	}
 
-	async insert(year, creationDateTime, spending) {
-		await this.idb.put(this.year, spending, creationDateTime);
-		this.setLastUpdatedTime(this.year, spending.month);
-	}
-
+	/**
+	 * Remove a Spending from the cache
+	 * @param {Spending} spending Spending to delete
+	 */
 	async delete(spending) {
-		await this.idb.delete(this.year, spending.key);		
-		this.setLastUpdatedTime(this.year, spending.value.month);
+		await this.idb.delete(this.year, spending.id);
+		this.reportEdit(spending.value.month);
 	}
 
-	getLastUpdatedTime(year, month) {
-		if(localStorage.getItem("Cache_modified_" + year + month)) {
-			return localStorage.getItem("Cache_modified_" + year + month);
+	/**
+	 * Returns the timestamp when this cache was edited last time. Defaults to 0 epoch time.
+	 * @param {number} forMonth Month for which to check when the cache was last updated
+	 * @returns {number} time when this cache was edit
+	 */
+	lastEditTime(forMonth) {
+		const storageKey = `Cache_modified_${this.year}_${forMonth}`;
+		if (localStorage.getItem(storageKey)) {
+			return localStorage.getItem(storageKey);
 		}
-		return new Date(0).toISOString();
+		return new Date(0).getTime();
 	}
 
-	setLastUpdatedTime(year, month, time) {
-		if(!year || !month) {
-			console.error("Illegal arguments!", year, month, time);
+	/**
+	 * Persists the time of edit for cache in permanent storage
+	 * @param {number} month Month for which to record the edit
+	 * @param {number} time Timestamp to store in storage
+	 */
+	reportEdit(month, time) {
+		if (!month) {
+			throw new Error(`Illegal arguments!${this.year}${month}${time}`);
+		}
+		const storageKey = `Cache_modified_${this.year}_${month}`;
+		if (time) {
+			localStorage.setItem(storageKey, time);
+		}
+		localStorage.setItem(storageKey, new Date().getTime());
+	}
+
+	/**
+	 * Callback function to update a planning database
+	 * @param {IndexedDb} db Database to upgrade
+	 * @param {number} oldVersion Version from which to update
+	 * @param {number} newVersion Version to which to update
+	 * @returns {undefined}
+	 */
+	static upgradeSpendingsDb(db, oldVersion, newVersion) {
+		if (!newVersion) {
 			return;
 		}
-		if(time) {	
-			localStorage.setItem("Cache_modified_" + year + month, time);
-			return;
-		}
-		localStorage.setItem("Cache_modified_" + year + month, new Date().toISOString());
-	}
-
-	upgradeSpendingsDb(db, oldVersion, newVersion) {
-		console.log("Upgrading to version", new Date().getFullYear());
 
 		if (oldVersion < newVersion) {
-			let store = db.createObjectStore(newVersion + "", { autoIncrement: true });
+			const store = db.createObjectStore(`${newVersion}`, { autoIncrement: true });
 			store.createIndex('byBoughtDate', 'boughtDate', { unique: false });
 			store.createIndex('byCategory', 'category', { unique: false });
 			store.createIndex('byDeleteStatus', 'isDeleted', { unique: false });

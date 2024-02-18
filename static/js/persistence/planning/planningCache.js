@@ -60,7 +60,6 @@ export default class PlanningCache {
 
 	/**
 	 * Initialize current instance of PlanningCache
-	 * @async
 	 */
 	async init() {
 		await this.idb.init();

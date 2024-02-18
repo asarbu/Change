@@ -22,8 +22,12 @@ module.exports = {
 		sourceType: 'module',
 	},
 	rules: {
+		'jsdoc/no-undefined-types': 1,
 		'no-tabs': 0,
 		indent: [1, 'tab'],
-		'linebreak-style': ['error', 'windows']
+		'linebreak-style': ['error', 'windows'],
 	},
+	plugins: [
+		'jsdoc',
+	],
 };
