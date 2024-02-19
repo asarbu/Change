@@ -97,16 +97,18 @@ export default class Dom {
 	}
 
 	/**
-	 * Appends the obj instance to the current DOM
-	 * @param {Dom} obj Object to append to current DOM instance
+	 * Appends the obj instances to the current DOM
+	 * @param {Array<Dom>} children Object to append to current DOM instance
 	 * @returns {Dom}
 	 */
-	append(obj) {		
-		this.elm.appendChild(obj.toDom());
+	append(...children) {
+		children.forEach((child) => {
+			this.elm.appendChild(child.toHtml());
+		})
 		return this;
 	}
 
-	toDom() {
+	toHtml() {
 		return this.elmt;
 	}
 }
