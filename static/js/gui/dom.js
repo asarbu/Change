@@ -64,3 +64,49 @@ export function createImageButton(text, classList, src, parent, onClick) {
 	}
 	return btn;
 }
+
+export default class Dom {
+	constructor(tagName) {
+		/** @type {HTMLElement} */
+		this.elmt = document.createElement(tagName);
+	}
+
+	attr = function(name, value) {		
+		this.elmt.setAttribute(name, value);
+		return this;
+	}
+
+	id(id) {
+		this.elmt.id = id;
+		return this;
+	}
+
+	text(text) {
+		this.elmt.textContent = text;
+		return this;
+	}
+
+	cls(classes) {
+		this.elmt.classList.add(...classes);
+		return this;
+	}
+
+	onClick(listener) {
+		this.elmt.addEventListener('click', listener);
+		return this;
+	}
+
+	/**
+	 * Appends the obj instance to the current DOM
+	 * @param {Dom} obj Object to append to current DOM instance
+	 * @returns {Dom}
+	 */
+	append(obj) {		
+		this.elm.appendChild(obj.toDom());
+		return this;
+	}
+
+	toDom() {
+		return this.elmt;
+	}
+}
