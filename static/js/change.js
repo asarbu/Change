@@ -432,7 +432,6 @@ class PlanningCache {
 
 	/**
 	 * Initialize current instance of PlanningCache
-	 * @async
 	 */
 	async init() {
 		await this.idb.init();
@@ -765,7 +764,6 @@ function createChild(ofType, withParent) {
 }
 
 /**
- * 
  * @param {string} text Text to display in button. TODO remove if notused
  * @param {Array<string>} classList Array of classes to decorate button. TODO remove if not used
  * @param {string} src String that represents the icon inside the button
