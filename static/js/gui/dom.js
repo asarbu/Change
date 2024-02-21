@@ -38,7 +38,6 @@ export function createChild(ofType, withParent) {
 }
 
 /**
- * 
  * @param {string} text Text to display in button. TODO remove if notused
  * @param {Array<string>} classList Array of classes to decorate button. TODO remove if not used
  * @param {string} src String that represents the icon inside the button
@@ -71,7 +70,7 @@ export default class Dom {
 		this.elmt = document.createElement(tagName);
 	}
 
-	attr = function(name, value) {		
+	attr(name, value) {
 		this.elmt.setAttribute(name, value);
 		return this;
 	}
@@ -86,7 +85,7 @@ export default class Dom {
 		return this;
 	}
 
-	cls(classes) {
+	cls(...classes) {
 		this.elmt.classList.add(...classes);
 		return this;
 	}
@@ -103,8 +102,8 @@ export default class Dom {
 	 */
 	append(...children) {
 		children.forEach((child) => {
-			this.elm.appendChild(child.toHtml());
-		})
+			this.elmt.appendChild(child.toHtml());
+		});
 		return this;
 	}
 
