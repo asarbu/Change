@@ -85,6 +85,16 @@ export default class Dom {
 		return this;
 	}
 
+	type(type) {
+		this.elmt.type = type;
+		return this;
+	}
+
+	hideable(isVisible) {
+		this.elmt.setAttribute('hideable', true);
+		this.elmt.style.display = isVisible ? '' : 'none';
+	}
+
 	cls(...classes) {
 		this.elmt.classList.add(...classes);
 		return this;
