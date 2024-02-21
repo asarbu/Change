@@ -1,19 +1,24 @@
+import SpendingScreen from '../gui/spendingScreen.js';
+import SpendingCache from '../persistence/spending/spendingCache.js';
+import PlanningCache from '../persistence/planning/planningCache.js';
+
 async function initSpending() {
 	if (!window.indexedDB) {
-		console.error(`Your browser doesn't support IndexedDB`);
 		return;
 	}
-	
+
 	const spending = new SpendingController();
 	await spending.init();
 }
 
-class SpendingController {
-	#MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+export default class SpendingController {
+	#MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
 	#spendingCache = undefined;
+
 	/**
 	 * Used to quickly access already created tabs
-	 * @type {Map<string, SpendingTab>}
+	 * @type {Map<string, SpendingScreen>}
 	 */
 	#tabs = undefined;
 
@@ -22,28 +27,29 @@ class SpendingController {
 	 * @type {PlanningCache}
 	 */
 	#planningCache = undefined;
+
 	constructor() {
 		const currentYear = new Date().getFullYear();
 		this.#spendingCache = new SpendingCache(currentYear);
-		this.#planningCache = new PlanningCache();
-		
-		if(gdriveSync) {
-			this.spendingGDrive = new SpendingGDrive(this.#spendingCache);
-			this.planningGDrive = new PlanningGDrive(this.#planningCache);
-		}
+		this.#planningCache = new PlanningCache('2024');
+
+		/* if (gdriveSync) {
+			// this.spendingGDrive = new SpendingGDrive(this.#spendingCache);
+			// this.planningGDrive = new PlanningGDrive(this.#planningCache);
+		} */
 
 		this.#tabs = new Map();
-		
+
 		const now = new Date();
-		this.currentYear =  now.getFullYear();
+		this.currentYear = now.getFullYear();
 		this.currentMonth = now.getMonth();
 	}
 
 	async init() {
-		//console.log("Init spending");
+		// console.log("Init spending");
 		await this.#spendingCache.init();
 		await this.#planningCache.init();
-		
+
 		const planningCollections = await this.#planningCache.getExpenses();
 		const expenseBudgets = new Map();
 		const categories = new Map();
@@ -57,7 +63,7 @@ class SpendingController {
 				categories.set(groupName, categoryArray);
 			}
 		}
-		
+
 		let monthIndex = this.#MONTH_NAMES.indexOf(this.currentMonth);
 		let monthCount = 0;
 		while (monthIndex >= 0 && monthCount < 4){
@@ -74,14 +80,13 @@ class SpendingController {
 				monthCount++;
 			}
 
-			if(gdriveSync) {
+			/* if(gdriveSync) {
 				this.initGDrive(monthName);
-			}
+			} */
 			
 			monthIndex--;
 		}
-		
-		M.AutoInit();
+
 	}
 
 	async initGDrive(monthName) {
@@ -96,7 +101,7 @@ class SpendingController {
 		const gdriveLastUpdatedTime = await this.spendingGDrive.getLastUpdatedTime(this.currentYear, monthName);
 
 		if(cacheLastUpdatedTime < gdriveLastUpdatedTime) {
-			console.log("Found newer information on GDrive. Updating local cache", gdriveLastUpdatedTime, cacheLastUpdatedTime);
+			console.log('Found newer information on GDrive. Updating local cache', gdriveLastUpdatedTime, cacheLastUpdatedTime);
 			await this.spendingGDrive.fetchGDriveToCache(this.currentYear, monthName);
 			this.#spendingCache.setLastUpdatedTime(this.currentYear, monthName, gdriveLastUpdatedTime);
 			if(this.#tabs.has(monthName)) {
@@ -104,15 +109,15 @@ class SpendingController {
 				M.toast({html: 'Updated from GDrive', classes: 'rounded'});
 			}
 		} else if(cacheLastUpdatedTime > gdriveLastUpdatedTime) {
-			console.log("Found newer information on local cache. Updating GDrive", cacheLastUpdatedTime, gdriveLastUpdatedTime);
+			console.log('Found newer information on local cache. Updating GDrive', cacheLastUpdatedTime, gdriveLastUpdatedTime);
 			const spendings = await this.#spendingCache.readAll(this.currentYear, monthName);
 			this.spendingGDrive.fetchCacheToGDrive(this.currentYear, monthName, spendings);
 		}
 	}
 
 	async onClickCreateSpending(spending, creationDateTime) {
-		//console.log("Creating spending", spending);
-		//TODO split bought date into month, day, year. Store only month and day in object on caller to avoid processing here
+		// console.log("Creating spending", spending);
+		// TODO split bought date into month, day, year. Store only month and day in object on caller to avoid processing here
 		const boughtDate = spending.boughtDate;
 		const month = boughtDate.substring(0, 3);
 		const year = boughtDate.substring(boughtDate.length-4, boughtDate.length);
@@ -121,9 +126,9 @@ class SpendingController {
 		if(this.currentYear === year)
 			this.refreshTab(spending.month);
 
-		if(gdriveSync) {
+		/* if(gdriveSync) {
 			this.syncGDrive(spending.month);
-		}
+		} */
 	}
 
 	async onClickDeleteSpending(key) {
@@ -139,9 +144,9 @@ class SpendingController {
 			this.#spendingCache.delete(spending)
 		}
 
-		if(gdriveSync) {
+		/* if(gdriveSync) {
 			await this.syncGDrive(month);
-		}
+		} */
 	}
 
 	async refreshTab(month) {
@@ -155,4 +160,4 @@ class SpendingController {
 	}
 }
 
-document.addEventListener("DOMContentLoaded", initSpending);
+document.addEventListener('DOMContentLoaded', initSpending);

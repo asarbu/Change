@@ -1,5 +1,5 @@
-import Spending from './spendingModel';
-import Idb from '../idb';
+import Spending from './spendingModel.js';
+import Idb from '../idb.js';
 
 export default class SpendingCache {
 	static DATABASE_NAME = 'Spendings';

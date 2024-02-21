@@ -285,6 +285,58 @@ tbody>tr:last-of-type {
 	left: 0;
 }
 
+
+/* The Modal (backdrop) */
+.modal {
+	visibility: hidden; /* Hidden by default */
+	opacity:0;
+	position: fixed; /* Stay in place */
+	z-index: 1;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+	overflow: auto; /* Enable scroll if needed */
+	background-color: rgba(0,0,0,0.3); /* Black w/ opacity */
+	animation: fade 2s infinite;
+	z-index:6;
+  }
+  
+  /* Modal Content */
+  .modal-content {
+	position: fixed;
+	flex: 1 0 100%;
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	height:75%;
+	z-index:6;
+	bottom: -75%;
+	background: rgba(0, 0, 0, 0.05);
+	backdrop-filter: blur(5px);
+	-webkit-backdrop-filter: blur(5px);
+	border-radius:1rem 1rem 0 0;
+	border-top: 1px solid gainsboro;
+  }
+  .modal-header {
+	  height: 15%;
+	  padding:2%;
+	  text-align:center;
+  }
+  .modal-body {
+	  height: 80%;
+	  padding: 3%;
+  }
+  .modal-footer {
+	  height: 5%;
+	  margin: 5%;
+	  display: flex;
+	  justify-content: space-between;
+  }
+  h3:hover {
+	  text-decoration: underline;
+  }
+
 /* Mobile M / L */
 @media (max-width:768px) {
 	.sidenav-right {
