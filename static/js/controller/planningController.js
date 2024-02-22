@@ -1,5 +1,5 @@
-import PlanningCache from '../persistence/planning/planningCache';
-import PlanningScreen from '../gui/planningScreen';
+import PlanningCache from '../persistence/planning/planningCache.js';
+import PlanningScreen from '../gui/planningScreen.js';
 
 export default class PlanningController {
 	/**
@@ -21,7 +21,7 @@ export default class PlanningController {
 
 		let defaultYearCache;
 		for (let i = 0; i < this.#caches.length; i += 1) {
-			if (this.#caches[i].storeName === year) {
+			if (this.#caches[i].storeName === `${year}`) {
 				defaultYearCache = this.#caches[i];
 			}
 		}

@@ -4,7 +4,7 @@ import Idb from '../idb.js';
 export default class SpendingCache {
 	static DATABASE_NAME = 'Spendings';
 
-	static DATABASE_VERSION = 1;
+	static DATABASE_VERSION = 2024;
 
 	/**
 	 * @type {Idb}

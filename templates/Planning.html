@@ -16,7 +16,7 @@
 
 {% block script %}
 <script type="module">
-	import PlanningController from '/static/js/change.min.js';
+	import PlanningController from '/static/js/controller/planningController.js';
 	document.addEventListener("DOMContentLoaded", () => {
 		new PlanningController().init();
 	});

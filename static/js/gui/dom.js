@@ -90,9 +90,15 @@ export default class Dom {
 		return this;
 	}
 
+	hide() {
+		this.elmt.style.display = 'none';
+		return this;
+	}
+
 	hideable(isVisible) {
 		this.elmt.setAttribute('hideable', true);
 		this.elmt.style.display = isVisible ? '' : 'none';
+		return this;
 	}
 
 	cls(...classes) {
@@ -112,6 +118,9 @@ export default class Dom {
 	 */
 	append(...children) {
 		children.forEach((child) => {
+			if (!child) {
+				console.error('error')
+			}
 			this.elmt.appendChild(child.toHtml());
 		});
 		return this;
