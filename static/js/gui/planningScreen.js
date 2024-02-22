@@ -1,8 +1,8 @@
 /* eslint-disable class-methods-use-this */
-import GraphicEffects from './effects';
-import { create, createChild, createImageButton } from './dom';
-import { Statement, Category, Goal } from '../persistence/planning/planningModel';
-import icons from './icons';
+import GraphicEffects from './effects.js';
+import { create, createChild, createImageButton } from './dom.js';
+import { Statement, Category, Goal } from '../persistence/planning/planningModel.js';
+import icons from './icons.js';
 
 export default class PlanningScreen {
 	onClickUpdate = undefined;

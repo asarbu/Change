@@ -53,7 +53,7 @@ export default class Idb {
 			};
 
 			request.onerror = (event) => {
-				reject(new Error(`Database error: ${event.target.errorCode}`));
+				reject(new Error(`Database error: ${event.target.error}`));
 			};
 
 			request.onupgradeneeded = (event) => {

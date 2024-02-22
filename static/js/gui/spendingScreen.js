@@ -1,4 +1,5 @@
 import Dom from './dom.js';
+import icons from './icons.js';
 
 export default class SpendingScreen {
 	onClickCreateSpending = undefined;
@@ -9,16 +10,15 @@ export default class SpendingScreen {
 
 	spendings = undefined;
 
-	constructor(month, spendings, plannings, categories) {
+	constructor(month, spendings, categories) {
 		this.month = month;
 		this.spendings = spendings;
-		this.plannings = plannings;
 		this.categories = categories;
 	}
 
 	init() {
 		this.sketchScreen();
-		this.refresh(this.spendings);
+		// this.refresh(this.spendings);
 	}
 
 	sketchScreen() {
@@ -26,22 +26,22 @@ export default class SpendingScreen {
 			new Dom('div').cls('section').append(
 				new Dom('div').cls('slice').append(
 					new Dom('h1').text('Monthly spending'),
+					this.sketchSpendings(),
 				),
 			),
 		)
 			.toHtml();
 
-		const table = this.sketchSpendings();
 		const newSpendingModal = this.sketchInsertSpending();
-		const summaryModal = this.sketchSpendingSummary();
-		const categoryModal = this.createCategoryModal();
+		// const summaryModal = this.sketchSpendingSummary();
+		// const categoryModal = this.createCategoryModal();
 
-		this.spendingsTable = table;
-		this.summaryModal = summaryModal;
-		this.categoryModal = categoryModal;
+		// this.summaryModal = summaryModal;
+		// this.categoryModal = categoryModal;
 
 		const main = document.getElementById('main');
 		main.appendChild(this.tab);
+		main.appendChild(this.sketchNavBar().toHtml());
 
 		const loadingTab = document.getElementById('loading_tab');
 		if (loadingTab) {
@@ -61,10 +61,45 @@ export default class SpendingScreen {
 				),
 			),
 			new Dom('tbody'),
-		)
-			.toHtml();
+		);
 
 		return this.spendingsHtml;
+	}
+
+	sketchNavBar() {
+		const onClickAdd = undefined; // this.onClickAddSpending.bind(this);
+		const onClickEdit = undefined; // this.onClickEditSpending.bind(this);
+		const onClickDelete = undefined; // this.onClickDeleteSpending.bind(this);
+		const onClickDropup = undefined; // this.onClickDropup.bind(this);
+
+		this.navbar = new Dom('nav').append(
+			new Dom('div').cls('nav-header').append(
+				new Dom('button').cls('nav-item').hideable().onClick(onClickAdd).append(
+					new Dom('img').cls('white-fill').text('Add').attr('alt', 'Add').attr('src', icons.add_file),
+				),
+				new Dom('button').cls('nav-item').onClick(onClickEdit).append(
+					new Dom('img').cls('white-fill').text('Edit').attr('alt', 'Edit').attr('src', icons.edit),
+				),
+				new Dom('button').cls('nav-item').hideable().onClick(onClickDelete).append(
+					new Dom('img').cls('white-fill').text('Delete').attr('alt', 'Delete').attr('src', icons.delete),
+				),
+			),
+			new Dom('div').cls('nav-footer').append(
+				new Dom('button').cls('nav-item', 'nav-trigger').hideable().attr('data-side', 'left').onClick(onClickAdd).append(
+					new Dom('img').cls('white-fill').text('Menu').attr('alt', 'Menu').attr('src', icons.menu),
+				),
+				new Dom('button').cls('dropup', 'nav-item').text(`${this.id} `).append(
+					new Dom('span').text('▲').cls('white-50'),
+				),
+				new Dom('button').cls('nav-item').text(`${this.month} `).onClick(onClickDropup),
+				new Dom('button').cls('nav-item', 'nav-trigger').hideable().attr('data-side', 'right').onClick(onClickAdd).append(
+					new Dom('img').cls('white-fill').text('Menu').attr('alt', 'Menu').attr('src', icons.menu),
+				),
+			),
+			new Dom('div').cls('dropup-content', 'top-round').hide(),
+		);
+
+		return this.navbar;
 	}
 
 	sketchSpendingSummary() {

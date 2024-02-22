@@ -8,12 +8,13 @@ async function initSpending() {
 	}
 
 	const spending = new SpendingController();
-	await spending.init();
+	// await spending.init();
 }
 
 export default class SpendingController {
 	#MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
+	/** @type {SpendingCache} */
 	#spendingCache = undefined;
 
 	/**
@@ -50,43 +51,31 @@ export default class SpendingController {
 		await this.#spendingCache.init();
 		await this.#planningCache.init();
 
-		const planningCollections = await this.#planningCache.getExpenses();
-		const expenseBudgets = new Map();
-		const categories = new Map();
-		for(const [_, planningCollection] of planningCollections.entries()) {
-			for(const [groupName, group] of Object.entries(planningCollection.value.groups)) {
-				const categoryArray = [];
-				for(const [_, item] of Object.entries(group.items)) {
-					expenseBudgets.set(item.itemName, item.monthly);
-					categoryArray.push(item.itemName);
-				}
-				categories.set(groupName, categoryArray);
-			}
-		}
+		const expenseCategories = await this.#planningCache.readExpenses();
 
-		let monthIndex = this.#MONTH_NAMES.indexOf(this.currentMonth);
+		let monthIndex = this.currentMonth;
 		let monthCount = 0;
-		while (monthIndex >= 0 && monthCount < 4){
+
+		while (monthIndex >= 0 && monthCount < 4) {
 			const monthName = this.#MONTH_NAMES[monthIndex];
-			const spendings = await this.#spendingCache.readAll(this.currentYear, monthName);
-			
-			if(spendings.length > 0 || monthName === this.currentMonth) {
-				const tab = new SpendingTab(monthName, spendings, expenseBudgets, categories);
-				tab.init();
-				tab.onClickCreateSpending = this.onClickCreateSpending.bind(this);
-				tab.onClickDeleteSpending = this.onClickDeleteSpending.bind(this);
-				tab.onClickSaveSpendings = this.onClickSaveSpendings.bind(this);
-				this.#tabs.set(monthName, tab);
-				monthCount++;
+			const spendings = await this.#spendingCache.readAll(monthName);
+
+			if (spendings.length > 0 || monthIndex === this.currentMonth) {
+				const spendingScreen = new SpendingScreen(monthName, spendings, expenseCategories);
+				spendingScreen.init();
+				spendingScreen.onClickCreateSpending = this.onClickCreateSpending.bind(this);
+				spendingScreen.onClickDeleteSpending = this.onClickDeleteSpending.bind(this);
+				spendingScreen.onClickSaveSpendings = this.onClickSaveSpendings.bind(this);
+				this.#tabs.set(monthName, spendingScreen);
+				monthCount += 1;
 			}
 
 			/* if(gdriveSync) {
 				this.initGDrive(monthName);
 			} */
-			
-			monthIndex--;
-		}
 
+			monthIndex -= 1;
+		}
 	}
 
 	async initGDrive(monthName) {
