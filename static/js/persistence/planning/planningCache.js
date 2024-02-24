@@ -109,7 +109,7 @@ export default class PlanningCache {
 		const expenseStatements = await this.idb.getAllByIndex(this.storeName, 'byType', keyRange);
 		const expenses = [];
 		for (let i = 0; i < expenseStatements.length; i += 1) {
-			expenses.push(...expenseStatements[i].value.categories);
+			expenses.push(...expenseStatements[i].categories);
 		}
 		return expenses;
 	}
