@@ -118,9 +118,6 @@ export default class Dom {
 	 */
 	append(...children) {
 		children.forEach((child) => {
-			if (!child) {
-				console.error('error')
-			}
 			this.elmt.appendChild(child.toHtml());
 		});
 		return this;

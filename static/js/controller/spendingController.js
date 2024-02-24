@@ -58,14 +58,14 @@ export default class SpendingController {
 
 		while (monthIndex >= 0 && monthCount < 4) {
 			const monthName = this.#MONTH_NAMES[monthIndex];
-			const spendings = await this.#spendingCache.readAll(monthName);
+			const spendings = await this.#spendingCache.readAll(monthIndex);
 
 			if (spendings.length > 0 || monthIndex === this.currentMonth) {
 				const spendingScreen = new SpendingScreen(monthName, spendings, expenseCategories);
 				spendingScreen.init();
-				spendingScreen.onClickCreateSpending = this.onClickCreateSpending.bind(this);
-				spendingScreen.onClickDeleteSpending = this.onClickDeleteSpending.bind(this);
-				spendingScreen.onClickSaveSpendings = this.onClickSaveSpendings.bind(this);
+				spendingScreen.onClickCreateCallback = this.onClickCreateSpending.bind(this);
+				spendingScreen.onClickDeleteCallback = this.onClickDeleteSpending.bind(this);
+				spendingScreen.onClickSaveCallback = this.onClickSaveSpendings.bind(this);
 				this.#tabs.set(monthName, spendingScreen);
 				monthCount += 1;
 			}
@@ -104,16 +104,8 @@ export default class SpendingController {
 		}
 	}
 
-	async onClickCreateSpending(spending, creationDateTime) {
-		// console.log("Creating spending", spending);
-		// TODO split bought date into month, day, year. Store only month and day in object on caller to avoid processing here
-		const boughtDate = spending.boughtDate;
-		const month = boughtDate.substring(0, 3);
-		const year = boughtDate.substring(boughtDate.length-4, boughtDate.length);
-		spending.boughtDate = spending.boughtDate.split(',')[0];
-		await this.#spendingCache.insert(year, creationDateTime, spending);
-		if(this.currentYear === year)
-			this.refreshTab(spending.month);
+	async onClickCreateSpending(spending) {
+		await this.#spendingCache.insert(spending.id, spending);
 
 		/* if(gdriveSync) {
 			this.syncGDrive(spending.month);
@@ -121,7 +113,6 @@ export default class SpendingController {
 	}
 
 	async onClickDeleteSpending(key) {
-		//console.log("Delete spending", key);
 		const localSpending = await this.#spendingCache.read(key);
 		localSpending.isDeleted = 1;
 		this.#spendingCache.insert(undefined, key, localSpending);
