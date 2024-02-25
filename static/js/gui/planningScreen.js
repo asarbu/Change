@@ -461,7 +461,7 @@ export default class PlanningScreen {
 		// Subtract one for the bottom "Total" row.
 		const index = tbody.rows.length - 1;
 
-		const button = createImageButton('Add Row', [], icons.delete, undefined, this.onClickDeleteGoal.bind(this));
+		const button = createImageButton('Delete', [], icons.delete, undefined, this.onClickDeleteGoal.bind(this));
 		const options = {
 			index: index,
 			lastCellContent: button,
