@@ -9,6 +9,7 @@ export default class SpendingScreen {
 
 	onClickSaveCallback = undefined;
 
+	/** @type {Array<Spending>} */
 	spendings = undefined;
 
 	constructor(month, spendings, categories) {
@@ -75,20 +76,24 @@ export default class SpendingScreen {
 
 	sketchNavBar() {
 		const onClickAdd = this.onClickOpenModal.bind(this, this.newSpendingHtml);
-		const onClickEdit = undefined; // this.onClickEditSpending.bind(this);
+		const onClickEdit = this.onClickEdit.bind(this);
+		const onClickSave = this.onClickSave.bind(this);
 		const onClickDelete = undefined; // this.onClickDeleteSpending.bind(this);
 		const onClickDropup = undefined; // this.onClickDropup.bind(this);
 
 		this.navbar = new Dom('nav').append(
 			new Dom('div').cls('nav-header').append(
-				new Dom('button').cls('nav-item').onClick(onClickAdd).append(
-					new Dom('img').cls('white-fill').text('Add').attr('alt', 'Add').attr('src', icons.hand_coin),
+				new Dom('button').cls('nav-item').hideable().onClick(onClickDelete).append(
+					new Dom('img').cls('white-fill').text('Delete').attr('alt', 'Delete').attr('src', icons.delete),
 				),
-				new Dom('button').cls('nav-item').onClick(onClickEdit).append(
+				new Dom('button').id('edit-button').cls('nav-item').onClick(onClickEdit).append(
 					new Dom('img').cls('white-fill').text('Edit').attr('alt', 'Edit').attr('src', icons.edit),
 				),
-				new Dom('button').cls('nav-item').onClick(onClickDelete).append(
-					new Dom('img').cls('white-fill').text('Delete').attr('alt', 'Delete').attr('src', icons.delete),
+				new Dom('button').id('save-button').cls('nav-item').onClick(onClickSave).hide().append(
+					new Dom('img').cls('white-fill').text('Save').attr('alt', 'Save').attr('src', icons.save),
+				),
+				new Dom('button').cls('nav-item').onClick(onClickAdd).append(
+					new Dom('img').cls('white-fill').text('Add').attr('alt', 'Add').attr('src', icons.hand_coin),
 				),
 			),
 			new Dom('div').cls('nav-footer').append(
@@ -255,13 +260,15 @@ export default class SpendingScreen {
 		return categoryModal;
 	}
 
-	refresh(spendings) {
-        //console.log("Refreshing spendings...", spendings);
-		if(!spendings) console.trace();
+	refresh(spendings, forMonth) {
+		if (!spendings) throw Error('No spendings provided');
 		this.spendings = spendings;
-		//TODO replace this with creating a new tbody and replacing old one
+		if (!this.spendingSlices.has(forMonth)) {
+			this.createSlice(forMonth);
+		}
+		// TODO replace this with creating a new tbody and replacing old one
 		this.spendingsTable.tBodies[0].innerHTML = '';
-		
+
 		this.totals = new Map();
 		for (const spending of this.spendings) {
 			const spendingValue = spending.value;
@@ -282,57 +289,21 @@ export default class SpendingScreen {
 	 */
 	appendToSpendingTable(spending) {
 		const onClickDelete = this.onClickDeleteSpending.bind(this);
+		const onSpendingChanged = this.onSpendingChanged.bind(this);
 		const boughtOn = spending.boughtOn.toLocaleString('en-GB', { day: 'numeric', month: 'short' });
-		const newRow = new Dom('tr').id(spending.id).append(
-			new Dom('td').text(spending.description),
-			new Dom('td').text(boughtOn),
-			new Dom('td').text(spending.category),
-			new Dom('td').text(spending.price),
-			new Dom('button').cls('nav-item', 'nav-trigger').hideable().onClick(onClickDelete).append(
-				new Dom('img').cls('white-fill').text('Menu').attr('alt', 'Menu').attr('src', icons.menu),
+		const newRow = new Dom('tr').id(spending.id).userData(spending).append(
+			new Dom('td').text(spending.description).editable().onKeyUp(onSpendingChanged),
+			new Dom('td').text(boughtOn).editable().onKeyUp(onSpendingChanged),
+			new Dom('td').text(spending.category).editable().onKeyUp(onSpendingChanged),
+			new Dom('td').text(spending.price).editable().onKeyUp(onSpendingChanged),
+			new Dom('td').hideable().append(
+				new Dom('button').onClick(onClickDelete).append(
+					new Dom('img').cls('white-fill').text('Delete').attr('alt', 'Delete').attr('src', icons.delete),
+				),
 			),
 		);
 
 		this.spendingsHtml.tBodies[0].appendChild(newRow.toHtml());
-	}
-
-	appendRowToTBody(tbody, data, options) {
-		let index = -1;
-		if (options.index) {
-			index = options.index;
-		}
-
-		const row = tbody.insertRow(index);
-		let dataCell;
-
-		for (const dataCtn of data) {
-			dataCell = row.insertCell(-1);
-			dataCell.textContent = dataCtn;
-			if (!options.readonly) {
-				dataCell.setAttribute('editable', true);
-				
-			}
-			if (options.useBold == true) {
-				dataCell.style.fontWeight = 'bold';
-			}
-		}
-
-		if (options.color) {
-			dataCell.style.color = options.color;
-		}
-
-		if (options.deletable) {
-			const buttonsCell = row.insertCell(-1);
-			const btn = createImageButton('Delete','', ['waves-effect', 'waves-light', 'red', 'btn-small'], icons.delete);
-			btn.addEventListener('click', this.onClickDelete.bind(this), false);
-			
-			buttonsCell.appendChild(btn);
-			buttonsCell.setAttribute('hideable', 'true');
-			if (options.hidden) {
-				buttonsCell.style.display = 'none';
-			}
-		}
-		return row;
 	}
 
 	async drawCategoryList() {
@@ -386,71 +357,103 @@ export default class SpendingScreen {
 		this.categoryInput.value = event.target.innerText;
 		this.categoryInput.classList.add('valid');
 		this.expenseTypeInput.value = (event.target.parentNode.parentNode.parentNode.parentNode.firstElementChild.innerText);
-		M.updateTextFields();
 	}
 
 	async onClickDelete(event) {
 		const row = event.target.parentNode.parentNode;
-		const key = row.getAttribute('db_id');
-		
-		if(this.onClickDeleteCallback) {
+		const key = row.id;
+
+		if (this.onClickDeleteCallback) {
 			this.onClickDeleteCallback(key);
 		}
 
 		row.parentNode.removeChild(row);
 	}
 
-	onClickEdit() {
-		this.saveBtn.style.display = '';
-		this.editBtn.style.display = 'none';
-
-		const tableDefs = document.querySelectorAll('td[editable="true"]')
-		for (var i = 0; i < tableDefs.length; ++i) {
-			tableDefs[i].contentEditable = 'true';
-		}
-
-		const ths = document.querySelectorAll('th[hideable="true"]')
-		for (var i = 0; i < ths.length; ++i) {
-			ths[i].style.display = '';
-		}
-
-		const trs = document.querySelectorAll('td[hideable="true"]')
-		for (var i = 0; i < trs.length; ++i) {
-			trs[i].style.display = '';
-		}
-	}
-
-	onClickSave() {
-		this.editBtn.style.display = '';
-		this.saveBtn.style.display = 'none';
-
-		const tableDefs = document.querySelectorAll('td[editable="true"]')
-		for (var i = 0; i < tableDefs.length; ++i) {
-			tableDefs[i].contentEditable = 'false';
-		}
-
-		const ths = document.querySelectorAll('th[hideable="true"]')
-		for (var i = 0; i < ths.length; ++i) {
-			ths[i].style.display = 'none';
-		}
-
-		const trs = document.querySelectorAll('td[hideable="true"]')
-		for (var i = 0; i < trs.length; ++i) {
-			trs[i].style.display = 'none';
-		}
-
-		if(this.onClickSaveCallback) {
-			this.onClickSaveCallback(this.month);
-		}
-	}
-
 	//#endregion
 
 	// #region onClick handlers
+	onSpendingChanged(event) {
+		const cell = event.currentTarget;
+		const row = cell.parentNode;
+		const table = row.parentNode.parentNode;
+
+		const { cellIndex } = event.currentTarget;
+		/** @type {Spending} */
+		const spending = row.userData;
+
+		switch (cellIndex) {
+		case 0:
+			spending.description = cell.textContent;
+			break;
+		case 1:
+			spending.boughtOn = cell.valueAsDate;
+			break;
+		case 2:
+			spending.category = cell.textContent;
+			break;
+		case 3:
+			spending.price = cell.textContent;
+			break;
+		default:
+			break;
+		}
+
+		spending.edited = true;
+	}
+
 	onClickDeleteSpending(event) {
-		if (this.onClickDeleteCallback) {
-			this.onClickDeleteCallback();
+		const row = event.currentTarget.parentNode.parentNode;
+		const tBody = row.parentNode;
+		const spending = row.userData;
+
+		// this.spendings.splice(this.spendings.indexOf(spending), 1);
+		spending.deleted = true;
+		tBody.removeChild(row);
+	}
+
+	onClickEdit(event) {
+		this.editButton = document.getElementById('edit-button');
+		this.saveButton = document.getElementById('save-button');
+		const tableDefs = document.querySelectorAll('[editable="true"]');
+		for (let i = 0; i < tableDefs.length; i += 1) {
+			tableDefs[i].contentEditable = 'true';
+		}
+
+		const elements = document.querySelectorAll('[hideable="true"]');
+		for (let i = 0; i < elements.length; i += 1) {
+			elements[i].style.display = '';
+		}
+
+		this.editMode = true;
+		this.editButton.style.display = 'none';
+		this.saveButton.style.display = '';
+	}
+
+	onClickSave() {
+		this.editButton = document.getElementById('edit-button');
+		this.saveButton = document.getElementById('save-button');
+		const editables = document.querySelectorAll('[editable="true"]');
+		for (let i = 0; i < editables.length; i += 1) {
+			editables[i].contentEditable = 'false';
+		}
+
+		const hideables = document.querySelectorAll('[hideable="true"]');
+		for (let i = 0; i < hideables.length; i += 1) {
+			hideables[i].style.display = 'none';
+		}
+
+		this.editMode = false;
+		this.editButton.style.display = '';
+		this.saveButton.style.display = 'none';
+
+		const changedSpendings = this.spendings
+			.filter((spending) => spending.deleted || spending.edited || spending.created);
+
+		if (this.onClickSaveCallback) {
+			this.onClickSaveCallback(changedSpendings);
 		}
 	}
+
 	// # endregion
 }

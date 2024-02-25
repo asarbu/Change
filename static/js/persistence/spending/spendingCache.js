@@ -52,21 +52,11 @@ export default class SpendingCache {
 	}
 
 	/**
-	 * Update all spendings in the cache
-	 * @param {Array<Spending>} spendings Spendings to update
-	 */
-	async updateAll(spendings) {
-		await this.idb.updateAll(this.year, spendings);
-		this.onChange(this.month);
-	}
-
-	/**
 	 * Persist a spending in cache at a certain key
-	 * @param {number} key Key to identfy the spending in cache
 	 * @param {Spending} spending Spending to persist
 	 */
-	async insert(key, spending) {
-		await this.idb.insert(this.year, spending, key);
+	async insert(spending) {
+		await this.idb.insert(this.year, spending, spending.id);
 		this.onChange(spending);
 	}
 
@@ -76,7 +66,7 @@ export default class SpendingCache {
 	 */
 	async delete(spending) {
 		await this.idb.delete(this.year, spending.id);
-		this.onChange(spending.value.month);
+		this.onChange(spending);
 	}
 
 	/**
@@ -94,7 +84,7 @@ export default class SpendingCache {
 
 	/**
 	 * Persists the time of edit for cache in permanent storage
-	 * @param {Spending} spending Month for which to record the edit
+	 * @param {Spending} spending Spending for which to record the edit
 	 * @param {number} time Timestamp to store in storage
 	 */
 	onChange(spending, time) {

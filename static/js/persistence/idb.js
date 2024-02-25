@@ -157,6 +157,7 @@ export default class Idb {
 			store.index(indexName).openCursor(iDbKey).onsuccess = (event) => {
 				const cursor = event.target.result;
 				if (cursor) {
+					cursor.value.id = cursor.primaryKey;
 					values.push(cursor.value);
 					cursor.continue();
 				}

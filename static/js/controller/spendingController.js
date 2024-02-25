@@ -1,6 +1,7 @@
 import SpendingScreen from '../gui/spendingScreen.js';
 import SpendingCache from '../persistence/spending/spendingCache.js';
 import PlanningCache from '../persistence/planning/planningCache.js';
+import Spending from '../persistence/spending/spendingModel.js';
 
 async function initSpending() {
 	if (!window.indexedDB) {
@@ -105,7 +106,7 @@ export default class SpendingController {
 	}
 
 	async onClickCreateSpending(spending) {
-		await this.#spendingCache.insert(spending.id, spending);
+		await this.#spendingCache.insert(spending);
 
 		/* if(gdriveSync) {
 			this.syncGDrive(spending.month);
@@ -118,11 +119,18 @@ export default class SpendingController {
 		this.#spendingCache.insert(undefined, key, localSpending);
 	}
 
-	async onClickSaveSpendings(month) {
-		const deletedSpendings = await this.#spendingCache.readAllDeleted(this.currentYear, month);
-		for(const spending of deletedSpendings) {
-			this.#spendingCache.delete(spending)
-		}
+	/**
+	 * 
+	 * @param {Array<Spending} spendings Spendings to be persisted
+	 */
+	async onClickSaveSpendings(spendings) {
+		spendings
+			.filter((spending) => spending.deleted)
+			.forEach((spending) => this.#spendingCache.delete(spending));
+
+		spendings
+			.filter((spending) => spending.edited || spending.created)
+			.forEach((spending) => this.#spendingCache.insert(spending));
 
 		/* if(gdriveSync) {
 			await this.syncGDrive(month);
@@ -131,7 +139,7 @@ export default class SpendingController {
 
 	async refreshTab(month) {
 		const spendings = await this.#spendingCache.readAll(this.currentYear, month);
-		if(this.#tabs.get(month)) {
+		if (this.#tabs.get(month)) {
 			this.#tabs.get(month).refresh(spendings);
 		} else {
 			//TODO this might trigger a reload before gdrive updated
