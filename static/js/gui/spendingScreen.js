@@ -1,4 +1,5 @@
 import Spending from '../persistence/spending/spendingModel.js';
+import Category from '../persistence/planning/planningModel.js';
 import Dom from './dom.js';
 import icons from './icons.js';
 
@@ -11,6 +12,9 @@ export default class SpendingScreen {
 
 	/** @type {Array<Spending>} */
 	spendings = undefined;
+
+	/** @type {Array<Category>} */
+	categories = undefined
 
 	constructor(month, spendings, categories) {
 		this.month = month;
@@ -44,7 +48,8 @@ export default class SpendingScreen {
 		const main = document.getElementById('main');
 		main.appendChild(this.tab);
 		main.appendChild(this.buildInsertSpendingModal());
-		main.appendChild(this.sketchNavBar().toHtml());
+		main.appendChild(this.buildSpendingSummaryModal());
+		main.appendChild(this.buildNavBar().toHtml());
 
 		const loadingTab = document.getElementById('loading_tab');
 		if (loadingTab) {
@@ -74,10 +79,11 @@ export default class SpendingScreen {
 		return spendingsDom;
 	}
 
-	sketchNavBar() {
+	buildNavBar() {
 		const onClickAdd = this.onClickOpenModal.bind(this, this.newSpendingHtml);
 		const onClickEdit = this.onClickEdit.bind(this);
 		const onClickSave = this.onClickSave.bind(this);
+		const onClickSummary = this.onClickOpenModal.bind(this, this.summaryHtml);
 		const onClickDelete = undefined; // this.onClickDeleteSpending.bind(this);
 		const onClickDropup = undefined; // this.onClickDropup.bind(this);
 
@@ -91,6 +97,9 @@ export default class SpendingScreen {
 				),
 				new Dom('button').id('save-button').cls('nav-item').onClick(onClickSave).hide().append(
 					new Dom('img').cls('white-fill').text('Save').attr('alt', 'Save').attr('src', icons.save),
+				),
+				new Dom('button').id('summary-button').cls('nav-item').onClick(onClickSummary).append(
+					new Dom('img').cls('white-fill').text('Summary').attr('alt', 'Save').attr('src', icons.summary),
 				),
 				new Dom('button').cls('nav-item').onClick(onClickAdd).append(
 					new Dom('img').cls('white-fill').text('Add').attr('alt', 'Add').attr('src', icons.hand_coin),
@@ -114,71 +123,36 @@ export default class SpendingScreen {
 		return this.navbar;
 	}
 
-	onClickOpenModal(modalBackdrop, event) {
-		// Get the modalBackdrop
-		const modalContent = modalBackdrop.firstChild;
-		modalBackdrop.classList.add('show-modal-backdrop');
-		modalContent.classList.add('show-modal-content');
-		// TODO focus on description when opening modal
-		// await new Promise(r => setTimeout(r, 100));
-		this.focusInputField('price-input-field');
-	}
+	buildSpendingSummaryModal(month) {
+		this.summaryHtml = new Dom('div').id('summary-backdrop').cls('modal').append(
+			new Dom('div').id('summary-content').cls('modal-content').append(
+				new Dom('div').cls('modal-header').append(
+					new Dom('h2').text('Expenses summary'),
+				),
+				new Dom('div').cls('modal-body').append(
+					new Dom('table').id(`summary-table-${month}`).append(
+						new Dom('thead').append(
+							new Dom('tr').append(
+								new Dom('th').text('Category'),
+								new Dom('th').text('Spending'),
+								new Dom('th').text('Budget'),
+								new Dom('th').text('Percent'),
+							),
+						),
+						new Dom('tbody'),
+					),
+				),
+				new Dom('div').cls('modal-footer').append(
+					new Dom('h3').text('Cancel'),
+				),
+			),
+		)
+			.toHtml();
 
-	focusInputField(withId) {
-		/* Focus cannot be applied to invisible elements.
-		 * We need to wait for elemnt to be focusable.
-		 * We also cannot use display: none -> display: visible because that cannot be animated 
-		 */
-		requestAnimationFrame(() => {
-			const priceInputField = document.getElementById(withId);
-			priceInputField.focus();
-			if (document.activeElement !== priceInputField) {
-				requestAnimationFrame(this.focusInputField.bind(this, withId));
-			}
-		});
-	}
+		// TODO rework this into DOM object
+		this.summaryHtml.addEventListener('click', this.onClickCloseModal.bind(this, this.summaryHtml));
 
-	onClickCloseModal(modalBackdrop, event) {
-		// Force close if it function not triggered by an event (triggered by code)
-		if (!event || event.target === modalBackdrop) {
-			modalBackdrop.firstChild.classList.remove('show-modal-content');
-			modalBackdrop.classList.remove('show-modal-backdrop');
-		}
-	}
-
-	sketchSpendingSummary() {
-		const modal = create('div', {id: 'summary-modal-' + this.month, classes: ['modal', 'bottom-sheet']});
-		const modalContent = create('div', {classes: ['modal-content']});
-		const modalFooter = create('div', {classes: ['modal-footer']});
-		const h4 = create('h4', {textContent: 'Expenses vs. planning'});
-		const table = create('table', {id: 'summary-table-' + this.month, classes: ['striped', 'row', 'table-content']});
-		const tHead = create('thead');
-		const tr = create('tr');
-		const thCategory = create('th', {textContent: 'Category'});
-		const thSpending = create('th', {textContent: 'Spending'});
-		const thBudget = create('th', {textContent: 'Budget'});
-		const thPercentage = create('th', {textContent: 'Percent'});
-		const tBody = create('tbody');
-		const a = create('a', {textContent: 'Close', classes: ['modal-close', 'waves-effect', 'waves-green', 'btn-flat']});
-
-		a.setAttribute('href', '#!');
-
-		tr.appendChild(thCategory);
-		tr.appendChild(thSpending);
-		tr.appendChild(thBudget);
-		tr.appendChild(thPercentage);
-		tHead.appendChild(tr);
-		table.appendChild(tHead);
-		table.appendChild(tBody);
-		modalContent.appendChild(h4);
-		modalContent.appendChild(table);
-		modalFooter.appendChild(a);
-		modal.appendChild(modalContent);
-		modal.appendChild(modalFooter);
-
-		this.summaryTable = table;
-
-		return modal;
+		return this.summaryHtml;
 	}
 
 	buildInsertSpendingModal() {
@@ -221,17 +195,13 @@ export default class SpendingScreen {
 
 	onClickModalSave(event) {
 		const modalBackdrop = event.target.parentNode.parentNode.parentNode;
-		const date = document.getElementById('date-input-field').valueAsDate;
-		const description = document.getElementById('description-input-field').value;
-		const price = document.getElementById('price-input-field').value;
-		const category = document.getElementById('category-input-field').value;
 
 		const newSpending = {
 			id: new Date().getTime(),
-			boughtOn: date,
-			description,
-			price,
-			category,
+			boughtOn: document.getElementById('date-input-field').valueAsDate,
+			description: document.getElementById('description-input-field').value,
+			price: document.getElementById('price-input-field').value,
+			category: document.getElementById('category-input-field').value,
 		};
 
 		this.appendToSpendingTable(newSpending);
@@ -244,20 +214,30 @@ export default class SpendingScreen {
 	}
 
 	createCategoryModal() {
-		const categoryModal = create('div', { id: 'category-modal-' + this.month, classes: ['modal', 'bottom-sheet']});
-		const modalContent = create('div', { classes: ['modal-content']});
-		const modalFooter = create('div', { classes: ['modal-footer']});
-		const a = create('a', {id: 'categoryModalClose', textContent: 'Close', href: '#!', classes: ['modal-close', 'waves-effect', 'waves-green', 'btn-flat']});
-		const categoryList = create('ul', {id: 'categoryList', classes: ['collapsible', 'popout']});
+		this.newSpendingHtml = new Dom('div').id('categories-backdrop').cls('modal').append(
+			new Dom('div').id('categories-content').cls('modal-content').append(
+				new Dom('div').cls('modal-header').append(
+					new Dom('h2').text('Insert Spending'),
+				),
+				new Dom('div').cls('modal-body', 'accordion').append(
+					this.categories.map((category) => new Dom('div').cls('accordion-item').append(
+						new Dom('input').id(category.id).cls('accordion-state').attr('type', 'checkbox'),
+						new Dom('label').cls('accordion-header').attr('for', category.id).append(
+							new Dom('span').text(category.name),
+						),
+						new Dom('div').cls('accordion-content').append(
+							category.goals.map((goal) => new Dom('div').cls('accordion-secondary').text(goal.name)),
+						),
+					)),
+				),
+			),
+		)
+			.toHtml();
 
-		modalFooter.appendChild(a);
-		modalContent.appendChild(categoryList);
-		categoryModal.appendChild(modalContent);
-		categoryModal.appendChild(modalFooter);
+		// TODO rework this into DOM object
+		this.summaryHtml.addEventListener('click', this.onClickCloseModal.bind(this, this.summaryHtml));
 
-		this.categoryList = categoryList;
-		this.drawCategoryList();
-		return categoryModal;
+		return this.summaryHtml;
 	}
 
 	refresh(spendings, forMonth) {
@@ -306,28 +286,6 @@ export default class SpendingScreen {
 		this.spendingsHtml.tBodies[0].appendChild(newRow.toHtml());
 	}
 
-	async drawCategoryList() {
-		for (const [key, value] of this.categories.entries()) {
-			const li = create('li');
-			const header = create('div', {textContent: key, classes: ['collapsible-header']});
-			const body = create('div', {classes: ['collapsible-body']});
-			const span = create('span');
-			const ul = create('ul', {classes: ['card', 'collection']});
-
-			for (const data of value) {
-				const li = create('li', {textContent: data, classes: ['collection-item', 'modal-close']});
-				li.addEventListener('click', this.onClickCategory.bind(this), false);
-				ul.appendChild(li);
-			}
-
-			span.appendChild(ul);
-			body.appendChild(span);
-			li.appendChild(header);
-			li.appendChild(body);
-			this.categoryList.appendChild(li);
-		}
-	}
-
 	processSummary() {
 		let totalSpent = 0;
 		let totalBudget = 0;
@@ -351,8 +309,8 @@ export default class SpendingScreen {
 		this.appendRowToTBody(tBody, ['Total', totalSpent, totalBudget, parseInt(totalPercent/count)], options);
 		this.summaryTable.replaceChild(fragment, this.summaryTable.tBodies[0]);
 	}
-	
-	//#region GUI handlers
+
+	// #region GUI handlers
 	onClickCategory(event) {
 		this.categoryInput.value = event.target.innerText;
 		this.categoryInput.classList.add('valid');
@@ -369,14 +327,12 @@ export default class SpendingScreen {
 
 		row.parentNode.removeChild(row);
 	}
-
-	//#endregion
+	// #endregion
 
 	// #region onClick handlers
 	onSpendingChanged(event) {
 		const cell = event.currentTarget;
 		const row = cell.parentNode;
-		const table = row.parentNode.parentNode;
 
 		const { cellIndex } = event.currentTarget;
 		/** @type {Spending} */
@@ -412,7 +368,7 @@ export default class SpendingScreen {
 		tBody.removeChild(row);
 	}
 
-	onClickEdit(event) {
+	onClickEdit() {
 		this.editButton = document.getElementById('edit-button');
 		this.saveButton = document.getElementById('save-button');
 		const tableDefs = document.querySelectorAll('[editable="true"]');
@@ -455,5 +411,38 @@ export default class SpendingScreen {
 		}
 	}
 
-	// # endregion
+	
+
+	onClickOpenModal(modalBackdrop, event) {
+		// Get the modalBackdrop
+		const modalContent = modalBackdrop.firstChild;
+		modalBackdrop.classList.add('show-modal-backdrop');
+		modalContent.classList.add('show-modal-content');
+		// TODO focus on description when opening modal
+		// await new Promise(r => setTimeout(r, 100));
+		this.focusInputField('price-input-field');
+	}
+
+	focusInputField(withId) {
+		/* Focus cannot be applied to invisible elements.
+		 * We need to wait for elemnt to be focusable.
+		 * We also cannot use display: none -> display: visible because that cannot be animated 
+		 */
+		requestAnimationFrame(() => {
+			const priceInputField = document.getElementById(withId);
+			priceInputField.focus();
+			if (document.activeElement !== priceInputField) {
+				requestAnimationFrame(this.focusInputField.bind(this, withId));
+			}
+		});
+	}
+
+	onClickCloseModal(modalBackdrop, event) {
+		// Force close if it function not triggered by an event (triggered by code)
+		if (!event || event.target === modalBackdrop) {
+			modalBackdrop.firstChild.classList.remove('show-modal-content');
+			modalBackdrop.classList.remove('show-modal-backdrop');
+		}
+	}
+	// #endregion
 }
