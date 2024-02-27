@@ -1,5 +1,5 @@
 import Spending from '../persistence/spending/spendingModel.js';
-import Category from '../persistence/planning/planningModel.js';
+import { Category } from '../persistence/planning/planningModel.js';
 import Dom from './dom.js';
 import icons from './icons.js';
 
@@ -14,7 +14,7 @@ export default class SpendingScreen {
 	spendings = undefined;
 
 	/** @type {Array<Category>} */
-	categories = undefined
+	categories = undefined;
 
 	constructor(month, spendings, categories) {
 		this.month = month;
@@ -38,16 +38,10 @@ export default class SpendingScreen {
 		)
 			.toHtml();
 
-		const newSpendingModal = this.buildInsertSpendingModal();
-		// const summaryModal = this.sketchSpendingSummary();
-		// const categoryModal = this.createCategoryModal();
-
-		// this.summaryModal = summaryModal;
-		// this.categoryModal = categoryModal;
-
 		const main = document.getElementById('main');
 		main.appendChild(this.tab);
-		main.appendChild(this.buildInsertSpendingModal());
+		main.appendChild(this.buildAddSpendingModal());
+		main.appendChild(this.createCategoryModal());
 		main.appendChild(this.buildSpendingSummaryModal());
 		main.appendChild(this.buildNavBar().toHtml());
 
@@ -80,10 +74,10 @@ export default class SpendingScreen {
 	}
 
 	buildNavBar() {
-		const onClickAdd = this.onClickOpenModal.bind(this, this.newSpendingHtml);
+		const onClickAdd = this.onClickAddSpending.bind(this);
 		const onClickEdit = this.onClickEdit.bind(this);
 		const onClickSave = this.onClickSave.bind(this);
-		const onClickSummary = this.onClickOpenModal.bind(this, this.summaryHtml);
+		const onClickSummary = this.onClickSummary.bind(this, this.summaryHtml);
 		const onClickDelete = undefined; // this.onClickDeleteSpending.bind(this);
 		const onClickDropup = undefined; // this.onClickDropup.bind(this);
 
@@ -155,7 +149,8 @@ export default class SpendingScreen {
 		return this.summaryHtml;
 	}
 
-	buildInsertSpendingModal() {
+	buildAddSpendingModal() {
+		const onClickCategory = this.onClickCategoryInput.bind(this);
 		this.newSpendingHtml = new Dom('div').id('add-spending-backdrop').cls('modal').append(
 			new Dom('div').id('add-spending-content').cls('modal-content').append(
 				new Dom('div').cls('modal-header').append(
@@ -167,16 +162,16 @@ export default class SpendingScreen {
 						new Dom('label').text('Date: '),
 					),
 					new Dom('div').cls('input-field').append(
-						new Dom('input').id('description-input-field').type('text').attr('required', ''),
-						new Dom('label').text('Description: '),
-					),
-					new Dom('div').cls('input-field').append(
-						new Dom('input').id('category-input-field').type('text').attr('required', ''),
+						new Dom('input').id('category-input-field').type('text').attr('required', '').onClick(onClickCategory),
 						new Dom('label').text('Category: '),
 					),
 					new Dom('div').cls('input-field').append(
-						new Dom('input').id('price-input-field').type('text').attr('required', undefined),
+						new Dom('input').id('price-input-field').type('number').attr('required', '').attr('step', '0.01'),
 						new Dom('label').text('Price: '),
+					),
+					new Dom('div').cls('input-field').append(
+						new Dom('input').id('description-input-field').type('text').attr('required', ''),
+						new Dom('label').text('Description: '),
 					),
 				),
 				new Dom('div').cls('modal-footer').append(
@@ -214,19 +209,19 @@ export default class SpendingScreen {
 	}
 
 	createCategoryModal() {
-		this.newSpendingHtml = new Dom('div').id('categories-backdrop').cls('modal').append(
+		this.categoryHtml = new Dom('div').id('categories-backdrop').cls('modal').append(
 			new Dom('div').id('categories-content').cls('modal-content').append(
 				new Dom('div').cls('modal-header').append(
 					new Dom('h2').text('Insert Spending'),
 				),
 				new Dom('div').cls('modal-body', 'accordion').append(
-					this.categories.map((category) => new Dom('div').cls('accordion-item').append(
+					...this.categories.map((category) => new Dom('div').cls('accordion-item').append(
 						new Dom('input').id(category.id).cls('accordion-state').attr('type', 'checkbox'),
 						new Dom('label').cls('accordion-header').attr('for', category.id).append(
 							new Dom('span').text(category.name),
 						),
 						new Dom('div').cls('accordion-content').append(
-							category.goals.map((goal) => new Dom('div').cls('accordion-secondary').text(goal.name)),
+							...category.goals.map((goal) => new Dom('div').cls('accordion-secondary').text(goal.name).onClick(this.onClickCategory.bind(this))),
 						),
 					)),
 				),
@@ -235,9 +230,9 @@ export default class SpendingScreen {
 			.toHtml();
 
 		// TODO rework this into DOM object
-		this.summaryHtml.addEventListener('click', this.onClickCloseModal.bind(this, this.summaryHtml));
+		this.categoryHtml.addEventListener('click', this.onClickCloseModal.bind(this, this.categoryHtml));
 
-		return this.summaryHtml;
+		return this.categoryHtml;
 	}
 
 	refresh(spendings, forMonth) {
@@ -311,12 +306,6 @@ export default class SpendingScreen {
 	}
 
 	// #region GUI handlers
-	onClickCategory(event) {
-		this.categoryInput.value = event.target.innerText;
-		this.categoryInput.classList.add('valid');
-		this.expenseTypeInput.value = (event.target.parentNode.parentNode.parentNode.parentNode.firstElementChild.innerText);
-	}
-
 	async onClickDelete(event) {
 		const row = event.target.parentNode.parentNode;
 		const key = row.id;
@@ -411,16 +400,31 @@ export default class SpendingScreen {
 		}
 	}
 
-	
+	onClickSummary() {
+		this.onClickOpenModal(document.getElementById('summary-backdrop'));
+	}
 
-	onClickOpenModal(modalBackdrop, event) {
-		// Get the modalBackdrop
+	onClickAddSpending() {
+		this.onClickCategoryInput();
+	}
+
+	onClickCategoryInput() {
+		this.onClickOpenModal(document.getElementById('categories-backdrop'));
+	}
+
+	onClickCategory(event) {
+		const categoryInput = document.getElementById('category-input-field');
+		const categoryModal = document.getElementById('categories-backdrop');
+		categoryInput.value = event.target.textContent;
+		this.onClickCloseModal(categoryModal);
+		this.onClickOpenModal(document.getElementById('add-spending-backdrop'));
+		this.focusInputField('price-input-field');
+	}
+
+	onClickOpenModal(modalBackdrop) {
 		const modalContent = modalBackdrop.firstChild;
 		modalBackdrop.classList.add('show-modal-backdrop');
 		modalContent.classList.add('show-modal-content');
-		// TODO focus on description when opening modal
-		// await new Promise(r => setTimeout(r, 100));
-		this.focusInputField('price-input-field');
 	}
 
 	focusInputField(withId) {
