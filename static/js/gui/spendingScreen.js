@@ -124,7 +124,7 @@ export default class SpendingScreen {
 					new Dom('h2').text('Expenses summary'),
 				),
 				new Dom('div').cls('modal-body').append(
-					new Dom('table').id(`summary-table-${month}`).append(
+					new Dom('table').id(`summary-table-${month}`).cls('top-round', 'bot-round').append(
 						new Dom('thead').append(
 							new Dom('tr').append(
 								new Dom('th').text('Category'),
@@ -135,10 +135,6 @@ export default class SpendingScreen {
 						),
 						new Dom('tbody').append(
 							...this.buildSummary(),
-							new Dom('tr').append(
-								new Dom('td').text('Total'),
-								new Dom('td').text(this.spendings.reduce((previous, current) => previous + current.price, 0)),
-							),
 						),
 					),
 				),
@@ -250,18 +246,7 @@ export default class SpendingScreen {
 		// TODO replace this with creating a new tbody and replacing old one
 		this.spendingsTable.tBodies[0].innerHTML = '';
 
-		this.totals = new Map();
-		for (const spending of this.spendings) {
-			const spendingValue = spending.value;
-			if (!this.totals.has(spendingValue.category)) {
-				this.totals.set(spendingValue.category, 0);
-			}
-			const newTotal = this.totals.get(spendingValue.category) + parseFloat(spendingValue.price);
-			this.totals.set(spendingValue.category, newTotal);
-			this.appendToSpendingTable(spending.key, spending.value);
-		}
-		
-		this.buildSummary();
+		this.spendingsTable.tBodies[0].appendChild(this.buildSummary());
 	}
 
 	/**
@@ -289,34 +274,30 @@ export default class SpendingScreen {
 
 	buildSummary() {
 		const spentGoals = [...new Set(this.spendings.map((spending) => spending.category))];
-		const budget = this.categories.map((category) => category.goals);
-		return spentGoals.map((goal) => new Dom('tr').append(
-			new Dom('td').text(goal),
-			new Dom('td').text(this.spendings.reduce((accumulator, spending) => accumulator + (spending.category === goal ? spending.price : 0), 0).toFixed(2)),
-			new Dom('td').text(this.categories.find((category) => category.name === category)),
+		const goals = this.categories
+			.map((category) => category.goals)
+			.flat()
+			.filter((goal) => spentGoals.filter((spentGoal) => spentGoal === goal.name).length > 0);
+		const spendingTotal = this.spendings
+			.reduce((accumulator, current) => accumulator + current.price, 0);
+		const budgetTotal = goals.reduce((accumulator, current) => accumulator + current.monthly, 0);
+		return spentGoals.map((goal) => {
+			const spentForGoal = this.spendings
+				.reduce((accumulator, spending) => accumulator + (spending.category === goal ? spending.price : 0), 0)
+				.toFixed(2);
+			const budgetForGoal = goals.find((plannedGoal) => plannedGoal.name === goal).monthly;
+			return new Dom('tr').append(
+				new Dom('td').text(goal),
+				new Dom('td').text(spentForGoal),
+				new Dom('td').text(budgetForGoal),
+				new Dom('td').text(((100 * spentForGoal) / budgetForGoal).toFixed(2)),
+			);
+		}).concat(new Dom('tr').append(
+			new Dom('td').text('Total'),
+			new Dom('td').text(spendingTotal),
+			new Dom('td').text(budgetTotal),
+			new Dom('td').text(((100 * spendingTotal) / budgetTotal).toFixed(2)),
 		));
-		/*
-		let totalSpent = 0;
-		let totalBudget = 0;
-		let totalPercent = 0.00;
-		let count = 0;
-
-		const fragment = document.createDocumentFragment();
-		const tBody = create('tbody');
-		fragment.appendChild(tBody);
-		for (const [key, value] of this.totals) {
-			const planningBudget = this.plannings.get(key);
-			const percentage = value / parseFloat(planningBudget);
-			this.appendRowToTBody(tBody, [key, value, planningBudget, parseInt(percentage * 100)], { readonly: true, color: getColorForPercentage(percentage) });
-			
-			totalBudget = totalBudget + parseInt(planningBudget);
-			totalSpent = totalSpent + parseInt(value);
-			totalPercent = totalPercent + parseInt(percentage * 100);
-			count++;
-		}
-		const options = { useBold: true, readonly: true, index: -1, color: getColorForPercentage(totalPercent/count)};
-		this.appendRowToTBody(tBody, ['Total', totalSpent, totalBudget, parseInt(totalPercent/count)], options);
-		this.summaryTable.replaceChild(fragment, this.summaryTable.tBodies[0]);*/
 	}
 
 	// #region GUI handlers
