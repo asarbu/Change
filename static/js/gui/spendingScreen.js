@@ -133,7 +133,13 @@ export default class SpendingScreen {
 								new Dom('th').text('Percent'),
 							),
 						),
-						new Dom('tbody'),
+						new Dom('tbody').append(
+							...this.buildSummary(),
+							new Dom('tr').append(
+								new Dom('td').text('Total'),
+								new Dom('td').text(this.spendings.reduce((previous, current) => previous + current.price, 0)),
+							),
+						),
 					),
 				),
 				new Dom('div').cls('modal-footer').append(
@@ -195,7 +201,7 @@ export default class SpendingScreen {
 			id: new Date().getTime(),
 			boughtOn: document.getElementById('date-input-field').valueAsDate,
 			description: document.getElementById('description-input-field').value,
-			price: document.getElementById('price-input-field').value,
+			price: +document.getElementById('price-input-field').value,
 			category: document.getElementById('category-input-field').value,
 		};
 
@@ -255,7 +261,7 @@ export default class SpendingScreen {
 			this.appendToSpendingTable(spending.key, spending.value);
 		}
 		
-		this.processSummary();
+		this.buildSummary();
 	}
 
 	/**
@@ -281,7 +287,15 @@ export default class SpendingScreen {
 		this.spendingsHtml.tBodies[0].appendChild(newRow.toHtml());
 	}
 
-	processSummary() {
+	buildSummary() {
+		const spentGoals = [...new Set(this.spendings.map((spending) => spending.category))];
+		const budget = this.categories.map((category) => category.goals);
+		return spentGoals.map((goal) => new Dom('tr').append(
+			new Dom('td').text(goal),
+			new Dom('td').text(this.spendings.reduce((accumulator, spending) => accumulator + (spending.category === goal ? spending.price : 0), 0).toFixed(2)),
+			new Dom('td').text(this.categories.find((category) => category.name === category)),
+		));
+		/*
 		let totalSpent = 0;
 		let totalBudget = 0;
 		let totalPercent = 0.00;
@@ -302,7 +316,7 @@ export default class SpendingScreen {
 		}
 		const options = { useBold: true, readonly: true, index: -1, color: getColorForPercentage(totalPercent/count)};
 		this.appendRowToTBody(tBody, ['Total', totalSpent, totalBudget, parseInt(totalPercent/count)], options);
-		this.summaryTable.replaceChild(fragment, this.summaryTable.tBodies[0]);
+		this.summaryTable.replaceChild(fragment, this.summaryTable.tBodies[0]);*/
 	}
 
 	// #region GUI handlers
@@ -338,7 +352,7 @@ export default class SpendingScreen {
 			spending.category = cell.textContent;
 			break;
 		case 3:
-			spending.price = cell.textContent;
+			spending.price = +cell.textContent;
 			break;
 		default:
 			break;
