@@ -70,6 +70,17 @@ export default class SpendingScreen {
 			this.appendToSpendingTable(this.spendings[i]);
 		}
 
+		const spendingTotal = this
+			.spendings
+			.reduce((accumulator, current) => accumulator + current.price, 0);
+
+		this.spendingsHtml.tBodies[0].appendChild(new Dom('tr').append(
+			new Dom('td').text('Total'),
+			new Dom('td').text(new Date().toLocaleString('en-GB', { day: 'numeric', month: 'short' })),
+			new Dom('td').text('-'),
+			new Dom('td').text(spendingTotal.toFixed(2)),
+		).toHtml());
+
 		return spendingsDom;
 	}
 
@@ -139,7 +150,7 @@ export default class SpendingScreen {
 					),
 				),
 				new Dom('div').cls('modal-footer').append(
-					new Dom('h3').text('Cancel'),
+					new Dom('h3').id('summary-cancel').text('Cancel'),
 				),
 			),
 		)
