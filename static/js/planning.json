@@ -11,30 +11,30 @@
 					{
 						"id": "Food",
 						"name": "Food",
-						"daily": "3",
-						"monthly": "60",
-						"yearly": "720"
+						"daily": 3,
+						"monthly": 60,
+						"yearly": 720
 					},
 					{
 						"id": "Lunch",
 						"name": "Lunch",
-						"daily": "3",
-						"monthly": "60",
-						"yearly": "720"
+						"daily": 3,
+						"monthly": 60,
+						"yearly": 720
 					},
 					{
 						"id": "Medication",
 						"name": "Medication",
-						"daily": "1",
-						"monthly": "20",
-						"yearly": "240"
+						"daily": 1,
+						"monthly": 20,
+						"yearly": 240
 					},
 					{
 						"id": "Hygene",
 						"name": "Hygene",
-						"daily": "1",
-						"monthly": "20",
-						"yearly": "240"
+						"daily": 1,
+						"monthly": 20,
+						"yearly": 240
 					}
 				]
 			},
@@ -45,79 +45,79 @@
 					{
 						"id": "Rent",
 						"name": "Rent",
-						"daily": "0",
-						"monthly": "0",
-						"yearly": "0"
+						"daily": 0,
+						"monthly": 0,
+						"yearly": 0
 					},
 					{
 						"id": "Gas",
 						"name": "Gas",
-						"daily": "0",
-						"monthly": "0",
-						"yearly": "0"
+						"daily": 0,
+						"monthly": 0,
+						"yearly": 0
 					},
 					{
 						"id": "Electricity",
 						"name": "Electricity",
-						"daily": "0",
-						"monthly": "0",
-						"yearly": "0"
+						"daily": 0,
+						"monthly": 0,
+						"yearly": 0
 					},
 					{
 						"id": "Water",
 						"name": "Water",
-						"daily": "0",
-						"monthly": "0",
-						"yearly": "0"
+						"daily": 0,
+						"monthly": 0,
+						"yearly": 0
 					},
 					{
 						"id": "CableNetflixHBO",
 						"name": "Cable (Netflix/HBO/...)",
-						"daily": "0",
-						"monthly": "0",
-						"yearly": "0"
+						"daily": 0,
+						"monthly": 0,
+						"yearly": 0
 					},
 					{
 						"id": "Internet",
 						"name": "Internet",
-						"daily": "0",
-						"monthly": "0",
-						"yearly": "0"
+						"daily": 0,
+						"monthly": 0,
+						"yearly": 0
 					},
 					{
 						"id": "Telephone",
 						"name": "Telephone",
-						"daily": "0",
-						"monthly": "0",
-						"yearly": "0"
+						"daily": 0,
+						"monthly": 0,
+						"yearly": 0
 					},
 					{
 						"id": "Trash",
 						"name": "Trash",
-						"daily": "0",
-						"monthly": "0",
-						"yearly": "0"
+						"daily": 0,
+						"monthly": 0,
+						"yearly": 0
 					},
 					{
 						"id": "HouseMaintenance",
 						"name": "House maintenance",
-						"daily": "0",
-						"monthly": "0",
-						"yearly": "0"
+						"daily": 0,
+						"monthly": 0,
+						"yearly": 0
 					},
 					{
 						"id": "HomeInsurance",
 						"name": "Home Insurance",
-						"daily": "0",
-						"monthly": "0",
-						"yearly": "0"
+						"daily": 0,
+						"monthly": 0,
+						"yearly": 0
 					},
 					{
 						"id": "Repairs",
 						"name": "Repairs",
-						"daily": "0",
-						"monthly": "0",
-						"yearly": "0"
+						"daily": 0,
+						"monthly": 0,
+						"yearly": 0
 					}
 				]
 			},
@@ -128,72 +128,72 @@
 					{
 						"id": "PublicTransportPlan",
 						"name": "Public transport plan",
-						"daily": "0",
-						"monthly": "0",
-						"yearly": "0"
+						"daily": 0,
+						"monthly": 0,
+						"yearly": 0
 					},
 					{
 						"id": "Fuel",
 						"name": "Fuel",
-						"daily": "0",
-						"monthly": "60",
-						"yearly": "0"
+						"daily": 0,
+						"monthly": 60,
+						"yearly": 0
 					},
 					{
 						"id": "CarInsurance",
 						"name": "Car Insurance",
-						"daily": "0",
-						"monthly": "0",
-						"yearly": "0"
+						"daily": 0,
+						"monthly": 0,
+						"yearly": 0
 					},
 					{
 						"id": "CASCO",
 						"name": "CASCO",
-						"daily": "0",
-						"monthly": "0",
-						"yearly": "0"
+						"daily": 0,
+						"monthly": 0,
+						"yearly": 0
 					},
 					{
 						"id": "Tolls",
 						"name": "Tolls",
-						"daily": "0",
-						"monthly": "0",
-						"yearly": "0"
+						"daily": 0,
+						"monthly": 0,
+						"yearly": 0
 					},
 					{
 						"id": "Taxes",
 						"name": "Taxes",
-						"daily": "0",
-						"monthly": "0",
-						"yearly": "0"
+						"daily": 0,
+						"monthly": 0,
+						"yearly": 0
 					},
 					{
 						"id": "Revision",
 						"name": "Revision",
-						"daily": "0",
-						"monthly": "0",
-						"yearly": "0"
+						"daily": 0,
+						"monthly": 0,
+						"yearly": 0
 					},
 					{
 						"id": "CarRepairs",
 						"name": "Car Repairs",
-						"daily": "0",
-						"monthly": "0",
-						"yearly": "0"
+						"daily": 0,
+						"monthly": 0,
+						"yearly": 0
 					},
 					{
 						"id": "Tires",
 						"name": "Tires",
-						"daily": "0",
-						"monthly": "0",
-						"yearly": "0"
+						"daily": 0,
+						"monthly": 0,
+						"yearly": 0
 					},
 					{
 						"id": "Parking",
 						"name": "Parking",
-						"daily": "0",
-						"monthly": "0",
-						"yearly": "0"
+						"daily": 0,
+						"monthly": 0,
+						"yearly": 0
 					}
 				]
 			},
@@ -204,30 +204,30 @@
 					{
 						"id": "EmergencyFund",
 						"name": "Emergency fund",
-						"daily": "0",
-						"monthly": "0",
-						"yearly": "0"
+						"daily": 0,
+						"monthly": 0,
+						"yearly": 0
 					},
 					{
 						"id": "SafetyFund",
 						"name": "Safety fund",
-						"daily": "0",
-						"monthly": "60",
-						"yearly": "0"
+						"daily": 0,
+						"monthly": 60,
+						"yearly": 0
 					},
 					{
 						"id": "Education",
 						"name": "Education",
-						"daily": "0",
-						"monthly": "0",
-						"yearly": "0"
+						"daily": 0,
+						"monthly": 0,
+						"yearly": 0
 					},
 					{
 						"id": "Retirement",
 						"name": "Retirement",
-						"daily": "0",
-						"monthly": "0",
-						"yearly": "0"
+						"daily": 0,
+						"monthly": 0,
+						"yearly": 0
 					}
 				]
 			}
@@ -245,58 +245,58 @@
 					{
 						"id": "Vacations",
 						"name": "Vacations",
-						"daily": "0",
-						"monthly": "0",
-						"yearly": "0"
+						"daily": 0,
+						"monthly": 0,
+						"yearly": 0
 					},
 					{
 						"id": "Haitcuts",
 						"name": "Haircuts",
-						"daily": "0",
-						"monthly": "60",
-						"yearly": "0"
+						"daily": 0,
+						"monthly": 60,
+						"yearly": 0
 					},
 					{
 						"id": "NightOuts",
 						"name": "Night outs",
-						"daily": "0",
-						"monthly": "0",
-						"yearly": "0"
+						"daily": 0,
+						"monthly": 0,
+						"yearly": 0
 					},
 					{
 						"id": "HouseRepairs",
 						"name": "House repairs",
-						"daily": "0",
-						"monthly": "0",
-						"yearly": "0"
+						"daily": 0,
+						"monthly": 0,
+						"yearly": 0
 					},
 					{
 						"id": "Clothes",
 						"name": "Clothes",
-						"daily": "0",
-						"monthly": "0",
-						"yearly": "0"
+						"daily": 0,
+						"monthly": 0,
+						"yearly": 0
 					},
 					{
 						"id": "Gifts",
 						"name": "Gifts",
-						"daily": "0",
-						"monthly": "0",
-						"yearly": "0"
+						"daily": 0,
+						"monthly": 0,
+						"yearly": 0
 					},
 					{
 						"id": "Electronics",
 						"name": "Electronics",
-						"daily": "0",
-						"monthly": "0",
-						"yearly": "0"
+						"daily": 0,
+						"monthly": 0,
+						"yearly": 0
 					},
 					{
 						"id": "PensionFund",
 						"name": "Pension fund",
-						"daily": "0",
-						"monthly": "0",
-						"yearly": "0"
+						"daily": 0,
+						"monthly": 0,
+						"yearly": 0
 					}
 				]
 			},
@@ -307,23 +307,23 @@
 					{
 						"id": "Cigarettes",
 						"name": "Cigarettes",
-						"daily": "0",
-						"monthly": "0",
-						"yearly": "0"
+						"daily": 0,
+						"monthly": 0,
+						"yearly": 0
 					},
 					{
 						"id": "Gambling",
 						"name": "Gambling",
-						"daily": "0",
-						"monthly": "60",
-						"yearly": "0"
+						"daily": 0,
+						"monthly": 60,
+						"yearly": 0
 					},
 					{
 						"id": "Hobbies",
 						"name": "Hobbies",
-						"daily": "0",
-						"monthly": "0",
-						"yearly": "0"
+						"daily": 0,
+						"monthly": 0,
+						"yearly": 0
 					}
 				]
 			}
@@ -341,23 +341,23 @@
 					{
 						"id": "Mortgage",
 						"name": "Mortgage",
-						"daily": "3",
-						"monthly": "60",
-						"yearly": "720"
+						"daily": 3,
+						"monthly": 60,
+						"yearly": 720
 					},
 					{
 						"id": "PersonalNeedsLoan",
 						"name": "Personal needs loan",
-						"daily": "3",
-						"monthly": "60",
-						"yearly": "720"
+						"daily": 3,
+						"monthly": 60,
+						"yearly": 720
 					},
 					{
 						"id": "CreditCard",
 						"name": "Credit card",
-						"daily": "1",
-						"monthly": "20",
-						"yearly": "240"
+						"daily": 1,
+						"monthly": 20,
+						"yearly": 240
 					}
 				]
 			}
@@ -375,30 +375,30 @@
 					{
 						"id": "Wage1",
 						"name": "Wage 1",
-						"daily": "3",
-						"monthly": "60",
-						"yearly": "720"
+						"daily": 3,
+						"monthly": 60,
+						"yearly": 720
 					},
 					{
 						"id": "Wage2",
 						"name": "Wage 2",
-						"daily": "3",
-						"monthly": "60",
-						"yearly": "729"
+						"daily": 3,
+						"monthly": 60,
+						"yearly": 729
 					},
 					{
 						"id": "Bonus",
 						"name": "Bonus",
-						"daily": "1",
-						"monthly": "20",
-						"yearly": "240"
+						"daily": 1,
+						"monthly": 20,
+						"yearly": 240
 					},
 					{
 						"id": "MealTickets",
 						"name": "Meal Tickets",
-						"daily": "1",
-						"monthly": "20",
-						"yearly": "240"
+						"daily": 1,
+						"monthly": 20,
+						"yearly": 240
 					}
 				]
 			},
@@ -409,44 +409,44 @@
 					{
 						"id": "Rents",
 						"name": "Rents",
-						"daily": "3",
-						"monthly": "60",
-						"yearly": "720"
+						"daily": 3,
+						"monthly": 60,
+						"yearly": 720
 					},
 					{
 						"id": "Interests",
 						"name": "Interests",
-						"daily": "3",
-						"monthly": "60",
-						"yearly": "720"
+						"daily": 3,
+						"monthly": 60,
+						"yearly": 720
 					},
 					{
 						"id": "Dividends",
 						"name": "Dividends",
-						"daily": "1",
-						"monthly": "20",
-						"yearly": "240"
+						"daily": 1,
+						"monthly": 20,
+						"yearly": 240
 					},
 					{
 						"id": "Copyright",
 						"name": "Copyright",
-						"daily": "1",
-						"monthly": "20",
-						"yearly": "240"
+						"daily": 1,
+						"monthly": 20,
+						"yearly": 240
 					},
 					{
 						"id": "Allowance",
 						"name": "Allowance",
-						"daily": "1",
-						"monthly": "20",
-						"yearly": "240"
+						"daily": 1,
+						"monthly": 20,
+						"yearly": 240
 					},
 					{
 						"id": "ChildSupport",
 						"name": "Child support",
-						"daily": "1",
-						"monthly": "20",
-						"yearly": "240"
+						"daily": 1,
+						"monthly": 20,
+						"yearly": 240
 					}
 				]
 			}
