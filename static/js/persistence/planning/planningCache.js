@@ -1,10 +1,10 @@
-import Idb from '../idb';
-import { Category, Statement } from './planningModel';
+import Idb from '../idb.js';
+import { Category, Statement } from './planningModel.js';
 
 export default class PlanningCache {
 	static DATABASE_NAME = 'Planning';
 
-	static PLANNING_TEMPLATE_URI = 'static/v2/js/planning.json';
+	static PLANNING_TEMPLATE_URI = 'static/js/planning.json';
 
 	// TODO: Lower this to 1 at release
 	static DATABASE_VERSION = 2024;
@@ -54,7 +54,16 @@ export default class PlanningCache {
 	 * @param {Idb} idb Idb instance
 	 */
 	constructor(storeName, idb) {
-		this.idb = idb;
+		if (!idb) {
+			this.idb = new Idb(
+				PlanningCache.DATABASE_NAME,
+				PlanningCache.DATABASE_VERSION,
+				PlanningCache.upgradePlanningDatabase,
+			);
+		} else {
+			this.idb = idb;
+		}
+
 		this.storeName = storeName;
 	}
 
@@ -91,13 +100,18 @@ export default class PlanningCache {
 	}
 
 	/**
-	 * Fetch only the statements of type "Expense"
+	 * Fetch only the categories of type "Expense"
 	 * @async
-	 * @returns {Array<Statement>}
+	 * @returns {Array<Category>}
 	 */
 	async readExpenses() {
 		const keyRange = IDBKeyRange.only('Expense');
-		return this.idb.getAllByIndex(this.storeName, 'byType', keyRange);
+		const expenseStatements = await this.idb.getAllByIndex(this.storeName, 'byType', keyRange);
+		const expenses = [];
+		for (let i = 0; i < expenseStatements.length; i += 1) {
+			expenses.push(...expenseStatements[i].categories);
+		}
+		return expenses;
 	}
 
 	/**

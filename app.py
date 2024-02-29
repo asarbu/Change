@@ -11,7 +11,7 @@ app.config['TEMPLATES_AUTO_RELOAD'] = True
 
 @app.route("/")
 def index(name="Change!"):
-    return render_template('Planning.html', name=name)
+    return render_template('Spending.html', name=name)
     
 @app.route('/Planning', methods=['GET'])
 def planning(name="Change!"):

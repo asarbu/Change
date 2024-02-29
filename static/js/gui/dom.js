@@ -70,18 +70,20 @@ export default class Dom {
 		this.elmt = document.createElement(tagName);
 	}
 
+	/**
+	 * Appends the obj instances to the current DOM
+	 * @param {Array<Dom>} children Object to append to current DOM instance
+	 * @returns {Dom}
+	 */
+	append(...children) {
+		children.forEach((child) => {
+			this.elmt.appendChild(child.toHtml ? child.toHtml() : child);
+		});
+		return this;
+	}
+
 	attr(name, value) {
 		this.elmt.setAttribute(name, value);
-		return this;
-	}
-
-	id(id) {
-		this.elmt.id = id;
-		return this;
-	}
-
-	text(text) {
-		this.elmt.textContent = text;
 		return this;
 	}
 
@@ -90,24 +92,53 @@ export default class Dom {
 		return this;
 	}
 
+	editable() {
+		this.elmt.setAttribute('editable', 'true');
+		return this;
+	}
+
+	hide() {
+		this.elmt.style.display = 'none';
+		return this;
+	}
+
+	hideable(isVisible) {
+		this.elmt.setAttribute('hideable', true);
+		this.elmt.style.display = isVisible ? '' : 'none';
+		return this;
+	}
+
+	id(id) {
+		this.elmt.id = id;
+		return this;
+	}
+
 	onClick(listener) {
 		this.elmt.addEventListener('click', listener);
 		return this;
 	}
 
-	/**
-	 * Appends the obj instances to the current DOM
-	 * @param {Array<Dom>} children Object to append to current DOM instance
-	 * @returns {Dom}
-	 */
-	append(...children) {
-		children.forEach((child) => {
-			this.elmt.appendChild(child.toHtml());
-		});
+	onKeyUp(listener) {
+		this.elmt.addEventListener('keyup', listener, false);
+		return this;
+	}
+
+	text(text) {
+		this.elmt.textContent = text;
+		return this;
+	}
+
+	type(type) {
+		this.elmt.type = type;
 		return this;
 	}
 
 	toHtml() {
 		return this.elmt;
+	}
+
+	userData(userData) {
+		this.elmt.userData = userData;
+		return this;
 	}
 }
