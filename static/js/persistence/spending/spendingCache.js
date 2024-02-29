@@ -1,10 +1,10 @@
-import Spending from './spendingModel';
-import Idb from '../idb';
+import Spending from './spendingModel.js';
+import Idb from '../idb.js';
 
 export default class SpendingCache {
 	static DATABASE_NAME = 'Spendings';
 
-	static DATABASE_VERSION = 1;
+	static DATABASE_VERSION = 2024;
 
 	/**
 	 * @type {Idb}
@@ -45,29 +45,19 @@ export default class SpendingCache {
 	 * @returns {Promise<Array<Spending>>}
 	 */
 	async readAll(month) {
-		// TODO redo this
-		// Hack from https://stackoverflow.com/questions/9791219/indexeddb-search-using-wildcards
-		const keyRange = IDBKeyRange.bound(month, `${month}\uffff`);
+		const fromDate = new Date(this.year, month, 1);
+		const toDate = new Date(this.year, month + 1, 0);
+		const keyRange = IDBKeyRange.bound(fromDate, toDate);
 		return this.idb.getAllByIndex(this.year, 'byBoughtDate', keyRange);
 	}
 
 	/**
-	 * Update all spendings in the cache
-	 * @param {Array<Spending>} spendings Spendings to update
-	 */
-	async updateAll(spendings) {
-		await this.idb.updateAll(this.year, spendings);
-		this.onChange(this.month);
-	}
-
-	/**
 	 * Persist a spending in cache at a certain key
-	 * @param {number} key Key to identfy the spending in cache
 	 * @param {Spending} spending Spending to persist
 	 */
-	async insert(key, spending) {
-		await this.idb.put(this.year, spending, key);
-		this.onChange(spending.month);
+	async insert(spending) {
+		await this.idb.insert(this.year, spending, spending.id);
+		this.onChange(spending);
 	}
 
 	/**
@@ -76,7 +66,7 @@ export default class SpendingCache {
 	 */
 	async delete(spending) {
 		await this.idb.delete(this.year, spending.id);
-		this.onChange(spending.value.month);
+		this.onChange(spending);
 	}
 
 	/**
@@ -94,14 +84,15 @@ export default class SpendingCache {
 
 	/**
 	 * Persists the time of edit for cache in permanent storage
-	 * @param {number} month Month for which to record the edit
+	 * @param {Spending} spending Spending for which to record the edit
 	 * @param {number} time Timestamp to store in storage
 	 */
-	onChange(month, time) {
-		if (!month) {
-			throw new Error(`Illegal arguments!${this.year}${month}${time}`);
+	onChange(spending, time) {
+		if (!spending) {
+			throw new Error(`Illegal arguments!${this.year}${spending}${time}`);
 		}
-		const storageKey = `Cache_modified_${this.year}_${month}`;
+
+		const storageKey = `Cache_modified_${this.year}_${spending.boughtOn.getMonth()}`;
 		if (time) {
 			localStorage.setItem(storageKey, time);
 		}
@@ -122,11 +113,8 @@ export default class SpendingCache {
 
 		if (oldVersion < newVersion) {
 			const store = db.createObjectStore(`${newVersion}`, { autoIncrement: true });
-			store.createIndex('byBoughtDate', 'boughtDate', { unique: false });
+			store.createIndex('byBoughtDate', 'boughtOn', { unique: false });
 			store.createIndex('byCategory', 'category', { unique: false });
-			store.createIndex('byDeleteStatus', 'isDeleted', { unique: false });
-			store.createIndex('byMonth', 'month', { unique: false });
-			store.createIndex('byMonthAndCategory', ['month', 'category'], { unique: false });
 		}
 	}
 }

@@ -16,9 +16,9 @@
 
 {% block script %}
 <script type="module">
-	import PlanningController from '/static/js/controller/planningController.js';
+	import SpendingController from './static/js/controller/spendingController.js'
 	document.addEventListener("DOMContentLoaded", () => {
-		new PlanningController().init();
+		new SpendingController().init();
 	});
 </script>
 {% endblock %}

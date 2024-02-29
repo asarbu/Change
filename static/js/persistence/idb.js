@@ -53,7 +53,7 @@ export default class Idb {
 			};
 
 			request.onerror = (event) => {
-				reject(new Error(`Database error: ${event.target.errorCode}`));
+				reject(new Error(`Database error: ${event.target.error}`));
 			};
 
 			request.onupgradeneeded = (event) => {
@@ -157,7 +157,8 @@ export default class Idb {
 			store.index(indexName).openCursor(iDbKey).onsuccess = (event) => {
 				const cursor = event.target.result;
 				if (cursor) {
-					values.push({ key: cursor.primaryKey, value: cursor.value });
+					cursor.value.id = cursor.primaryKey;
+					values.push(cursor.value);
 					cursor.continue();
 				}
 			};
