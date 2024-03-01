@@ -169,6 +169,11 @@ export default class Idb {
 		});
 	}
 
+	/**
+	 * Returns all the values from an object store
+	 * @param {string} storeName Store from which to get the data
+	 * @returns 
+	 */
 	getAll(storeName) {
 		return new Promise((resolve) => {
 			const st = this.getStoreTransaction(storeName, Idb.#READ_ONLY);

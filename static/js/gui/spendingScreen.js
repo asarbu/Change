@@ -17,6 +17,8 @@ export default class SpendingScreen {
 	/** @type {Array<Category>} */
 	categories = undefined;
 
+	months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
 	constructor(spendings, categories) {
 		this.spendings = spendings;
 		this.categories = categories;
@@ -26,20 +28,20 @@ export default class SpendingScreen {
 		const container = this.sketchScreen(this.spendings);
 
 		this.gfx = new GraphicEffects();
-		this.gfx.init(container)
+		this.gfx.init(container);
 		// this.refresh(this.spendings);
 	}
 
 	sketchScreen(spendings) {
 		const availableMonths = [...new Set(spendings
-			.map((spending) => spending.boughtOn.getMonth()))];
+			.map((spending) => spending.boughtOn.getMonth()).concat(new Date().getMonth()))];
 
 		const tab =	new Dom('div').cls('container').append(
 			new Dom('div').cls('section').append(
 				...availableMonths.map((availableMonth) => new Dom('div').id(availableMonth).cls('slice').append(
 					new Dom('h1').text('Monthly spending'),
 					this.sketchSpendings(
-						availableMonth,
+						this.months[availableMonth],
 						spendings.filter((spending) => spending.boughtOn.getMonth() === availableMonth),
 					),
 				)),
@@ -87,7 +89,7 @@ export default class SpendingScreen {
 
 		this.spendingsHtml.tBodies[0].appendChild(new Dom('tr').append(
 			new Dom('td').text('Total'),
-			new Dom('td').text(new Date().toLocaleString('en-GB', { day: 'numeric', month: 'short' })),
+			new Dom('td').text('-'),
 			new Dom('td').text('-'),
 			new Dom('td').text(spendingTotal.toFixed(2)),
 		).toHtml());
