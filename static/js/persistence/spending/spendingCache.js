@@ -6,6 +6,25 @@ export default class SpendingCache {
 
 	static DATABASE_VERSION = 2024;
 
+	static async getAll() {
+		const idb = new Idb(
+			SpendingCache.DATABASE_NAME,
+			SpendingCache.DATABASE_VERSION,
+			SpendingCache.upgradeSpendingsDb,
+		);
+		await idb.init();
+
+		const objectStores = idb.getObjectStores();
+		const spendingsArray = new Array(objectStores.length);
+		for (let i = 0; i < objectStores.length; i += 1) {
+			const storeName = objectStores[i];
+			const spendingCache = new SpendingCache(storeName, idb);
+			await spendingCache.init();
+			spendingsArray[i] = (spendingCache);
+		}
+		return spendingsArray;
+	}
+
 	/**
 	 * @type {Idb}
 	 */
@@ -15,7 +34,7 @@ export default class SpendingCache {
 	 * @param {number} year Year for which to initialize current cache
 	 */
 	constructor(year) {
-		this.year = year;
+		this.year = +year;
 		this.idb = new Idb(
 			SpendingCache.DATABASE_NAME,
 			SpendingCache.DATABASE_VERSION,
@@ -44,11 +63,19 @@ export default class SpendingCache {
 	 * @param {number} month Month for which to read Spendings
 	 * @returns {Promise<Array<Spending>>}
 	 */
-	async readAll(month) {
+	async readAllForMonth(month) {
 		const fromDate = new Date(this.year, month, 1);
 		const toDate = new Date(this.year, month + 1, 0);
 		const keyRange = IDBKeyRange.bound(fromDate, toDate);
 		return this.idb.getAllByIndex(this.year, 'byBoughtDate', keyRange);
+	}
+
+	/**
+	 * @returns {Array<Spending>}
+	 */
+	async readAllForYear() {
+		const spendings = this.idb.getAll(this.year);
+		return spendings;
 	}
 
 	/**

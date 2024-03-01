@@ -50,10 +50,10 @@ export default class PlanningCache {
 	}
 
 	/**
-	 * @param {string} storeName Object store name associated with this object
+	 * @param {string} year Object store name associated with this object
 	 * @param {Idb} idb Idb instance
 	 */
-	constructor(storeName, idb) {
+	constructor(year, idb) {
 		if (!idb) {
 			this.idb = new Idb(
 				PlanningCache.DATABASE_NAME,
@@ -64,7 +64,7 @@ export default class PlanningCache {
 			this.idb = idb;
 		}
 
-		this.storeName = storeName;
+		this.year = +year;
 	}
 
 	/**
@@ -73,11 +73,11 @@ export default class PlanningCache {
 	async init() {
 		await this.idb.init();
 
-		const storeCount = await this.idb.count(this.storeName);
+		const storeCount = await this.idb.count(this.year);
 		if (storeCount === 0) {
 			await fetch(PlanningCache.PLANNING_TEMPLATE_URI)
 				.then((response) => response.json())
-				.then((planningFile) => this.idb.putAll(this.storeName, planningFile));
+				.then((planningFile) => this.idb.putAll(this.year, planningFile));
 		}
 	}
 
@@ -86,7 +86,7 @@ export default class PlanningCache {
 	 * @returns {Promise<Array<Statement>>}
 	 */
 	async readAll() {
-		return this.idb.openCursor(this.storeName);
+		return this.idb.openCursor(this.year);
 	}
 
 	/**
@@ -95,8 +95,8 @@ export default class PlanningCache {
 	 * @param {Array<Statement>} statements Statenents to be updated in dabatase
 	 */
 	async updateAll(statements) {
-		await this.idb.clear(this.storeName);
-		await this.idb.putAll(this.storeName, statements);
+		await this.idb.clear(this.year);
+		await this.idb.putAll(this.year, statements);
 	}
 
 	/**
@@ -106,7 +106,7 @@ export default class PlanningCache {
 	 */
 	async readExpenses() {
 		const keyRange = IDBKeyRange.only('Expense');
-		const expenseStatements = await this.idb.getAllByIndex(this.storeName, 'byType', keyRange);
+		const expenseStatements = await this.idb.getAllByIndex(this.year, 'byType', keyRange);
 		const expenses = [];
 		for (let i = 0; i < expenseStatements.length; i += 1) {
 			expenses.push(...expenseStatements[i].categories);
@@ -120,7 +120,7 @@ export default class PlanningCache {
 	 * @returns {Array<Category>}
 	 */
 	async readCategories() {
-		return this.idb.openCursor(this.storeName);
+		return this.idb.openCursor(this.year);
 	}
 
 	/**
@@ -130,7 +130,7 @@ export default class PlanningCache {
 	 * @returns {Statement}
 	 */
 	async read(key) {
-		return this.idb.get(this.storeName, key);
+		return this.idb.get(this.year, key);
 	}
 
 	/**
@@ -141,7 +141,7 @@ export default class PlanningCache {
 	 * @returns {Statement} Updated value
 	 */
 	async update(key, value) {
-		await this.idb.insert(this.storeName, value, key);
+		await this.idb.insert(this.year, value, key);
 	}
 
 	/**
@@ -151,6 +151,6 @@ export default class PlanningCache {
 	 * @returns {Statement} Deleted value
 	 */
 	async delete(key) {
-		await this.idb.delete(this.storeName, key);
+		await this.idb.delete(this.year, key);
 	}
 }

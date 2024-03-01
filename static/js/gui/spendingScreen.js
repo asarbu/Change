@@ -2,6 +2,7 @@ import Spending from '../persistence/spending/spendingModel.js';
 import { Category } from '../persistence/planning/planningModel.js';
 import Dom from './dom.js';
 import icons from './icons.js';
+import GraphicEffects from './effects.js';
 
 export default class SpendingScreen {
 	onClickCreateCallback = undefined;
@@ -16,30 +17,38 @@ export default class SpendingScreen {
 	/** @type {Array<Category>} */
 	categories = undefined;
 
-	constructor(month, spendings, categories) {
-		this.month = month;
+	constructor(spendings, categories) {
 		this.spendings = spendings;
 		this.categories = categories;
 	}
 
 	init() {
-		this.sketchScreen();
+		const container = this.sketchScreen(this.spendings);
+
+		this.gfx = new GraphicEffects();
+		this.gfx.init(container)
 		// this.refresh(this.spendings);
 	}
 
-	sketchScreen() {
-		this.tab =	new Dom('div').id(this.month).cls('container').append(
+	sketchScreen(spendings) {
+		const availableMonths = [...new Set(spendings
+			.map((spending) => spending.boughtOn.getMonth()))];
+
+		const tab =	new Dom('div').cls('container').append(
 			new Dom('div').cls('section').append(
-				new Dom('div').cls('slice').append(
+				...availableMonths.map((availableMonth) => new Dom('div').id(availableMonth).cls('slice').append(
 					new Dom('h1').text('Monthly spending'),
-					this.sketchSpendings(),
-				),
+					this.sketchSpendings(
+						availableMonth,
+						spendings.filter((spending) => spending.boughtOn.getMonth() === availableMonth),
+					),
+				)),
 			),
 		)
 			.toHtml();
 
 		const main = document.getElementById('main');
-		main.appendChild(this.tab);
+		main.appendChild(tab);
 		main.appendChild(this.buildAddSpendingModal());
 		main.appendChild(this.createCategoryModal());
 		main.appendChild(this.buildSpendingSummaryModal());
@@ -49,13 +58,15 @@ export default class SpendingScreen {
 		if (loadingTab) {
 			loadingTab.parentNode.removeChild(loadingTab);
 		}
+
+		return tab;
 	}
 
-	sketchSpendings() {
-		const spendingsDom = new Dom('table').id(this.month).cls('top-round', 'bot-round').append(
+	sketchSpendings(month, spendings) {
+		const spendingsDom = new Dom('table').id(month).cls('top-round', 'bot-round').append(
 			new Dom('thead').append(
 				new Dom('tr').append(
-					new Dom('th').text(this.month),
+					new Dom('th').text(month),
 					new Dom('th').text('Date'),
 					new Dom('th').text('Category'),
 					new Dom('th').text('Amount'),
@@ -66,8 +77,8 @@ export default class SpendingScreen {
 		);
 		this.spendingsHtml = spendingsDom.toHtml();
 
-		for (let i = 0; i < this.spendings.length; i += 1) {
-			this.appendToSpendingTable(this.spendings[i]);
+		for (let i = 0; i < spendings.length; i += 1) {
+			this.appendToSpendingTable(spendings[i]);
 		}
 
 		const spendingTotal = this
