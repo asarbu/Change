@@ -169,6 +169,25 @@ export default class Idb {
 		});
 	}
 
+	getAll(storeName) {
+		return new Promise((resolve) => {
+			const st = this.getStoreTransaction(storeName, Idb.#READ_ONLY);
+			const store = st[0];
+			const txn = st[1];
+
+			// console.log("Getting all by index", storeName, index, key)
+			let values = [];
+			const request = store.getAll();
+			request.onsuccess = () => {
+				values = request.result;
+			};
+
+			txn.oncomplete = () => {
+				resolve(values);
+			};
+		});
+	}
+
 	/**
 	 * Count number of objects in store
 	 * @param {string} storeName Object store to look up

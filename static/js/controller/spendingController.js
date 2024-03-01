@@ -15,6 +15,9 @@ async function initSpending() {
 export default class SpendingController {
 	#MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
+	/** @type {Array<SpendingCache>} */
+	#spendingCaches = undefined;
+
 	/** @type {SpendingCache} */
 	#spendingCache = undefined;
 
@@ -26,57 +29,57 @@ export default class SpendingController {
 
 	/**
 	 * Used to quickly access already created tabs
+	 * @type {Array<PlanningCache>}
+	 */
+	#planningCaches = undefined;
+
+	/**
+	 * Used to quickly access already created tabs
 	 * @type {PlanningCache}
 	 */
 	#planningCache = undefined;
 
-	constructor() {
-		const currentYear = new Date().getFullYear();
-		this.#spendingCache = new SpendingCache(currentYear);
-		this.#planningCache = new PlanningCache('2024');
-
+	/**
+	 * Construct controller that will handle requests between GUI and Backend
+	 * @param {number} forYear Year for which to initialize the controller
+	 */
+	constructor(forYear) {
 		/* if (gdriveSync) {
 			// this.spendingGDrive = new SpendingGDrive(this.#spendingCache);
 			// this.planningGDrive = new PlanningGDrive(this.#planningCache);
 		} */
-
-		this.#tabs = new Map();
-
-		const now = new Date();
-		this.currentYear = now.getFullYear();
-		this.currentMonth = now.getMonth();
 	}
 
-	async init() {
-		// console.log("Init spending");
-		await this.#spendingCache.init();
-		await this.#planningCache.init();
+	async init(forYear) {
+		const year = forYear || new Date().getFullYear();
+		const month = new Date().getMonth();
+		this.#spendingCaches = await SpendingCache.getAll();
+		this.#planningCaches = await PlanningCache.getAll();
+
+		for (let i = 0; i < this.#spendingCaches.length; i += 1) {
+			if (this.#spendingCaches[i].year === year) {
+				this.#spendingCache = this.#spendingCaches[i];
+				this.#planningCache = this.#planningCaches
+					.find((planningCache) => planningCache.year === year);
+			}
+		}
+
+		await this.#planningCache?.init();
+		await this.#spendingCache?.init();
 
 		const expenseCategories = await this.#planningCache.readExpenses();
+		const spendings = await this.#spendingCache.readAllForYear();
 
-		let monthIndex = this.currentMonth;
-		let monthCount = 0;
+		const spendingScreen = new SpendingScreen(spendings, expenseCategories);
+		spendingScreen.init();
+		spendingScreen.onClickCreateCallback = this.onClickCreateSpending.bind(this);
+		spendingScreen.onClickDeleteCallback = this.onClickDeleteSpending.bind(this);
+		spendingScreen.onClickSaveCallback = this.onClickSaveSpendings.bind(this);
 
-		while (monthIndex >= 0 && monthCount < 4) {
-			const monthName = this.#MONTH_NAMES[monthIndex];
-			const spendings = await this.#spendingCache.readAll(monthIndex);
 
-			if (spendings.length > 0 || monthIndex === this.currentMonth) {
-				const spendingScreen = new SpendingScreen(monthName, spendings, expenseCategories);
-				spendingScreen.init();
-				spendingScreen.onClickCreateCallback = this.onClickCreateSpending.bind(this);
-				spendingScreen.onClickDeleteCallback = this.onClickDeleteSpending.bind(this);
-				spendingScreen.onClickSaveCallback = this.onClickSaveSpendings.bind(this);
-				this.#tabs.set(monthName, spendingScreen);
-				monthCount += 1;
-			}
-
-			/* if(gdriveSync) {
-				this.initGDrive(monthName);
-			} */
-
-			monthIndex -= 1;
-		}
+		/* if(gdriveSync) {
+			this.initGDrive(monthName);
+		} */
 	}
 
 	async initGDrive(monthName) {

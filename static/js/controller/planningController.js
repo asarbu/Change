@@ -21,7 +21,7 @@ export default class PlanningController {
 
 		let defaultYearCache;
 		for (let i = 0; i < this.#caches.length; i += 1) {
-			if (this.#caches[i].storeName === `${year}`) {
+			if (this.#caches[i].year === `${year}`) {
 				defaultYearCache = this.#caches[i];
 			}
 		}
@@ -42,7 +42,7 @@ export default class PlanningController {
 	async initPlanningScreen(cache) {
 		const planningCache = cache;
 		const localCollections = await planningCache.readAll();
-		const planningScreen = new PlanningScreen(planningCache.storeName, localCollections);
+		const planningScreen = new PlanningScreen(planningCache.year, localCollections);
 		planningScreen.onClickUpdate = this.onClickUpdate.bind(this);
 		return planningScreen;
 	}
@@ -63,7 +63,7 @@ export default class PlanningController {
 	async onClickUpdate(id, statements) {
 		// TODO repalce with a map
 		for (let i = 0; i < this.#caches.length; i += 1) {
-			if (this.#caches[i].storeName === id) {
+			if (this.#caches[i].year === id) {
 				this.#caches[i].updateAll(statements);
 			}
 		}
