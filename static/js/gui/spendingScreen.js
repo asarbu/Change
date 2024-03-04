@@ -3,6 +3,7 @@ import { Category } from '../persistence/planning/planningModel.js';
 import Dom from './dom.js';
 import icons from './icons.js';
 import GraphicEffects from './effects.js';
+import Modal from './modal.js';
 
 export default class SpendingScreen {
 	onClickCreateCallback = undefined;
@@ -52,6 +53,7 @@ export default class SpendingScreen {
 		const main = document.getElementById('main');
 		main.appendChild(tab);
 		main.appendChild(this.buildAddSpendingModal());
+		main.appendChild(this.buildMonthModal());
 		main.appendChild(this.createCategoryModal());
 		main.appendChild(this.buildSpendingSummaryModal());
 		main.appendChild(this.buildNavBar().toHtml());
@@ -102,8 +104,9 @@ export default class SpendingScreen {
 		const onClickEdit = this.onClickEdit.bind(this);
 		const onClickSave = this.onClickSave.bind(this);
 		const onClickSummary = this.onClickSummary.bind(this, this.summaryHtml);
+		const onClickMonth = this.onClickMonth.bind(this);
 		const onClickDelete = undefined; // this.onClickDeleteSpending.bind(this);
-		const onClickDropup = undefined; // this.onClickDropup.bind(this);
+		const onClickYear = undefined; // this.onClickDropup.bind(this);
 
 		this.navbar = new Dom('nav').append(
 			new Dom('div').cls('nav-header').append(
@@ -127,10 +130,10 @@ export default class SpendingScreen {
 				new Dom('button').cls('nav-item', 'nav-trigger').hideable().attr('data-side', 'left').onClick(onClickAdd).append(
 					new Dom('img').cls('white-fill').text('Menu').attr('alt', 'Menu').attr('src', icons.menu),
 				),
-				new Dom('button').cls('dropup', 'nav-item').text(`${this.id} `).append(
+				new Dom('button').cls('dropup', 'nav-item').text(`${this.id} `).onClick(onClickYear).append(
 					new Dom('span').text('▲').cls('white-50'),
 				),
-				new Dom('button').cls('nav-item').text(`${this.month} `).onClick(onClickDropup),
+				new Dom('button').cls('nav-item').text(`${this.month} `).onClick(onClickMonth),
 				new Dom('button').cls('nav-item', 'nav-trigger').hideable().attr('data-side', 'right').onClick(onClickAdd).append(
 					new Dom('img').cls('white-fill').text('Menu').attr('alt', 'Menu').attr('src', icons.menu),
 				),
@@ -139,6 +142,18 @@ export default class SpendingScreen {
 		);
 
 		return this.navbar;
+	}
+
+	buildMonthModal() {
+		this.monthDropup = new Modal('month-dropup')
+			.header(
+				new Dom('h2').text('Choose spending month'),
+			).body(
+				...([...new Set(this.spendings
+					.map((spending) => this.months[spending.boughtOn.getMonth()]))]
+					.map((month) => new Dom('div').cls('accordion-secondary').text(month))),
+			).addCancelFooter();
+		return this.monthDropup.toHtml();
 	}
 
 	buildSpendingSummaryModal(month) {
@@ -325,6 +340,11 @@ export default class SpendingScreen {
 	}
 
 	// #region GUI handlers
+
+	onClickMonth() {
+		this.monthDropup.open();
+	}
+
 	async onClickDelete(event) {
 		const row = event.target.parentNode.parentNode;
 		const key = row.id;
@@ -449,7 +469,7 @@ export default class SpendingScreen {
 	focusInputField(withId) {
 		/* Focus cannot be applied to invisible elements.
 		 * We need to wait for elemnt to be focusable.
-		 * We also cannot use display: none -> display: visible because that cannot be animated 
+		 * We also cannot use display: none -> display: visible because that cannot be animated
 		 */
 		requestAnimationFrame(() => {
 			const priceInputField = document.getElementById(withId);
