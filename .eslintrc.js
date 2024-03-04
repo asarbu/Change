@@ -26,6 +26,12 @@ module.exports = {
 		'no-tabs': 0,
 		indent: [1, 'tab'],
 		'linebreak-style': ['error', 'windows'],
+		"newline-per-chained-call": [
+			"error",
+			{
+				"ignoreChainWithDepth": 5
+			}
+		]
 	},
 	plugins: [
 		'jsdoc',

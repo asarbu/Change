@@ -116,9 +116,10 @@ export default class SpendingScreen {
 				new Dom('button').id('edit-button').cls('nav-item').onClick(onClickEdit).append(
 					new Dom('img').cls('white-fill').text('Edit').attr('alt', 'Edit').attr('src', icons.edit),
 				),
-				new Dom('button').id('save-button').cls('nav-item').onClick(onClickSave).hide().append(
-					new Dom('img').cls('white-fill').text('Save').attr('alt', 'Save').attr('src', icons.save),
-				),
+				new Dom('button').id('save-button').cls('nav-item').onClick(onClickSave).hide()
+					.append(
+						new Dom('img').cls('white-fill').text('Save').attr('alt', 'Save').attr('src', icons.save),
+					),
 				new Dom('button').id('summary-button').cls('nav-item').onClick(onClickSummary).append(
 					new Dom('img').cls('white-fill').text('Summary').attr('alt', 'Save').attr('src', icons.summary),
 				),
@@ -127,16 +128,18 @@ export default class SpendingScreen {
 				),
 			),
 			new Dom('div').cls('nav-footer').append(
-				new Dom('button').cls('nav-item', 'nav-trigger').hideable().attr('data-side', 'left').onClick(onClickAdd).append(
-					new Dom('img').cls('white-fill').text('Menu').attr('alt', 'Menu').attr('src', icons.menu),
-				),
+				new Dom('button').cls('nav-item', 'nav-trigger').hideable().attr('data-side', 'left').onClick(onClickAdd)
+					.append(
+						new Dom('img').cls('white-fill').text('Menu').attr('alt', 'Menu').attr('src', icons.menu),
+					),
 				new Dom('button').cls('dropup', 'nav-item').text(`${this.id} `).onClick(onClickYear).append(
 					new Dom('span').text('▲').cls('white-50'),
 				),
 				new Dom('button').cls('nav-item').text(`${this.month} `).onClick(onClickMonth),
-				new Dom('button').cls('nav-item', 'nav-trigger').hideable().attr('data-side', 'right').onClick(onClickAdd).append(
-					new Dom('img').cls('white-fill').text('Menu').attr('alt', 'Menu').attr('src', icons.menu),
-				),
+				new Dom('button').cls('nav-item', 'nav-trigger').hideable().attr('data-side', 'right').onClick(onClickAdd)
+					.append(
+						new Dom('img').cls('white-fill').text('Menu').attr('alt', 'Menu').attr('src', icons.menu),
+					),
 			),
 			new Dom('div').cls('dropup-content', 'top-round').hide(),
 		);
