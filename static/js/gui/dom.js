@@ -87,6 +87,11 @@ export default class Dom {
 		return this;
 	}
 
+	clear() {
+		this.elmt.innerHTML = '';
+		return this;
+	}
+
 	cls(...classes) {
 		this.elmt.classList.add(...classes);
 		return this;

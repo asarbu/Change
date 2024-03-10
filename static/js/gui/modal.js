@@ -21,11 +21,15 @@ export default class Modal {
 	}
 
 	body(...domElements) {
-		this.content.append(
-			new Dom('div').cls('modal-body').append(
-				...domElements,
-			),
+		if (!this.bodyDom) {
+			this.bodyDom = new Dom('div').cls('modal-body');
+			this.content.append(this.bodyDom);
+		}
+
+		this.bodyDom.append(
+			...domElements,
 		);
+
 		return this;
 	}
 
