@@ -1,3 +1,8 @@
+/* eslint-disable max-classes-per-file */
+// Too much overhead to split to multiple files
+
+import { Category, Goal } from '../planning/planningModel.js';
+
 export default class Spending {
 	/**
 	 * @param {id} id Unique identifier of this spending
@@ -27,5 +32,93 @@ export default class Spending {
 			return new Date(value);
 		}
 		return value;
+	}
+}
+
+export class SpendingReport {
+	/**
+	 * @type {number}
+	 */
+	#month = undefined;
+
+	/**
+	 * @type {Array<Spending>}
+	 */
+	#spendings = undefined;
+
+	/**
+	 * @type {Set<Category>}
+	 */
+	#goals = undefined;
+
+	/**
+	 * @type {number}
+	 */
+	#total = 0;
+
+	static MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+	/**
+	 *
+	 * @param {number} month Month for which to build the report
+	 */
+	constructor(month) {
+		this.#month = month;
+		this.#spendings = [];
+		this.#goals = new Set();
+	}
+
+	/**
+	 * Adds information about spending to report. Recomputes relevant data
+	 * @param {Spending} spending Spending object to append to report
+	 */
+	appendSpending(spending) {
+		this.#spendings.push(spending);
+		this.#total += spending.price;
+		this.#goals.add(spending.category);
+	}
+
+	/**
+	 * Returns the total amount for spendings in report
+	 * @returns {number}
+	 */
+	total() {
+		return this.#total.toFixed(2);
+	}
+
+	/**
+	 * Returns reports' total amount as a Spending object
+	 * @returns {Spending}
+	 */
+	totalAsSpending() {
+		return new Spending(`total-${this.#month}`, '-', '-', '-', 'Total', this.#total);
+	}
+
+	/**
+	 * Returns a copy of the spendings data in current report
+	 * @returns {Array<Spending>}
+	 */
+	spendings() {
+		return [...this.#spendings];
+	}
+
+	/**
+	 * Returns a copy of the category data in current report
+	 * @returns {Array<Goal}
+	 */
+	goals() {
+		return [...this.#goals];
+	}
+
+	/**
+	 * Returns the ID of the current report
+	 * @returns {number}
+	 */
+	id() {
+		return this.#month;
+	}
+
+	toString() {
+		return SpendingReport.MONTH_NAMES[this.#month];
 	}
 }

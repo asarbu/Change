@@ -1,16 +1,7 @@
 import SpendingScreen from '../gui/spendingScreen.js';
 import SpendingCache from '../persistence/spending/spendingCache.js';
 import PlanningCache from '../persistence/planning/planningCache.js';
-import Spending from '../persistence/spending/spendingModel.js';
-
-async function initSpending() {
-	if (!window.indexedDB) {
-		return;
-	}
-
-	const spending = new SpendingController();
-	// await spending.init();
-}
+import Spending, { SpendingReport } from '../persistence/spending/spendingModel.js';
 
 export default class SpendingController {
 	#MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -70,12 +61,25 @@ export default class SpendingController {
 		const expenseCategories = await this.#planningCache.readExpenses();
 		const spendings = await this.#spendingCache.readAllForYear();
 
+		const currentMonth = new Date().getMonth();
+		/** @type {Map<number, SpendingReport>} */
+		const spendingReports = new Map();
+		spendingReports.set(currentMonth, new SpendingReport(currentMonth));
+
+		spendings.forEach((spending) => {
+			const spendingMonth = spending.boughtOn.getMonth();
+			if (!spendingReports.has(spendingMonth)) {
+				spendingReports.set(spendingMonth, new SpendingReport(spendingMonth));
+			}
+			spendingReports.get(spendingMonth).appendSpending(spending);
+		});
+
 		const spendingScreen = new SpendingScreen(spendings, expenseCategories);
 		spendingScreen.init();
+		spendingScreen.updateSpendingReport(spendingReports.get(currentMonth));
 		spendingScreen.onClickCreateCallback = this.onClickCreateSpending.bind(this);
 		spendingScreen.onClickDeleteCallback = this.onClickDeleteSpending.bind(this);
 		spendingScreen.onClickSaveCallback = this.onClickSaveSpendings.bind(this);
-
 
 		/* if(gdriveSync) {
 			this.initGDrive(monthName);
@@ -150,5 +154,3 @@ export default class SpendingController {
 		}
 	}
 }
-
-document.addEventListener('DOMContentLoaded', initSpending);

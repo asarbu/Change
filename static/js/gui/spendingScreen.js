@@ -1,4 +1,4 @@
-import Spending from '../persistence/spending/spendingModel.js';
+import Spending, { SpendingReport } from '../persistence/spending/spendingModel.js';
 import { Category } from '../persistence/planning/planningModel.js';
 import Dom from './dom.js';
 import icons from './icons.js';
@@ -18,59 +18,83 @@ export default class SpendingScreen {
 	/** @type {Array<Category>} */
 	categories = undefined;
 
-	months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+	/** @type {Map<number, Dom} */
+	#drawnReports = new Map();
 
-	constructor(spendings, categories) {
-		this.spendings = spendings;
+	/**
+	 * 
+	 * @param {SpendingReport} defaultSpendingReport 
+	 * @param {Array<Category>} categories 
+	 */
+	constructor(defaultSpendingReport, categories) {
+		this.defaultSpendingReport = defaultSpendingReport;
 		this.categories = categories;
 	}
 
 	init() {
-		const container = this.sketchScreen(this.spendings);
+		const main = document.getElementById('main');
+		main.appendChild(this.buildCategoryModal(this.categories));
+		main.appendChild(this.buildAddSpendingModal());
+		main.appendChild(this.buildMonthModal());
+		main.appendChild(this.buildNavBar().toHtml());
 
+		const container = this.build(this.spendings);
 		this.gfx = new GraphicEffects();
 		this.gfx.init(container);
 		// this.refresh(this.spendings);
 	}
 
-	sketchScreen(spendings) {
-		const availableMonths = [...new Set(spendings
-			.map((spending) => spending.boughtOn.getMonth()).concat(new Date().getMonth()))];
-
-		const tab =	new Dom('div').cls('container').append(
-			new Dom('div').cls('section').append(
-				...availableMonths.map((availableMonth) => new Dom('div').id(availableMonth).cls('slice').append(
-					new Dom('h1').text('Monthly spending'),
-					this.sketchSpendings(
-						this.months[availableMonth],
-						spendings.filter((spending) => spending.boughtOn.getMonth() === availableMonth),
-					),
-				)),
-			),
-		)
-			.toHtml();
-
-		const main = document.getElementById('main');
-		main.appendChild(tab);
-		main.appendChild(this.buildAddSpendingModal());
-		main.appendChild(this.buildMonthModal());
-		main.appendChild(this.createCategoryModal());
-		main.appendChild(this.buildSpendingSummaryModal());
-		main.appendChild(this.buildNavBar().toHtml());
-
-		const loadingTab = document.getElementById('loading_tab');
-		if (loadingTab) {
-			loadingTab.parentNode.removeChild(loadingTab);
+	/**
+	 * Draws report on screen. Updates it if already present.
+	 * @param {SpendingReport} spendingReport
+	 */
+	updateSpendingReport(spendingReport) {
+		let reportSlice = this.#drawnReports.get(spendingReport);
+		if (!reportSlice) {
+			reportSlice = new Dom('div').id(spendingReport.id()).cls('slice').append(
+				new Dom('h1').text(`${spendingReport} spending`),
+			);
+			this.screen.append(reportSlice);
+		} else {
+			reportSlice.clear();
 		}
 
-		return tab;
+		reportSlice.append(
+			this.buildSpendingsReport(spendingReport),
+		);
+
+		this.monthDropup.body(
+			new Dom('div').cls('accordion-secondary').text(spendingReport),
+		);
 	}
 
-	sketchSpendings(month, spendings) {
-		const spendingsDom = new Dom('table').id(month).cls('top-round', 'bot-round').append(
+	build() {
+		this.screen =	new Dom('div').cls('container').append(
+			new Dom('div').id('spendings-section').cls('section'),
+		);
+
+		const main = document.getElementById('main');
+		main.appendChild(this.screen.toHtml());
+
+		return this.screen.toHtml();
+	}
+
+	buildSlice(spendingReport) {
+		const main = document.getElementById('main');
+		main.appendChild(this.buildSpendingSummaryModal());
+		this.buildSpendingsReport(spendingReport);
+	}
+
+	/**
+	 * Builds the {Dom} object associated with this report
+	 * @param {SpendingReport} spendingReport
+	 * @returns {Dom}
+	 */
+	buildSpendingsReport(spendingReport) {
+		const spendingsDom = new Dom('table').id(spendingReport.id).cls('top-round', 'bot-round').append(
 			new Dom('thead').append(
 				new Dom('tr').append(
-					new Dom('th').text(month),
+					new Dom('th').text(spendingReport),
 					new Dom('th').text('Date'),
 					new Dom('th').text('Category'),
 					new Dom('th').text('Amount'),
@@ -81,20 +105,11 @@ export default class SpendingScreen {
 		);
 		this.spendingsHtml = spendingsDom.toHtml();
 
+		const spendings = spendingReport.spendings();
 		for (let i = 0; i < spendings.length; i += 1) {
 			this.appendToSpendingTable(spendings[i]);
 		}
-
-		const spendingTotal = this
-			.spendings
-			.reduce((accumulator, current) => accumulator + current.price, 0);
-
-		this.spendingsHtml.tBodies[0].appendChild(new Dom('tr').append(
-			new Dom('td').text('Total'),
-			new Dom('td').text('-'),
-			new Dom('td').text('-'),
-			new Dom('td').text(spendingTotal.toFixed(2)),
-		).toHtml());
+		this.appendToSpendingTable(spendingReport.totalAsSpending());
 
 		return spendingsDom;
 	}
@@ -151,11 +166,7 @@ export default class SpendingScreen {
 		this.monthDropup = new Modal('month-dropup')
 			.header(
 				new Dom('h2').text('Choose spending month'),
-			).body(
-				...([...new Set(this.spendings
-					.map((spending) => this.months[spending.boughtOn.getMonth()]))]
-					.map((month) => new Dom('div').cls('accordion-secondary').text(month))),
-			).addCancelFooter();
+			).body().addCancelFooter();
 		return this.monthDropup.toHtml();
 	}
 
@@ -228,12 +239,17 @@ export default class SpendingScreen {
 		this.addSpendingModal.close();
 	}
 
-	createCategoryModal() {
+	/**
+	 * 
+	 * @param {Array<Category>} forCategories 
+	 * @returns {Dom}
+	 */
+	buildCategoryModal(forCategories) {
 		this.categoryModal = new Modal('categories').header(
 			new Dom('h2').text('Insert Spending'),
 		).body(
 			new Dom('div').cls('accordion').append(
-				...this.categories.map((category) => new Dom('div').cls('accordion-item').append(
+				...forCategories.map((category) => new Dom('div').cls('accordion-item').append(
 					new Dom('input').id(category.id).cls('accordion-state').attr('type', 'checkbox'),
 					new Dom('label').cls('accordion-header').attr('for', category.id).append(
 						new Dom('span').text(category.name),
