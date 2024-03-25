@@ -87,6 +87,19 @@ export class SpendingReport {
 	}
 
 	/**
+	 * 
+	 * @param {string} goal 
+	 * @returns {number}
+	 */
+	totalForGoal(goal) {
+		if (!this.#goals.has(goal)) return 0;
+
+		return this.#spendings.reduce(
+			(accumulator, spending) => accumulator + (spending.category === goal ? spending.price : 0), 0,
+		);
+	}
+
+	/**
 	 * Returns reports' total amount as a Spending object
 	 * @returns {Spending}
 	 */

@@ -74,7 +74,11 @@ export default class SpendingController {
 			spendingReports.get(spendingMonth).appendSpending(spending);
 		});
 
-		const spendingScreen = new SpendingScreen(spendings, expenseCategories);
+		const spendingScreen = new SpendingScreen(
+			year,
+			spendingReports.get(currentMonth),
+			expenseCategories,
+		);
 		spendingScreen.init();
 		spendingScreen.updateSpendingReport(spendingReports.get(currentMonth));
 		spendingScreen.onClickCreateCallback = this.onClickCreateSpending.bind(this);

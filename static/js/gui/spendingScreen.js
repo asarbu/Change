@@ -22,11 +22,12 @@ export default class SpendingScreen {
 	#drawnReports = new Map();
 
 	/**
-	 * 
+	 * @param {number} year
 	 * @param {SpendingReport} defaultSpendingReport 
 	 * @param {Array<Category>} categories 
 	 */
-	constructor(defaultSpendingReport, categories) {
+	constructor(year, defaultSpendingReport, categories) {
+		this.year = year;
 		this.defaultSpendingReport = defaultSpendingReport;
 		this.categories = categories;
 	}
@@ -36,9 +37,9 @@ export default class SpendingScreen {
 		main.appendChild(this.buildCategoryModal(this.categories));
 		main.appendChild(this.buildAddSpendingModal());
 		main.appendChild(this.buildMonthModal());
-		main.appendChild(this.buildNavBar().toHtml());
+		main.appendChild(this.buildNavBar(this.year, this.defaultSpendingReport).toHtml());
 
-		const container = this.build(this.spendings);
+		const container = this.build(this.defaultSpendingReport);
 		this.gfx = new GraphicEffects();
 		this.gfx.init(container);
 		// this.refresh(this.spendings);
@@ -68,21 +69,27 @@ export default class SpendingScreen {
 		);
 	}
 
-	build() {
+	/**
+	 * 
+	 * @param {SpendingReport} spendingReport 
+	 * @returns {HTMLElement}
+	 */
+	build(spendingReport) {
 		this.screen =	new Dom('div').cls('container').append(
 			new Dom('div').id('spendings-section').cls('section'),
 		);
 
 		const main = document.getElementById('main');
 		main.appendChild(this.screen.toHtml());
+		main.appendChild(this.buildSlice(spendingReport).toHtml());
 
 		return this.screen.toHtml();
 	}
 
 	buildSlice(spendingReport) {
 		const main = document.getElementById('main');
-		main.appendChild(this.buildSpendingSummaryModal());
-		this.buildSpendingsReport(spendingReport);
+		main.appendChild(this.buildSpendingSummaryModal(spendingReport));
+		return this.buildSpendingsReport(spendingReport);
 	}
 
 	/**
@@ -114,7 +121,12 @@ export default class SpendingScreen {
 		return spendingsDom;
 	}
 
-	buildNavBar() {
+	/**
+	 * @param {number} year
+	 * @param {SpendingReport} spendingReport 
+	 * @returns 
+	 */
+	buildNavBar(year, spendingReport) {
 		const onClickAdd = this.onClickAddSpending.bind(this);
 		const onClickEdit = this.onClickEdit.bind(this);
 		const onClickSave = this.onClickSave.bind(this);
@@ -147,10 +159,10 @@ export default class SpendingScreen {
 					.append(
 						new Dom('img').cls('white-fill').text('Menu').attr('alt', 'Menu').attr('src', icons.menu),
 					),
-				new Dom('button').cls('dropup', 'nav-item').text(`${this.id} `).onClick(onClickYear).append(
+				new Dom('button').cls('dropup', 'nav-item').text(`${year} `).onClick(onClickYear).append(
 					new Dom('span').text('▲').cls('white-50'),
 				),
-				new Dom('button').cls('nav-item').text(`${this.month} `).onClick(onClickMonth),
+				new Dom('button').cls('nav-item').text(`${spendingReport.toString()} `).onClick(onClickMonth),
 				new Dom('button').cls('nav-item', 'nav-trigger').hideable().attr('data-side', 'right').onClick(onClickAdd)
 					.append(
 						new Dom('img').cls('white-fill').text('Menu').attr('alt', 'Menu').attr('src', icons.menu),
@@ -170,11 +182,16 @@ export default class SpendingScreen {
 		return this.monthDropup.toHtml();
 	}
 
-	buildSpendingSummaryModal(month) {
+	/**
+	 * 
+	 * @param {SpendingReport} spendingReport 
+	 * @returns {HTMLElement}
+	 */
+	buildSpendingSummaryModal(spendingReport) {
 		this.summaryModal = new Modal('summary').header(
 			new Dom('h2').text('Expenses summary'),
 		).body(
-			new Dom('table').id(`summary-table-${month}`).cls('top-round', 'bot-round').append(
+			new Dom('table').id(`summary-table-${spendingReport}`).cls('top-round', 'bot-round').append(
 				new Dom('thead').append(
 					new Dom('tr').append(
 						new Dom('th').text('Category'),
@@ -184,7 +201,7 @@ export default class SpendingScreen {
 					),
 				),
 				new Dom('tbody').append(
-					...this.buildSummary(),
+					...this.buildSummary(spendingReport),
 				),
 			),
 		).addCancelFooter();
@@ -299,19 +316,21 @@ export default class SpendingScreen {
 		this.spendingsHtml.tBodies[0].appendChild(newRow.toHtml());
 	}
 
-	buildSummary() {
-		const spentGoals = [...new Set(this.spendings.map((spending) => spending.category))];
+	/**
+	 * 
+	 * @param {SpendingReport} spendingReport 
+	 * @returns 
+	 */
+	buildSummary(spendingReport) {
+		const spentGoals = spendingReport.goals();
 		const goals = this.categories
 			.map((category) => category.goals)
 			.flat()
 			.filter((goal) => spentGoals.filter((spentGoal) => spentGoal === goal.name).length > 0);
-		const spendingTotal = this.spendings
-			.reduce((accumulator, current) => accumulator + current.price, 0);
 		const budgetTotal = goals.reduce((accumulator, current) => accumulator + current.monthly, 0);
+		const spendingTotal = spendingReport.total();
 		return spentGoals.map((goal) => {
-			const spentForGoal = this.spendings
-				.reduce((accumulator, spending) => accumulator + (spending.category === goal ? spending.price : 0), 0)
-				.toFixed(2);
+			const spentForGoal = spendingReport.totalForGoal(goal);
 			const budgetForGoal = goals.find((plannedGoal) => plannedGoal.name === goal).monthly;
 			return new Dom('tr').append(
 				new Dom('td').text(goal),
