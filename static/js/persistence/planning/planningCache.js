@@ -104,7 +104,7 @@ export default class PlanningCache {
 	 * @async
 	 * @returns {Array<Category>}
 	 */
-	async readExpenses() {
+	async readExpenseCategories() {
 		const keyRange = IDBKeyRange.only('Expense');
 		const expenseStatements = await this.idb.getAllByIndex(this.year, 'byType', keyRange);
 		const expenses = [];

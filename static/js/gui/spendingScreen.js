@@ -23,8 +23,8 @@ export default class SpendingScreen {
 
 	/**
 	 * @param {number} year
-	 * @param {SpendingReport} defaultSpendingReport 
-	 * @param {Array<Category>} categories 
+	 * @param {SpendingReport} defaultSpendingReport
+	 * @param {Array<Category>} categories
 	 */
 	constructor(year, defaultSpendingReport, categories) {
 		this.year = year;
@@ -50,12 +50,13 @@ export default class SpendingScreen {
 	 * @param {SpendingReport} spendingReport
 	 */
 	updateSpendingReport(spendingReport) {
-		let reportSlice = this.#drawnReports.get(spendingReport);
+		let reportSlice = this.#drawnReports.get(spendingReport.id());
+		const sliceId = `slice_${spendingReport.id()}`;
 		if (!reportSlice) {
-			reportSlice = new Dom('div').id(spendingReport.id()).cls('slice').append(
+			reportSlice = new Dom('div').id(sliceId).cls('slice').append(
 				new Dom('h1').text(`${spendingReport} spending`),
 			);
-			this.screen.append(reportSlice);
+			this.section.append(reportSlice);
 		} else {
 			reportSlice.clear();
 		}
@@ -64,19 +65,39 @@ export default class SpendingScreen {
 			this.buildSpendingsReport(spendingReport),
 		);
 
+		this.#drawnReports.set(spendingReport.id(), reportSlice);
+		const moveToSlice = this.moveToMonth.bind(this, spendingReport.id());
 		this.monthDropup.body(
-			new Dom('div').cls('accordion-secondary').text(spendingReport),
+			new Dom('div').cls('accordion-secondary').text(spendingReport).onClick(moveToSlice),
 		);
+		if (this.#drawnReports.size > 1) {
+			const dropupRight = document.getElementById('dropup-right');
+			const oldText = dropupRight.textContent.split(' ')[0];
+			dropupRight.innerHTML = '';
+			dropupRight.textContent = `${oldText} `;
+			const span = new Dom('span').text('▲').cls('white-50').toHtml();
+			dropupRight.appendChild(span);
+		}
+	}
+
+	moveToMonth(month) {
+		const reportSlice = this.#drawnReports.get(month);
+		const sliceIndex = Array.prototype.indexOf.call(
+			this.section.toHtml().childNodes,
+			reportSlice.toHtml(),
+		);
+		this.gfx.slideTo(sliceIndex);
+		this.monthDropup.close();
 	}
 
 	/**
-	 * 
-	 * @param {SpendingReport} spendingReport 
+	 * @param {SpendingReport} spendingReport
 	 * @returns {HTMLElement}
 	 */
 	build(spendingReport) {
-		this.screen =	new Dom('div').cls('container').append(
-			new Dom('div').id('spendings-section').cls('section'),
+		this.section = new Dom('div').id('spendings-section').cls('section');
+		this.screen = new Dom('div').cls('container').append(
+			this.section,
 		);
 
 		const main = document.getElementById('main');
@@ -98,7 +119,7 @@ export default class SpendingScreen {
 	 * @returns {Dom}
 	 */
 	buildSpendingsReport(spendingReport) {
-		const spendingsDom = new Dom('table').id(spendingReport.id).cls('top-round', 'bot-round').append(
+		const spendingsDom = new Dom('table').id(spendingReport.id()).cls('top-round', 'bot-round').append(
 			new Dom('thead').append(
 				new Dom('tr').append(
 					new Dom('th').text(spendingReport),
@@ -123,8 +144,8 @@ export default class SpendingScreen {
 
 	/**
 	 * @param {number} year
-	 * @param {SpendingReport} spendingReport 
-	 * @returns 
+	 * @param {SpendingReport} spendingReport
+	 * @returns {Dom}
 	 */
 	buildNavBar(year, spendingReport) {
 		const onClickAdd = this.onClickAddSpending.bind(this);
@@ -159,10 +180,8 @@ export default class SpendingScreen {
 					.append(
 						new Dom('img').cls('white-fill').text('Menu').attr('alt', 'Menu').attr('src', icons.menu),
 					),
-				new Dom('button').cls('dropup', 'nav-item').text(`${year} `).onClick(onClickYear).append(
-					new Dom('span').text('▲').cls('white-50'),
-				),
-				new Dom('button').cls('nav-item').text(`${spendingReport.toString()} `).onClick(onClickMonth),
+				new Dom('button').id('dropup-left').cls('nav-item').text(`${year} `).onClick(onClickYear),
+				new Dom('button').id('dropup-right').cls('nav-item').text(`${spendingReport.toString()} `).onClick(onClickMonth),
 				new Dom('button').cls('nav-item', 'nav-trigger').hideable().attr('data-side', 'right').onClick(onClickAdd)
 					.append(
 						new Dom('img').cls('white-fill').text('Menu').attr('alt', 'Menu').attr('src', icons.menu),
@@ -183,8 +202,7 @@ export default class SpendingScreen {
 	}
 
 	/**
-	 * 
-	 * @param {SpendingReport} spendingReport 
+	 * @param {SpendingReport} spendingReport
 	 * @returns {HTMLElement}
 	 */
 	buildSpendingSummaryModal(spendingReport) {
@@ -257,8 +275,7 @@ export default class SpendingScreen {
 	}
 
 	/**
-	 * 
-	 * @param {Array<Category>} forCategories 
+	 * @param {Array<Category>} forCategories
 	 * @returns {Dom}
 	 */
 	buildCategoryModal(forCategories) {
@@ -317,9 +334,8 @@ export default class SpendingScreen {
 	}
 
 	/**
-	 * 
-	 * @param {SpendingReport} spendingReport 
-	 * @returns 
+	 * @param {SpendingReport} spendingReport
+	 * @returns {void}
 	 */
 	buildSummary(spendingReport) {
 		const spentGoals = spendingReport.goals();

@@ -73,7 +73,7 @@ export default class SpendingCache {
 	/**
 	 * @returns {Array<Spending>}
 	 */
-	async readAllForYear() {
+	async readAll() {
 		const spendings = this.idb.getAll(this.year);
 		return spendings;
 	}
