@@ -176,16 +176,14 @@ export default class SpendingScreen {
 				),
 			),
 			new Dom('div').cls('nav-footer').append(
-				new Dom('button').cls('nav-item', 'nav-trigger').hideable().attr('data-side', 'left').onClick(onClickAdd)
-					.append(
-						new Dom('img').cls('white-fill').text('Menu').attr('alt', 'Menu').attr('src', icons.menu),
-					),
+				new Dom('button').cls('nav-item', 'nav-trigger').attr('data-side', 'left').append(
+					new Dom('img').cls('white-fill').text('Menu').attr('alt', 'Menu').attr('src', icons.menu),
+				),
 				new Dom('button').id('dropup-left').cls('nav-item').text(`${year} `).onClick(onClickYear),
 				new Dom('button').id('dropup-right').cls('nav-item').text(`${spendingReport.toString()} `).onClick(onClickMonth),
-				new Dom('button').cls('nav-item', 'nav-trigger').hideable().attr('data-side', 'right').onClick(onClickAdd)
-					.append(
-						new Dom('img').cls('white-fill').text('Menu').attr('alt', 'Menu').attr('src', icons.menu),
-					),
+				new Dom('button').cls('nav-item', 'nav-trigger').attr('data-side', 'right').append(
+					new Dom('img').cls('white-fill').text('Menu').attr('alt', 'Menu').attr('src', icons.menu),
+				),
 			),
 			new Dom('div').cls('dropup-content', 'top-round').hide(),
 		);
