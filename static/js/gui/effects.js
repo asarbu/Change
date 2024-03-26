@@ -161,7 +161,7 @@ export default class GraphicEffects {
 
 	/* Nav panel */
 	openNav(ev) {
-		const { side } = ev.target.dataset;
+		const { side } = ev.currentTarget.dataset;
 		if (side === 'left') {
 			if (this.navOpen === 'left') {
 				this.closeNav();
