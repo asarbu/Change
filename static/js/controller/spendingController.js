@@ -35,6 +35,7 @@ export default class SpendingController {
 	 * @param {number} forYear Year for which to initialize the controller
 	 */
 	constructor(forYear) {
+		this.year = forYear;
 		/* if (gdriveSync) {
 			// this.spendingGDrive = new SpendingGDrive(this.#spendingCache);
 			// this.planningGDrive = new PlanningGDrive(this.#planningCache);
@@ -42,10 +43,9 @@ export default class SpendingController {
 	}
 
 	async init(forYear) {
-		const year = forYear || new Date().getFullYear();
-		const month = new Date().getMonth();
 		this.#spendingCaches = await SpendingCache.getAll();
 		this.#planningCaches = await PlanningCache.getAll();
+		const year = forYear || new Date().getFullYear();
 
 		for (let i = 0; i < this.#spendingCaches.length; i += 1) {
 			if (this.#spendingCaches[i].year === year) {
@@ -58,8 +58,8 @@ export default class SpendingController {
 		await this.#planningCache?.init();
 		await this.#spendingCache?.init();
 
-		const expenseCategories = await this.#planningCache.readExpenses();
-		const spendings = await this.#spendingCache.readAllForYear();
+		const expenseCategories = await this.#planningCache.readExpenseCategories();
+		const spendings = await this.#spendingCache.readAll();
 
 		const currentMonth = new Date().getMonth();
 		/** @type {Map<number, SpendingReport>} */
@@ -85,6 +85,18 @@ export default class SpendingController {
 		spendingScreen.onClickDeleteCallback = this.onClickDeleteSpending.bind(this);
 		spendingScreen.onClickSaveCallback = this.onClickSaveSpendings.bind(this);
 
+		let pastMonth = currentMonth - 1;
+		while (pastMonth >= 0 && spendingReports.has(pastMonth)) {
+			spendingScreen.updateSpendingReport(spendingReports.get(pastMonth));
+			pastMonth -= 1;
+		}
+
+		let futureMonth = currentMonth + 1;
+		while (futureMonth < 12 && spendingReports.has(futureMonth)) {
+			spendingScreen.updateSpendingReport(spendingReports.get(futureMonth));
+			futureMonth += 1;
+		}
+
 		/* if(gdriveSync) {
 			this.initGDrive(monthName);
 		} */
@@ -98,18 +110,24 @@ export default class SpendingController {
 	}
 
 	async syncGDrive(monthName) {
-		const cacheLastUpdatedTime = this.#spendingCache.getLastUpdatedTime(this.currentYear, monthName);
-		const gdriveLastUpdatedTime = await this.spendingGDrive.getLastUpdatedTime(this.currentYear, monthName);
+		const cacheLastUpdatedTime = this.#spendingCache.getLastUpdatedTime(
+			this.currentYear,
+			monthName,
+		);
+		const gdriveLastUpdatedTime = await this.spendingGDrive.getLastUpdatedTime(
+			this.currentYear,
+			monthName,
+		);
 
-		if(cacheLastUpdatedTime < gdriveLastUpdatedTime) {
+		if (cacheLastUpdatedTime < gdriveLastUpdatedTime) {
 			console.log('Found newer information on GDrive. Updating local cache', gdriveLastUpdatedTime, cacheLastUpdatedTime);
 			await this.spendingGDrive.fetchGDriveToCache(this.currentYear, monthName);
 			this.#spendingCache.setLastUpdatedTime(this.currentYear, monthName, gdriveLastUpdatedTime);
-			if(this.#tabs.has(monthName)) {
+			if (this.#tabs.has(monthName)) {
 				this.refreshTab(monthName);
-				M.toast({html: 'Updated from GDrive', classes: 'rounded'});
+				// M.toast({ html: 'Updated from GDrive', classes: 'rounded' });
 			}
-		} else if(cacheLastUpdatedTime > gdriveLastUpdatedTime) {
+		} else if (cacheLastUpdatedTime > gdriveLastUpdatedTime) {
 			console.log('Found newer information on local cache. Updating GDrive', cacheLastUpdatedTime, gdriveLastUpdatedTime);
 			const spendings = await this.#spendingCache.readAll(this.currentYear, monthName);
 			this.spendingGDrive.fetchCacheToGDrive(this.currentYear, monthName, spendings);
@@ -131,7 +149,7 @@ export default class SpendingController {
 	}
 
 	/**
-	 * 
+	 * Handler
 	 * @param {Array<Spending} spendings Spendings to be persisted
 	 */
 	async onClickSaveSpendings(spendings) {
@@ -153,7 +171,7 @@ export default class SpendingController {
 		if (this.#tabs.get(month)) {
 			this.#tabs.get(month).refresh(spendings);
 		} else {
-			//TODO this might trigger a reload before gdrive updated
+			// TODO this might trigger a reload before gdrive updated
 			window.location.reload();
 		}
 	}

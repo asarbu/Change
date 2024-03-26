@@ -263,28 +263,6 @@ tbody>tr:last-of-type {
 	position: relative;
 	left: 0;
 }
-
-.dropup-content {
-	display: none;
-	position: absolute;
-	bottom: 100%;
-	width: 100%;
-	background: rgba(0, 0, 0, 0.4);
-	backdrop-filter: blur(5px);
-	-webkit-backdrop-filter: blur(5px);
-	z-index: 7;
-}
-
-.dropup-content > div {
-	color: white;
-	padding: 12px 16px;
-	text-decoration: none;
-	display: block;
-	text-align: center;
-	position: relative;
-	left: 0;
-}
-
 /* The Modal (backdrop) */
 .modal {
 	visibility: hidden; /* Hidden by default */
