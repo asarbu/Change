@@ -87,8 +87,8 @@ export class SpendingReport {
 	}
 
 	/**
-	 * 
-	 * @param {string} goal 
+	 * Computes total amount spent in a month for a specific goal name
+	 * @param {string} goal
 	 * @returns {number}
 	 */
 	totalForGoal(goal) {

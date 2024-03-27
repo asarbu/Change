@@ -4,10 +4,9 @@ import Dom from './dom.js';
 import icons from './icons.js';
 import GraphicEffects from './effects.js';
 import Modal from './modal.js';
+import SpendingNavBar, { SpendingNavBarEventHandlers } from './spendingNavBar.js';
 
 export default class SpendingScreen {
-	onClickCreateCallback = undefined;
-
 	onClickDeleteCallback = undefined;
 
 	onClickSaveCallback = undefined;
@@ -19,7 +18,13 @@ export default class SpendingScreen {
 	categories = undefined;
 
 	/** @type {Map<number, Dom} */
-	#drawnReports = new Map();
+	#drawnSlices = new Map();
+
+	/** @type {Modal} */
+	#addSpendingModal = undefined;
+
+	/** @type {Modal} */
+	#categoryModal = undefined;
 
 	/**
 	 * @param {number} year
@@ -33,61 +38,63 @@ export default class SpendingScreen {
 	}
 
 	init() {
+		const eventHandlers = new SpendingNavBarEventHandlers();
+		eventHandlers.onClickAddSpending = this.onClickAddSpending.bind(this);
+		eventHandlers.onClickDelete = this.onClickDelete.bind(this);
+		eventHandlers.onClickEdit = this.onClickEdit.bind(this);
+		eventHandlers.onClickSave = this.onClickSave.bind(this);
+		eventHandlers.onClickSummary = this.onClickSummary.bind(this);
+		eventHandlers.onMonthChanged = this.slideToMonth.bind(this);
+		this.navbar = new SpendingNavBar(this.year, this.defaultSpendingReport, eventHandlers);
 		const main = document.getElementById('main');
-		main.appendChild(this.buildCategoryModal(this.categories));
-		main.appendChild(this.buildAddSpendingModal());
-		main.appendChild(this.buildMonthModal());
-		main.appendChild(this.buildNavBar(this.year, this.defaultSpendingReport).toHtml());
+		main.appendChild(this.navbar.toHtml());
+
+		main.appendChild(this.buildCategoryModal(this.categories).toHtml());
+		main.appendChild(this.buildAddSpendingModal().toHtml());
+		main.appendChild(this.buildSpendingSummaryModal(this.defaultSpendingReport).toHtml());
 
 		const container = this.build(this.defaultSpendingReport);
 		this.gfx = new GraphicEffects();
 		this.gfx.init(container);
-		// this.refresh(this.spendings);
+
+		this.navbar.selectMonth(this.defaultSpendingReport.id());
 	}
 
 	/**
-	 * Draws report on screen. Updates it if already present.
+	 * Builds or rebuilds the slice with the given report
 	 * @param {SpendingReport} spendingReport
 	 */
-	updateSpendingReport(spendingReport) {
-		let reportSlice = this.#drawnReports.get(spendingReport.id());
+	updateSlice(spendingReport) {
+		let reportSlice = this.#drawnSlices.get(spendingReport.id());
 		const sliceId = `slice_${spendingReport.id()}`;
 		if (!reportSlice) {
 			reportSlice = new Dom('div').id(sliceId).cls('slice').append(
 				new Dom('h1').text(`${spendingReport} spending`),
 			);
 			this.section.append(reportSlice);
+			this.navbar.appendMonth(spendingReport.id());
 		} else {
 			reportSlice.clear();
 		}
 
 		reportSlice.append(
-			this.buildSpendingsReport(spendingReport),
+			this.buildSlice(spendingReport),
 		);
 
-		this.#drawnReports.set(spendingReport.id(), reportSlice);
-		const moveToSlice = this.moveToMonth.bind(this, spendingReport.id());
-		this.monthDropup.body(
-			new Dom('div').cls('accordion-secondary').text(spendingReport).onClick(moveToSlice),
-		);
-		if (this.#drawnReports.size > 1) {
-			const dropupRight = document.getElementById('dropup-right');
-			const oldText = dropupRight.textContent.split(' ')[0];
-			dropupRight.innerHTML = '';
-			dropupRight.textContent = `${oldText} `;
-			const span = new Dom('span').text('▲').cls('white-50').toHtml();
-			dropupRight.appendChild(span);
-		}
+		this.#drawnSlices.set(spendingReport.id(), reportSlice);
 	}
 
-	moveToMonth(month) {
-		const reportSlice = this.#drawnReports.get(month);
+	/**
+	 * Slides the current shown slice to the one for the month provided
+	 * @param {number} month
+	 */
+	slideToMonth(month) {
+		const reportSlice = this.#drawnSlices.get(month);
 		const sliceIndex = Array.prototype.indexOf.call(
 			this.section.toHtml().childNodes,
 			reportSlice.toHtml(),
 		);
 		this.gfx.slideTo(sliceIndex);
-		this.monthDropup.close();
 	}
 
 	/**
@@ -107,18 +114,12 @@ export default class SpendingScreen {
 		return this.screen.toHtml();
 	}
 
-	buildSlice(spendingReport) {
-		const main = document.getElementById('main');
-		main.appendChild(this.buildSpendingSummaryModal(spendingReport));
-		return this.buildSpendingsReport(spendingReport);
-	}
-
 	/**
 	 * Builds the {Dom} object associated with this report
 	 * @param {SpendingReport} spendingReport
 	 * @returns {Dom}
 	 */
-	buildSpendingsReport(spendingReport) {
+	buildSlice(spendingReport) {
 		const spendingsDom = new Dom('table').id(spendingReport.id()).cls('top-round', 'bot-round').append(
 			new Dom('thead').append(
 				new Dom('tr').append(
@@ -140,63 +141,6 @@ export default class SpendingScreen {
 		this.appendToSpendingTable(spendingReport.totalAsSpending());
 
 		return spendingsDom;
-	}
-
-	/**
-	 * @param {number} year
-	 * @param {SpendingReport} spendingReport
-	 * @returns {Dom}
-	 */
-	buildNavBar(year, spendingReport) {
-		const onClickAdd = this.onClickAddSpending.bind(this);
-		const onClickEdit = this.onClickEdit.bind(this);
-		const onClickSave = this.onClickSave.bind(this);
-		const onClickSummary = this.onClickSummary.bind(this, this.summaryHtml);
-		const onClickMonth = this.onClickMonth.bind(this);
-		const onClickDelete = undefined; // this.onClickDeleteSpending.bind(this);
-		const onClickYear = undefined; // this.onClickDropup.bind(this);
-
-		this.navbar = new Dom('nav').append(
-			new Dom('div').cls('nav-header').append(
-				new Dom('button').cls('nav-item').hideable().onClick(onClickDelete).append(
-					new Dom('img').cls('white-fill').text('Delete').attr('alt', 'Delete').attr('src', icons.delete),
-				),
-				new Dom('button').id('edit-button').cls('nav-item').onClick(onClickEdit).append(
-					new Dom('img').cls('white-fill').text('Edit').attr('alt', 'Edit').attr('src', icons.edit),
-				),
-				new Dom('button').id('save-button').cls('nav-item').onClick(onClickSave).hide()
-					.append(
-						new Dom('img').cls('white-fill').text('Save').attr('alt', 'Save').attr('src', icons.save),
-					),
-				new Dom('button').id('summary-button').cls('nav-item').onClick(onClickSummary).append(
-					new Dom('img').cls('white-fill').text('Summary').attr('alt', 'Save').attr('src', icons.summary),
-				),
-				new Dom('button').cls('nav-item').onClick(onClickAdd).append(
-					new Dom('img').cls('white-fill').text('Add').attr('alt', 'Add').attr('src', icons.hand_coin),
-				),
-			),
-			new Dom('div').cls('nav-footer').append(
-				new Dom('button').cls('nav-item', 'nav-trigger').attr('data-side', 'left').append(
-					new Dom('img').cls('white-fill').text('Menu').attr('alt', 'Menu').attr('src', icons.menu),
-				),
-				new Dom('button').id('dropup-left').cls('nav-item').text(`${year} `).onClick(onClickYear),
-				new Dom('button').id('dropup-right').cls('nav-item').text(`${spendingReport.toString()} `).onClick(onClickMonth),
-				new Dom('button').cls('nav-item', 'nav-trigger').attr('data-side', 'right').append(
-					new Dom('img').cls('white-fill').text('Menu').attr('alt', 'Menu').attr('src', icons.menu),
-				),
-			),
-			new Dom('div').cls('dropup-content', 'top-round').hide(),
-		);
-
-		return this.navbar;
-	}
-
-	buildMonthModal() {
-		this.monthDropup = new Modal('month-dropup')
-			.header(
-				new Dom('h2').text('Choose spending month'),
-			).body().addCancelFooter();
-		return this.monthDropup.toHtml();
 	}
 
 	/**
@@ -222,113 +166,7 @@ export default class SpendingScreen {
 			),
 		).addCancelFooter();
 
-		return this.summaryModal.toHtml();
-	}
-
-	buildAddSpendingModal() {
-		const onClickCategory = this.onClickCategoryInput.bind(this);
-		this.addSpendingModal = new Modal('add-spending').header(
-			new Dom('h2').text('Insert Spending'),
-		).body(
-			new Dom('div').cls('input-field').append(
-				new Dom('input').id('date-input-field').type('date').attr('required', '').attr('value', new Date().toISOString().substring(0, 10)),
-				new Dom('label').text('Date: '),
-			),
-			new Dom('div').cls('input-field').append(
-				new Dom('input').id('category-input-field').type('text').attr('required', '').onClick(onClickCategory),
-				new Dom('label').text('Category: '),
-			),
-			new Dom('div').cls('input-field').append(
-				new Dom('input').id('price-input-field').type('number').attr('required', '').attr('step', '0.01'),
-				new Dom('label').text('Price: '),
-			),
-			new Dom('div').cls('input-field').append(
-				new Dom('input').id('description-input-field').type('text').attr('required', ''),
-				new Dom('label').text('Description: '),
-			),
-		).footer(
-			new Dom('h3').text('Cancel'),
-			new Dom('h3').text('Save').onClick(this.onClickModalSave.bind(this)),
-		);
-
-		return this.addSpendingModal.toHtml();
-	}
-
-	onClickModalSave() {
-		const newSpending = {
-			id: new Date().getTime(),
-			boughtOn: document.getElementById('date-input-field').valueAsDate,
-			description: document.getElementById('description-input-field').value,
-			price: +document.getElementById('price-input-field').value,
-			category: document.getElementById('category-input-field').value,
-		};
-
-		this.appendToSpendingTable(newSpending);
-
-		if (this.onClickCreateCallback) {
-			this.onClickCreateCallback(newSpending);
-		}
-
-		this.addSpendingModal.close();
-	}
-
-	/**
-	 * @param {Array<Category>} forCategories
-	 * @returns {Dom}
-	 */
-	buildCategoryModal(forCategories) {
-		this.categoryModal = new Modal('categories').header(
-			new Dom('h2').text('Insert Spending'),
-		).body(
-			new Dom('div').cls('accordion').append(
-				...forCategories.map((category) => new Dom('div').cls('accordion-item').append(
-					new Dom('input').id(category.id).cls('accordion-state').attr('type', 'checkbox'),
-					new Dom('label').cls('accordion-header').attr('for', category.id).append(
-						new Dom('span').text(category.name),
-					),
-					new Dom('div').cls('accordion-content').append(
-						...category.goals.map((goal) => new Dom('div').cls('accordion-secondary').text(goal.name).onClick(this.onClickCategory.bind(this))),
-					),
-				)),
-			),
-		).addCancelFooter();
-
-		return this.categoryModal.toHtml();
-	}
-
-	refresh(spendings, forMonth) {
-		if (!spendings) throw Error('No spendings provided');
-		this.spendings = spendings;
-		if (!this.spendingSlices.has(forMonth)) {
-			this.createSlice(forMonth);
-		}
-		// TODO replace this with creating a new tbody and replacing old one
-		this.spendingsTable.tBodies[0].innerHTML = '';
-
-		this.spendingsTable.tBodies[0].appendChild(this.buildSummary());
-	}
-
-	/**
-	 * Appends a new row with the current spending to the screen table
-	 * @param {Spending} spending Spending to append
-	 */
-	appendToSpendingTable(spending) {
-		const onClickDelete = this.onClickDeleteSpending.bind(this);
-		const onSpendingChanged = this.onSpendingChanged.bind(this);
-		const boughtOn = spending.boughtOn.toLocaleString('en-GB', { day: 'numeric', month: 'short' });
-		const newRow = new Dom('tr').id(spending.id).userData(spending).append(
-			new Dom('td').text(spending.description).editable().onKeyUp(onSpendingChanged),
-			new Dom('td').text(boughtOn).editable().onKeyUp(onSpendingChanged),
-			new Dom('td').text(spending.category).editable().onKeyUp(onSpendingChanged),
-			new Dom('td').text(spending.price).editable().onKeyUp(onSpendingChanged),
-			new Dom('td').hideable().append(
-				new Dom('button').onClick(onClickDelete).append(
-					new Dom('img').cls('white-fill').text('Delete').attr('alt', 'Delete').attr('src', icons.delete),
-				),
-			),
-		);
-
-		this.spendingsHtml.tBodies[0].appendChild(newRow.toHtml());
+		return this.summaryModal;
 	}
 
 	/**
@@ -360,25 +198,111 @@ export default class SpendingScreen {
 		));
 	}
 
-	// #region GUI handlers
+	buildAddSpendingModal() {
+		const onClickCategory = this.onClickCategoryInput.bind(this);
+		this.#addSpendingModal = new Modal('add-spending').header(
+			new Dom('h2').text('Insert Spending'),
+		).body(
+			new Dom('div').cls('input-field').append(
+				new Dom('input').id('date-input-field').type('date').attr('required', '').attr('value', new Date().toISOString().substring(0, 10)),
+				new Dom('label').text('Date: '),
+			),
+			new Dom('div').cls('input-field').append(
+				new Dom('input').id('category-input-field').type('text').attr('required', '').onClick(onClickCategory),
+				new Dom('label').text('Category: '),
+			),
+			new Dom('div').cls('input-field').append(
+				new Dom('input').id('price-input-field').type('number').attr('required', '').attr('step', '0.01'),
+				new Dom('label').text('Price: '),
+			),
+			new Dom('div').cls('input-field').append(
+				new Dom('input').id('description-input-field').type('text').attr('required', ''),
+				new Dom('label').text('Description: '),
+			),
+		).footer(
+			new Dom('h3').text('Cancel'),
+			new Dom('h3').text('Save').onClick(this.onClickModalSave.bind(this)),
+		);
 
-	onClickMonth() {
-		this.monthDropup.open();
+		return this.#addSpendingModal;
 	}
 
-	async onClickDelete(event) {
-		const row = event.target.parentNode.parentNode;
-		const key = row.id;
+	onClickModalSave() {
+		const newSpending = {
+			id: new Date().getTime(),
+			boughtOn: document.getElementById('date-input-field').valueAsDate,
+			description: document.getElementById('description-input-field').value,
+			price: +document.getElementById('price-input-field').value,
+			category: document.getElementById('category-input-field').value,
+		};
 
-		if (this.onClickDeleteCallback) {
-			this.onClickDeleteCallback(key);
+		this.appendToSpendingTable(newSpending);
+
+		if (this.onClickCreateCallback) {
+			this.onClickCreateCallback(newSpending);
 		}
 
-		row.parentNode.removeChild(row);
+		this.#addSpendingModal.close();
 	}
-	// #endregion
+
+	/**
+	 * @param {Array<Category>} forCategories
+	 * @returns {Dom}
+	 */
+	buildCategoryModal(forCategories) {
+		this.categoryModal = new Modal('categories').header(
+			new Dom('h2').text('Insert Spending'),
+		).body(
+			new Dom('div').cls('accordion').append(
+				...forCategories.map((category) => new Dom('div').cls('accordion-item').append(
+					new Dom('input').id(category.id).cls('accordion-state').attr('type', 'checkbox'),
+					new Dom('label').cls('accordion-header').attr('for', category.id).append(
+						new Dom('span').text(category.name),
+					),
+					new Dom('div').cls('accordion-content').append(
+						...category.goals.map((goal) => new Dom('div').cls('accordion-secondary').text(goal.name).onClick(this.onClickCategory.bind(this))),
+					),
+				)),
+			),
+		).addCancelFooter();
+
+		return this.categoryModal;
+	}
+
+	/**
+	 * Appends a new row with the current spending to the screen table
+	 * @param {Spending} spending Spending to append
+	 */
+	appendToSpendingTable(spending) {
+		const onClickDelete = this.onClickDeleteSpending.bind(this);
+		const onSpendingChanged = this.onSpendingChanged.bind(this);
+		const boughtOn = spending.boughtOn.toLocaleString('en-GB', { day: 'numeric', month: 'short' });
+		const newRow = new Dom('tr').id(spending.id).userData(spending).append(
+			new Dom('td').text(spending.description).editable().onKeyUp(onSpendingChanged),
+			new Dom('td').text(boughtOn).editable().onKeyUp(onSpendingChanged),
+			new Dom('td').text(spending.category).editable().onKeyUp(onSpendingChanged),
+			new Dom('td').text(spending.price).editable().onKeyUp(onSpendingChanged),
+			new Dom('td').hideable().append(
+				new Dom('button').onClick(onClickDelete).append(
+					new Dom('img').cls('white-fill').text('Delete').attr('alt', 'Delete').attr('src', icons.delete),
+				),
+			),
+		);
+
+		this.spendingsHtml.tBodies[0].appendChild(newRow.toHtml());
+	}
 
 	// #region onClick handlers
+	onClickDeleteSpending(event) {
+		const row = event.currentTarget.parentNode.parentNode;
+		const tBody = row.parentNode;
+		const spending = row.userData;
+
+		// this.spendings.splice(this.spendings.indexOf(spending), 1);
+		spending.deleted = true;
+		tBody.removeChild(row);
+	}
+
 	onSpendingChanged(event) {
 		const cell = event.currentTarget;
 		const row = cell.parentNode;
@@ -407,14 +331,15 @@ export default class SpendingScreen {
 		spending.edited = true;
 	}
 
-	onClickDeleteSpending(event) {
-		const row = event.currentTarget.parentNode.parentNode;
-		const tBody = row.parentNode;
-		const spending = row.userData;
+	onClickDelete(event) {
+		const row = event.target.parentNode.parentNode;
+		const key = row.id;
 
-		// this.spendings.splice(this.spendings.indexOf(spending), 1);
-		spending.deleted = true;
-		tBody.removeChild(row);
+		if (this.onClickDeleteCallback) {
+			this.onClickDeleteCallback(key);
+		}
+
+		row.parentNode.removeChild(row);
 	}
 
 	onClickEdit() {
@@ -453,7 +378,7 @@ export default class SpendingScreen {
 		this.saveButton.style.display = 'none';
 
 		const changedSpendings = this.spendings
-			.filter((spending) => spending.deleted || spending.edited || spending.created);
+			.filter((spending) => spending.deleted || spending.edited);
 
 		if (this.onClickSaveCallback) {
 			this.onClickSaveCallback(changedSpendings);
@@ -465,6 +390,7 @@ export default class SpendingScreen {
 	}
 
 	onClickAddSpending() {
+		// TODO. Build category modal according to currently clicked month
 		this.onClickCategoryInput();
 	}
 
@@ -476,7 +402,7 @@ export default class SpendingScreen {
 		const categoryInput = document.getElementById('category-input-field');
 		categoryInput.value = event.target.textContent;
 		this.categoryModal.close();
-		this.addSpendingModal.open();
+		this.#addSpendingModal.open();
 		this.focusInputField('price-input-field');
 	}
 

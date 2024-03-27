@@ -4,8 +4,6 @@ import PlanningCache from '../persistence/planning/planningCache.js';
 import Spending, { SpendingReport } from '../persistence/spending/spendingModel.js';
 
 export default class SpendingController {
-	#MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
 	/** @type {Array<SpendingCache>} */
 	#spendingCaches = undefined;
 
@@ -80,20 +78,20 @@ export default class SpendingController {
 			expenseCategories,
 		);
 		spendingScreen.init();
-		spendingScreen.updateSpendingReport(spendingReports.get(currentMonth));
+		spendingScreen.updateSlice(spendingReports.get(currentMonth));
 		spendingScreen.onClickCreateCallback = this.onClickCreateSpending.bind(this);
 		spendingScreen.onClickDeleteCallback = this.onClickDeleteSpending.bind(this);
 		spendingScreen.onClickSaveCallback = this.onClickSaveSpendings.bind(this);
 
 		let pastMonth = currentMonth - 1;
 		while (pastMonth >= 0 && spendingReports.has(pastMonth)) {
-			spendingScreen.updateSpendingReport(spendingReports.get(pastMonth));
+			spendingScreen.updateSlice(spendingReports.get(pastMonth));
 			pastMonth -= 1;
 		}
 
 		let futureMonth = currentMonth + 1;
 		while (futureMonth < 12 && spendingReports.has(futureMonth)) {
-			spendingScreen.updateSpendingReport(spendingReports.get(futureMonth));
+			spendingScreen.updateSlice(spendingReports.get(futureMonth));
 			futureMonth += 1;
 		}
 
