@@ -1,5 +1,4 @@
 /* eslint-disable max-classes-per-file */
-import Spending from '../persistence/spending/spendingModel.js';
 import Dom from './dom.js';
 import icons from './icons.js';
 import Modal from './modal.js';
