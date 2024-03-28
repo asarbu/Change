@@ -156,8 +156,12 @@ export default class SpendingController {
 			.forEach((spending) => this.#spendingCache.delete(spending));
 
 		spendings
-			.filter((spending) => spending.edited || spending.created)
-			.forEach((spending) => this.#spendingCache.insert(spending));
+			.filter((spending) => spending.edited)
+			.forEach((spending) => {
+				const editedSpending = { ...spending };
+				delete editedSpending.edited;
+				this.#spendingCache.insert(editedSpending);
+			});
 
 		/* if(gdriveSync) {
 			await this.syncGDrive(month);

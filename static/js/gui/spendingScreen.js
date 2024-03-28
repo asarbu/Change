@@ -68,7 +68,7 @@ export default class SpendingScreen {
 		let reportSlice = this.#drawnSlices.get(spendingReport.id());
 		const sliceId = `slice_${spendingReport.id()}`;
 		if (!reportSlice) {
-			reportSlice = new Dom('div').id(sliceId).cls('slice').append(
+			reportSlice = new Dom('div').id(sliceId).cls('slice').userData(spendingReport).append(
 				new Dom('h1').text(`${spendingReport} spending`),
 			);
 			this.section.append(reportSlice);
@@ -377,12 +377,17 @@ export default class SpendingScreen {
 		this.editButton.style.display = '';
 		this.saveButton.style.display = 'none';
 
-		const changedSpendings = this.spendings
-			.filter((spending) => spending.deleted || spending.edited);
+		this.#drawnSlices.forEach((slice) => {
+			const spendingReport = slice.toHtml().userData;
+			if (spendingReport) {
+				const changedSpendings = spendingReport.spendings()
+					.filter((spending) => spending.deleted || spending.edited);
 
-		if (this.onClickSaveCallback) {
-			this.onClickSaveCallback(changedSpendings);
-		}
+				if (this.onClickSaveCallback) {
+					this.onClickSaveCallback(changedSpendings);
+				}
+			}
+		});
 	}
 
 	onClickSummary() {
