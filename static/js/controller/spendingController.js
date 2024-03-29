@@ -82,18 +82,21 @@ export default class SpendingController {
 		spendingScreen.onClickCreateCallback = this.onClickCreateSpending.bind(this);
 		spendingScreen.onClickDeleteCallback = this.onClickDeleteSpending.bind(this);
 		spendingScreen.onClickSaveCallback = this.onClickSaveSpendings.bind(this);
+		spendingScreen.onChangeSpendingCallback = this.onChangeSpending.bind(this);
 
-		let pastMonth = currentMonth - 1;
-		while (pastMonth >= 0 && spendingReports.has(pastMonth)) {
-			spendingScreen.updateSlice(spendingReports.get(pastMonth));
-			pastMonth -= 1;
+		for (let pastMonth = currentMonth - 1; pastMonth >= 0; pastMonth -= 1) {
+			if (spendingReports.has(pastMonth)) {
+				spendingScreen.updateSlice(spendingReports.get(pastMonth));
+			}
 		}
 
-		let futureMonth = currentMonth + 1;
-		while (futureMonth < 12 && spendingReports.has(futureMonth)) {
-			spendingScreen.updateSlice(spendingReports.get(futureMonth));
-			futureMonth += 1;
+		for (let futureMonth = currentMonth + 1; futureMonth < 12; futureMonth += 1) {
+			if (spendingReports.has(futureMonth)) {
+				spendingScreen.updateSlice(spendingReports.get(futureMonth));
+			}
 		}
+
+		this.spendingScreen = spendingScreen;
 
 		/* if(gdriveSync) {
 			this.initGDrive(monthName);
@@ -132,8 +135,24 @@ export default class SpendingController {
 		}
 	}
 
+	async getSpendingReport(forYear, forMonth) {
+		const spendingCache = this.#spendingCaches.find((cache) => cache.year === forYear);
+		const spendings = await spendingCache.readAllForMonth(forMonth);
+		const spendingReport = new SpendingReport(forMonth);
+		spendings.filter((currentSpending) => !currentSpending.deleted && !currentSpending.edited)
+			.forEach((currentSpending) => spendingReport.appendSpending(currentSpending));
+		return spendingReport;
+	}
+
+	/**
+	 * @param {Spending} spending
+	 */
 	async onClickCreateSpending(spending) {
 		await this.#spendingCache.insert(spending);
+		const year = spending.boughtOn.getFullYear();
+		const month = spending.boughtOn.getMonth();
+		const spendingReport = await this.getSpendingReport(year, month);
+		this.spendingScreen.updateSlice(spendingReport);
 
 		/* if(gdriveSync) {
 			this.syncGDrive(spending.month);
@@ -142,8 +161,18 @@ export default class SpendingController {
 
 	async onClickDeleteSpending(key) {
 		const localSpending = await this.#spendingCache.read(key);
-		localSpending.isDeleted = 1;
-		this.#spendingCache.insert(undefined, key, localSpending);
+		localSpending.deleted = true;
+		this.#spendingCache.insert(localSpending);
+	}
+
+	/**
+	 * Handler
+	 * @param {number} withKey
+	 */
+	async onChangeSpending(withKey) {
+		const localSpending = await this.#spendingCache.read(withKey);
+		localSpending.edited = true;
+		this.#spendingCache.insert(localSpending);
 	}
 
 	/**
@@ -158,10 +187,18 @@ export default class SpendingController {
 		spendings
 			.filter((spending) => spending.edited)
 			.forEach((spending) => {
-				const editedSpending = { ...spending };
-				delete editedSpending.edited;
-				this.#spendingCache.insert(editedSpending);
+				const spendingCopy = { ...spending };
+				delete spendingCopy.edited;
+				this.#spendingCache.insert(spendingCopy);
 			});
+
+		const month = spendings ? spendings[0].boughtOn.getMonth() : undefined;
+		const year = spendings ? spendings[0].boughtOn.getFullYear() : undefined;
+		const spendingReport = await this.getSpendingReport(year, month);
+
+		if (month !== undefined && year !== undefined) {
+			this.spendingScreen.updateSlice(spendingReport);
+		}
 
 		/* if(gdriveSync) {
 			await this.syncGDrive(month);

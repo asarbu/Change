@@ -65,7 +65,7 @@ export default class SpendingCache {
 	 */
 	async readAllForMonth(month) {
 		const fromDate = new Date(this.year, month, 1);
-		const toDate = new Date(this.year, month + 1, 0);
+		const toDate = new Date(this.year, month + 1, 1);
 		const keyRange = IDBKeyRange.bound(fromDate, toDate);
 		return this.idb.getAllByIndex(this.year, 'byBoughtDate', keyRange);
 	}
