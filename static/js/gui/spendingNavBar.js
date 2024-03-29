@@ -32,11 +32,17 @@ export default class SpendingNavBar {
 	/** @type {Modal} */
 	#monthsDropup = undefined;
 
+	/** @type {Modal} */
+	#yearsDropup = undefined;
+
 	/** @type {SpendingNavBarEventHandlers} */
 	#eventHandlers = undefined;
 
 	/** @type {number} */
 	#selectedMonth = undefined;
+
+	/** @type {number} */
+	#selectedYear = undefined;
 
 	/** @type {Array<string>} */
 	static #MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -50,11 +56,13 @@ export default class SpendingNavBar {
 	constructor(year, month, eventHandlers) {
 		this.year = year;
 		this.#monthsInDropup = new Map();
+		this.#yearsInDropup = new Map();
 		this.#monthsDropup = new Modal();
 		this.#eventHandlers = eventHandlers;
 
 		const main = document.getElementById('main');
 		main.appendChild(this.buildMonthModal().toHtml());
+		main.appendChild(this.buildYearModal().toHtml());
 
 		const onClickYear = eventHandlers.onYearChanged ? eventHandlers.onYearChanged : () => {};
 		const onClickDelete = eventHandlers.onClickDelete ? eventHandlers.onClickDelete : () => {};
@@ -89,7 +97,10 @@ export default class SpendingNavBar {
 				new Dom('button').cls('nav-item', 'nav-trigger').attr('data-side', 'left').append(
 					new Dom('img').cls('white-fill').text('Menu').attr('alt', 'Menu').attr('src', icons.menu),
 				),
-				new Dom('button').id('dropup-left').cls('nav-item').text(`${year} `).onClick(onClickYear),
+				new Dom('button').id('dropup-left').cls('nav-item').onClick(onClickYear).append(
+					new Dom('span').id('dropup-left-text').text(`${year} `),
+					new Dom('span').id('dropup-left-caret').cls('white-50').text(''),
+				),
 				new Dom('button').id('dropup-right').cls('nav-item').onClick(onClickMonthDropup).append(
 					new Dom('span').id('dropup-right-text').text(`${SpendingNavBar.#MONTH_NAMES[month]} `),
 					new Dom('span').id('dropup-right-caret').cls('white-50').text(''),
@@ -115,11 +126,11 @@ export default class SpendingNavBar {
 	}
 
 	buildYearModal() {
-		this.yearDropup = new Modal('year-dropup')
+		this.#yearsDropup = new Modal('year-dropup')
 			.header(
 				new Dom('h2').text('Choose spending year'),
 			).body().addCancelFooter();
-		return this.yearDropup.toHtml();
+		return this.#yearsDropup;
 	}
 
 	appendYear(year) {
@@ -127,7 +138,8 @@ export default class SpendingNavBar {
 
 		const yearDropupItem = new Dom('div').cls('accordion-secondary').text(year);
 		this.#yearsInDropup.set(year, yearDropupItem);
-		this.yearDropup.body(yearDropupItem);
+		this.#yearsDropup.body(yearDropupItem);
+		this.updateYearDropupText();
 	}
 
 	appendMonth(month) {
@@ -158,6 +170,27 @@ export default class SpendingNavBar {
 		this.updateMonthDropupText();
 	}
 
+	selectYear(year) {
+		if (year === this.#selectedYear) return;
+
+		this.#selectedYear = year;
+		this.updateYearDropupText();
+	}
+
+	updateYearDropupText() {
+		const dropupLeftText = document.getElementById('dropup-left-text');
+		const newText = `${this.#selectedYear} `;
+		if (dropupLeftText.textContent !== newText) {
+			dropupLeftText.textContent = newText;
+		}
+
+		const newCaret = this.#yearsInDropup.size > 1 ? '▲' : '';
+		const dropupLeftCaret = document.getElementById('dropup-left-caret');
+		if (dropupLeftCaret.textContent !== newCaret) {
+			dropupLeftCaret.textContent = newCaret;
+		}
+	}
+
 	updateMonthDropupText() {
 		const dropupRightText = document.getElementById('dropup-right-text');
 		const newText = `${SpendingNavBar.#MONTH_NAMES[this.#selectedMonth]} `;
@@ -176,6 +209,10 @@ export default class SpendingNavBar {
 
 	onClickMonthDropup() {
 		this.#monthsDropup.open();
+	}
+
+	onClickYearDropup() {
+		this.#yearsDropup.open();
 	}
 
 	// #endregion

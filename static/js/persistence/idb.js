@@ -9,9 +9,8 @@ export default class Idb {
 	 * @param {number} dbVersion Database version
 	 * @param {upgradeDbCallback} upgradeCallback Callback function to call in case upgrade is needed
 	 */
-	constructor(dbName, dbVersion, upgradeCallback) {
+	constructor(dbName, upgradeCallback) {
 		this.dbName = dbName;
-		this.dbVersion = dbVersion;
 		this.upgradeCallback = upgradeCallback;
 	}
 
@@ -20,7 +19,7 @@ export default class Idb {
 	 * @returns An instance of this
 	 */
 	async init() {
-		await this.open(this.dbName, this.dbVersion, this.upgradeCallback);
+		await this.open(this.dbName, this.upgradeCallback);
 		return this;
 	}
 
@@ -35,7 +34,6 @@ export default class Idb {
 	/**
 	 * Opens an IndexedDb Database
 	 * @param {string} dbName Database name
-	 * @param {number} version Version to upgrade this database
 	 * @param {upgradeDbCallback} upgradeCallback called in case the database needs upgrage
 	 * @returns {Promise<IDBDatabase>}
 	 */
@@ -49,6 +47,7 @@ export default class Idb {
 			request.onsuccess = (event) => {
 				const db = event.target.result;
 				this.db = db;
+				this.dbVersion = +db.version;
 				resolve(db);
 			};
 
@@ -317,6 +316,36 @@ export default class Idb {
 	 */
 	getObjectStores() {
 		return this.db.objectStoreNames;
+	}
+
+	/**
+	 * !! This increments the database version !!
+	 * @param {string} storeName
+	 */
+	createObjectStore(storeName) {
+		return new Promise((resolve, reject) => {
+			const version = this.dbVersion;
+			this.db.close();
+			const request = indexedDB.open(this.dbName, version + 1);
+
+			request.onsuccess = (event) => {
+				const db = event.target.result;
+				this.db = db;
+				this.dbVersion = +db.version;
+				resolve(db);
+			};
+
+			request.onerror = (event) => {
+				reject(new Error(`Database error: ${event.target.error}`));
+			};
+
+			request.onupgradeneeded = (event) => {
+				const db = event.target.result;
+				if (this.upgradeCallback) {
+					this.upgradeCallback(db, event.oldVersion, storeName);
+				}
+			};
+		});
 	}
 
 	/**

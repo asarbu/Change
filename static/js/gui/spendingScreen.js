@@ -60,6 +60,7 @@ export default class SpendingScreen {
 		this.gfx.init(container);
 
 		this.navbar.selectMonth(this.defaultSpendingReport.id());
+		this.navbar.selectYear(this.year);
 	}
 
 	/**
