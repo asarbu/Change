@@ -8,6 +8,8 @@ import SpendingNavBar, { SpendingNavBarEventHandlers } from './spendingNavBar.js
 
 export default class SpendingScreen {
 	onClickDeleteCallback = undefined;
+	
+	onChangeSpendingCallback = undefined;
 
 	onClickSaveCallback = undefined;
 
@@ -74,11 +76,12 @@ export default class SpendingScreen {
 			this.section.append(reportSlice);
 			this.navbar.appendMonth(spendingReport.id());
 		} else {
-			reportSlice.clear();
+			const sliceTable = document.getElementById(`table-${spendingReport.id()}`);
+			reportSlice.toHtml().removeChild(sliceTable);
 		}
 
 		reportSlice.append(
-			this.buildSlice(spendingReport),
+			this.buildTable(spendingReport),
 		);
 
 		this.#drawnSlices.set(spendingReport.id(), reportSlice);
@@ -109,7 +112,7 @@ export default class SpendingScreen {
 
 		const main = document.getElementById('main');
 		main.appendChild(this.screen.toHtml());
-		main.appendChild(this.buildSlice(spendingReport).toHtml());
+		main.appendChild(this.buildTable(spendingReport).toHtml());
 
 		return this.screen.toHtml();
 	}
@@ -119,8 +122,8 @@ export default class SpendingScreen {
 	 * @param {SpendingReport} spendingReport
 	 * @returns {Dom}
 	 */
-	buildSlice(spendingReport) {
-		const spendingsDom = new Dom('table').id(spendingReport.id()).cls('top-round', 'bot-round').append(
+	buildTable(spendingReport) {
+		const spendingsDom = new Dom('table').id(`table-${spendingReport.id()}`).cls('top-round', 'bot-round').append(
 			new Dom('thead').append(
 				new Dom('tr').append(
 					new Dom('th').text(spendingReport),
@@ -282,7 +285,7 @@ export default class SpendingScreen {
 			new Dom('td').text(boughtOn).editable().onKeyUp(onSpendingChanged),
 			new Dom('td').text(spending.category).editable().onKeyUp(onSpendingChanged),
 			new Dom('td').text(spending.price).editable().onKeyUp(onSpendingChanged),
-			new Dom('td').hideable().append(
+			new Dom('td').hideable(this.editMode).append(
 				new Dom('button').onClick(onClickDelete).append(
 					new Dom('img').cls('white-fill').text('Delete').attr('alt', 'Delete').attr('src', icons.delete),
 				),
@@ -296,10 +299,14 @@ export default class SpendingScreen {
 	onClickDeleteSpending(event) {
 		const row = event.currentTarget.parentNode.parentNode;
 		const tBody = row.parentNode;
+		/** @type {Spending} */
 		const spending = row.userData;
-
-		// this.spendings.splice(this.spendings.indexOf(spending), 1);
 		spending.deleted = true;
+
+		if (this.onClickDeleteCallback)	{
+			this.onClickDeleteCallback(spending.id);
+		}
+
 		tBody.removeChild(row);
 	}
 
@@ -326,6 +333,10 @@ export default class SpendingScreen {
 			break;
 		default:
 			break;
+		}
+
+		if (this.onChangeSpendingCallback && !spending.edited) {
+			this.onChangeSpendingCallback(spending.id);
 		}
 
 		spending.edited = true;
@@ -383,7 +394,7 @@ export default class SpendingScreen {
 				const changedSpendings = spendingReport.spendings()
 					.filter((spending) => spending.deleted || spending.edited);
 
-				if (this.onClickSaveCallback) {
+				if (this.onClickSaveCallback && changedSpendings?.length > 0) {
 					this.onClickSaveCallback(changedSpendings);
 				}
 			}
