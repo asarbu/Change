@@ -9,12 +9,6 @@ export default class PlanningController {
 	 */
 	#caches = undefined;
 
-	constructor() {
-		/* if(gdriveSync) {
-			this.planningGDrive = new PlanningGDrive(this.planningCache);
-		} */
-	}
-
 	async init(forYear) {
 		const year = forYear || new Date().getFullYear();
 		this.#caches = await PlanningCache.getAll();

@@ -8,7 +8,7 @@ import SpendingNavBar, { SpendingNavBarEventHandlers } from './spendingNavBar.js
 
 export default class SpendingScreen {
 	onClickDeleteCallback = undefined;
-	
+
 	onChangeSpendingCallback = undefined;
 
 	onClickSaveCallback = undefined;

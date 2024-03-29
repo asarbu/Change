@@ -16,12 +16,14 @@ export default class SpendingCache {
 
 		const objectStores = idb.getObjectStores();
 		const spendingsArray = new Array(objectStores.length);
+		const initSpendingPromises = [];
 		for (let i = 0; i < objectStores.length; i += 1) {
 			const storeName = objectStores[i];
 			const spendingCache = new SpendingCache(storeName, idb);
-			await spendingCache.init();
 			spendingsArray[i] = (spendingCache);
+			initSpendingPromises.push(spendingCache.init());
 		}
+		await Promise.all(initSpendingPromises);
 		return spendingsArray;
 	}
 
@@ -128,7 +130,7 @@ export default class SpendingCache {
 
 	/**
 	 * Callback function to update a planning database
-	 * @param {IndexedDb} db Database to upgrade
+	 * @param {IDBDatabase} db Database to upgrade
 	 * @param {number} oldVersion Version from which to update
 	 * @param {number} newVersion Version to which to update
 	 * @returns {undefined}
