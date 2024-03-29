@@ -121,7 +121,7 @@ export default class SpendingController {
 		);
 
 		if (cacheLastUpdatedTime < gdriveLastUpdatedTime) {
-			console.log('Found newer information on GDrive. Updating local cache', gdriveLastUpdatedTime, cacheLastUpdatedTime);
+			// console.log('Found newer information on GDrive. Updating local cache');
 			await this.spendingGDrive.fetchGDriveToCache(this.currentYear, monthName);
 			this.#spendingCache.setLastUpdatedTime(this.currentYear, monthName, gdriveLastUpdatedTime);
 			if (this.#tabs.has(monthName)) {
@@ -129,7 +129,7 @@ export default class SpendingController {
 				// M.toast({ html: 'Updated from GDrive', classes: 'rounded' });
 			}
 		} else if (cacheLastUpdatedTime > gdriveLastUpdatedTime) {
-			console.log('Found newer information on local cache. Updating GDrive', cacheLastUpdatedTime, gdriveLastUpdatedTime);
+			// console.log('Found newer information on local cache. Updating GDrive');
 			const spendings = await this.#spendingCache.readAll(this.currentYear, monthName);
 			this.spendingGDrive.fetchCacheToGDrive(this.currentYear, monthName, spendings);
 		}

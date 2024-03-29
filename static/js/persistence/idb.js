@@ -37,7 +37,7 @@ export default class Idb {
 	 * @param {string} dbName Database name
 	 * @param {number} version Version to upgrade this database
 	 * @param {upgradeDbCallback} upgradeCallback called in case the database needs upgrage
-	 * @returns {Promise<IndexedDb>}
+	 * @returns {Promise<IDBDatabase>}
 	 */
 	open(dbName, version, upgradeCallback) {
 		return new Promise((resolve, reject) => {
@@ -67,7 +67,7 @@ export default class Idb {
 
 	/**
 	 * @param {string} storeName Database object store name
-	 * @returns {Promise<Array<PlanningContext>>}
+	 * @returns {Promise<Array<Object>>}
 	 */
 	openCursor(storeName) {
 		return new Promise((resolve) => {
@@ -172,7 +172,7 @@ export default class Idb {
 	/**
 	 * Returns all the values from an object store
 	 * @param {string} storeName Store from which to get the data
-	 * @returns 
+	 * @returns {Array<Object>}
 	 */
 	getAll(storeName) {
 		return new Promise((resolve) => {

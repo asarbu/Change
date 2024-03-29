@@ -24,18 +24,20 @@ export default class PlanningCache {
 
 		const objectStores = idb.getObjectStores();
 		const planningsArray = new Array(objectStores.length);
+		const initPlanningPromises = [];
 		for (let i = 0; i < objectStores.length; i += 1) {
 			const storeName = objectStores[i];
 			const planningCache = new PlanningCache(storeName, idb);
-			await planningCache.init();
 			planningsArray[i] = (planningCache);
+			initPlanningPromises.push(planningCache.init());
 		}
+		await Promise.all(initPlanningPromises);
 		return planningsArray;
 	}
 
 	/**
 	 * Callback function to update a planning database
-	 * @param {IndexedDb} db Database to upgrade
+	 * @param {IDBDatabase} db Database to upgrade
 	 * @param {number} oldVersion Version from which to update
 	 * @param {number} newVersion Version to which to update
 	 * @returns {undefined}
