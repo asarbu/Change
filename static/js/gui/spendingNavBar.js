@@ -73,6 +73,7 @@ export default class SpendingNavBar {
 			? eventHandlers.onClickAddSpending
 			: () => {};
 		const onClickMonthDropup = this.onClickMonthDropup.bind(this);
+		const onClickYearDropup = this.onClickYearDropup.bind(this);
 
 		this.#navbar = new Dom('nav').append(
 			new Dom('div').cls('nav-header').append(
@@ -97,7 +98,7 @@ export default class SpendingNavBar {
 				new Dom('button').cls('nav-item', 'nav-trigger').attr('data-side', 'left').append(
 					new Dom('img').cls('white-fill').text('Menu').attr('alt', 'Menu').attr('src', icons.menu),
 				),
-				new Dom('button').id('dropup-left').cls('nav-item').onClick(onClickYear).append(
+				new Dom('button').id('dropup-left').cls('nav-item').onClick(onClickYearDropup).append(
 					new Dom('span').id('dropup-left-text').text(`${year} `),
 					new Dom('span').id('dropup-left-caret').cls('white-50').text(''),
 				),

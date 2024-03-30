@@ -6,8 +6,8 @@ export default class PlanningCache {
 
 	static PLANNING_TEMPLATE_URI = 'static/js/planning.json';
 
-	// TODO: Lower this to 1 at release
-	static DATABASE_VERSION = 2024;
+	/** @type {Idb} */
+	idb = undefined;
 
 	/**
 	 * Returns all planning caches in the database, initialized
@@ -15,12 +15,10 @@ export default class PlanningCache {
 	 * @returns {Promise<Array<PlanningCache>>}
 	 */
 	static async getAll() {
-		const idb = new Idb(
+		const idb = await Idb.get(
 			PlanningCache.DATABASE_NAME,
-			PlanningCache.DATABASE_VERSION,
 			PlanningCache.upgradePlanningDatabase,
 		);
-		await idb.init();
 
 		const objectStores = idb.getObjectStores();
 		const planningsArray = new Array(objectStores.length);
@@ -57,9 +55,8 @@ export default class PlanningCache {
 	 */
 	constructor(year, idb) {
 		if (!idb) {
-			this.idb = new Idb(
+			this.idb = Idb.get(
 				PlanningCache.DATABASE_NAME,
-				PlanningCache.DATABASE_VERSION,
 				PlanningCache.upgradePlanningDatabase,
 			);
 		} else {
@@ -73,8 +70,6 @@ export default class PlanningCache {
 	 * Initialize current instance of PlanningCache
 	 */
 	async init() {
-		await this.idb.init();
-
 		const storeCount = await this.idb.count(this.year);
 		if (storeCount === 0) {
 			await fetch(PlanningCache.PLANNING_TEMPLATE_URI)

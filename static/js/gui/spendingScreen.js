@@ -59,7 +59,7 @@ export default class SpendingScreen {
 		this.gfx = new GraphicEffects();
 		this.gfx.init(container);
 
-		this.navbar.selectMonth(this.defaultSpendingReport.id());
+		this.navbar.selectMonth(this.defaultSpendingReport.month());
 		this.navbar.selectYear(this.year);
 	}
 
@@ -67,17 +67,17 @@ export default class SpendingScreen {
 	 * Builds or rebuilds the slice with the given report
 	 * @param {SpendingReport} spendingReport
 	 */
-	updateSlice(spendingReport) {
-		let reportSlice = this.#drawnSlices.get(spendingReport.id());
-		const sliceId = `slice_${spendingReport.id()}`;
+	updateMonth(spendingReport) {
+		let reportSlice = this.#drawnSlices.get(spendingReport.month());
+		const sliceId = `slice_${spendingReport.month()}`;
 		if (!reportSlice) {
 			reportSlice = new Dom('div').id(sliceId).cls('slice').userData(spendingReport).append(
 				new Dom('h1').text(`${spendingReport} spending`),
 			);
 			this.section.append(reportSlice);
-			this.navbar.appendMonth(spendingReport.id());
+			this.navbar.appendMonth(spendingReport.month());
 		} else {
-			const sliceTable = document.getElementById(`table-${spendingReport.id()}`);
+			const sliceTable = document.getElementById(`table-${spendingReport.month()}`);
 			reportSlice.toHtml().removeChild(sliceTable);
 		}
 
@@ -85,7 +85,11 @@ export default class SpendingScreen {
 			this.buildTable(spendingReport),
 		);
 
-		this.#drawnSlices.set(spendingReport.id(), reportSlice);
+		this.#drawnSlices.set(spendingReport.month(), reportSlice);
+	}
+
+	updateYear(year) {
+		this.navbar.appendYear(year);
 	}
 
 	/**
@@ -124,7 +128,7 @@ export default class SpendingScreen {
 	 * @returns {Dom}
 	 */
 	buildTable(spendingReport) {
-		const spendingsDom = new Dom('table').id(`table-${spendingReport.id()}`).cls('top-round', 'bot-round').append(
+		const spendingsDom = new Dom('table').id(`table-${spendingReport.month()}`).cls('top-round', 'bot-round').append(
 			new Dom('thead').append(
 				new Dom('tr').append(
 					new Dom('th').text(spendingReport),

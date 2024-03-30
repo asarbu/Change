@@ -36,34 +36,30 @@ export default class Spending {
 }
 
 export class SpendingReport {
-	/**
-	 * @type {number}
-	 */
+	/** @type {number} */
 	#month = undefined;
 
-	/**
-	 * @type {Array<Spending>}
-	 */
+	/** @type {number} */
+	#year = undefined;
+
+	/** @type {Array<Spending>} */
 	#spendings = undefined;
 
-	/**
-	 * @type {Set<Category>}
-	 */
+	/** @type {Set<Category>} */
 	#goals = undefined;
 
-	/**
-	 * @type {number}
-	 */
+	/** @type {number} */
 	#total = 0;
 
 	static MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 	/**
-	 *
 	 * @param {number} month Month for which to build the report
+	 * @param {number} year Year for which to build the report
 	 */
-	constructor(month) {
+	constructor(year, month) {
 		this.#month = month;
+		this.#year = year;
 		this.#spendings = [];
 		this.#goals = new Set();
 	}
@@ -73,9 +69,16 @@ export class SpendingReport {
 	 * @param {Spending} spending Spending object to append to report
 	 */
 	appendSpending(spending) {
+		if (this.invalidBoughtDate(spending)) return;
+
 		this.#spendings.push(spending);
 		this.#total += spending.price;
 		this.#goals.add(spending.category);
+	}
+
+	invalidBoughtDate(spending) {
+		return spending.boughtOn.getMonth() !== this.#month
+			|| spending.boughtOn.getFullYear() !== this.#year;
 	}
 
 	/**
@@ -95,7 +98,8 @@ export class SpendingReport {
 		if (!this.#goals.has(goal)) return 0;
 
 		return this.#spendings.reduce(
-			(accumulator, spending) => accumulator + (spending.category === goal ? spending.price : 0), 0,
+			(accumulator, spending) => accumulator + (spending.category === goal ? spending.price : 0),
+			0,
 		);
 	}
 
@@ -127,8 +131,16 @@ export class SpendingReport {
 	 * Returns the ID of the current report
 	 * @returns {number}
 	 */
-	id() {
+	month() {
 		return this.#month;
+	}
+
+	year() {
+		return this.#year;
+	}
+
+	id() {
+		return `${this.#year}_${this.#month}`;
 	}
 
 	toString() {
