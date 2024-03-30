@@ -3,32 +3,44 @@ export default class Idb {
 
 	static #READ_WRITE = 'readwrite';
 
+	/** @type {IDBDatabase} */
+	#db = undefined;
+
+	/** @type {{upgradeCallback}} */
+	#upgradeCallback = undefined;
+
+	/** @type {Array<Idb>} */
+	static #connectedIdbs = [];
+
+	static async get(dbName, upgradeCallback) {
+		const connectedIdb = Idb.#connectedIdbs.find((idb) => idb.#db.name === dbName);
+		if (connectedIdb) return connectedIdb;
+
+		const db = await Idb.#open(dbName, undefined, upgradeCallback);
+		const newIdb = new Idb(db, upgradeCallback);
+		Idb.#connectedIdbs.push(newIdb);
+		return newIdb;
+	}
+
 	/**
+	 * Do not construct IDB objects directly. Use Idb.get() to initialize more efficient instances
 	 * @constructor
-	 * @param {string} dbName Database name
-	 * @param {number} dbVersion Database version
-	 * @param {upgradeDbCallback} upgradeCallback Callback function to call in case upgrade is needed
+	 * @param {IDBDatabase} db Database instance
+	 * @param {upgradeDbCallback} upgradeCallback function to call when creating new object stores
 	 */
-	constructor(dbName, upgradeCallback) {
-		this.dbName = dbName;
-		this.upgradeCallback = upgradeCallback;
+	constructor(db, upgradeCallback) {
+		this.#db = db;
+		this.#upgradeCallback = upgradeCallback;
 	}
 
 	/**
-	 * Initializes this object of IDB. Mandatory to be called before use.
-	 * @returns An instance of this
-	 */
-	async init() {
-		await this.open(this.dbName, this.upgradeCallback);
-		return this;
-	}
-
-	/**
-	 * @typedef {function(db:db, number, number)} upgradeCallback
+	 * @typedef {function(db:db, number, number, Array<string>)} upgradeCallback
 	 * @callback upgradeDbCallback
 	 * @param {db} db Database to be upgraded.
 	 * @param {number} oldVersion Version from which to upgrade
 	 * @param {number} newVersion Version to which to upgrade.
+	 * @param {Array<string>} storeNames Store names to create on upgrade.
+	 * @returns {void}
 	 */
 
 	/**
@@ -37,7 +49,7 @@ export default class Idb {
 	 * @param {upgradeDbCallback} upgradeCallback called in case the database needs upgrage
 	 * @returns {Promise<IDBDatabase>}
 	 */
-	open(dbName, version, upgradeCallback) {
+	static #open(dbName, version, upgradeCallback) {
 		return new Promise((resolve, reject) => {
 			if (!window.indexedDB) {
 				return;
@@ -46,8 +58,6 @@ export default class Idb {
 
 			request.onsuccess = (event) => {
 				const db = event.target.result;
-				this.db = db;
-				this.dbVersion = +db.version;
 				resolve(db);
 			};
 
@@ -58,7 +68,8 @@ export default class Idb {
 			request.onupgradeneeded = (event) => {
 				const db = event.target.result;
 				if (upgradeCallback) {
-					upgradeCallback(db, event.oldVersion, event.newVersion);
+					const defaultStore = new Date().getFullYear();
+					upgradeCallback(db, event.oldVersion, event.newVersion, [defaultStore]);
 				}
 			};
 		});
@@ -304,7 +315,7 @@ export default class Idb {
 	 * @returns {Boolean}
 	 */
 	hasObjectStore(storeName) {
-		if (this.db.objectStoreNames.contains(storeName)) {
+		if (this.#db.objectStoreNames.contains(storeName)) {
 			return true;
 		}
 		return false;
@@ -315,23 +326,31 @@ export default class Idb {
 	 * @returns {Array<string>}
 	 */
 	getObjectStores() {
-		return this.db.objectStoreNames;
+		/** @type {Array<string>} */
+		const objectStoreNames = [];
+		/** @type {DOMStringList} */
+
+		const domStringList = this.#db.objectStoreNames;
+		for (let index = 0; index < domStringList.length; index += 1) {
+			objectStoreNames.push(domStringList.item(index));
+		}
+		return objectStoreNames;
 	}
 
 	/**
 	 * !! This increments the database version !!
-	 * @param {string} storeName
+	 * @param {Array<string>} storeNames
+	 * @returns {Promise<IDBDatabase>}
 	 */
-	createObjectStore(storeName) {
+	createObjectStores(storeNames) {
 		return new Promise((resolve, reject) => {
-			const version = this.dbVersion;
-			this.db.close();
-			const request = indexedDB.open(this.dbName, version + 1);
+			const { name, version } = this.#db;
+			this.#db.close();
+			const request = indexedDB.open(name, version + 1);
 
 			request.onsuccess = (event) => {
 				const db = event.target.result;
-				this.db = db;
-				this.dbVersion = +db.version;
+				this.#db = db;
 				resolve(db);
 			};
 
@@ -341,9 +360,13 @@ export default class Idb {
 
 			request.onupgradeneeded = (event) => {
 				const db = event.target.result;
-				if (this.upgradeCallback) {
-					this.upgradeCallback(db, event.oldVersion, storeName);
+				if (this.#upgradeCallback) {
+					this.#upgradeCallback(db, event.oldVersion, event.newVersion, storeNames);
 				}
+			};
+
+			request.onblocked = (event) => {
+				throw Error(`Request was blocked: ${event.newVersion}`);
 			};
 		});
 	}
@@ -355,11 +378,11 @@ export default class Idb {
 	 * @returns {Array<Object>}
 	 */
 	getStoreTransaction(storeName, mode) {
-		if (!this.db.objectStoreNames.contains(storeName)) {
+		if (!this.#db.objectStoreNames.contains(storeName)) {
 			return undefined;
 		}
 
-		const txn = this.db.transaction(storeName, mode);
+		const txn = this.#db.transaction(storeName, mode);
 		const store = txn.objectStore(storeName);
 
 		return [store, txn];

@@ -4,27 +4,48 @@ import Idb from '../idb.js';
 export default class SpendingCache {
 	static DATABASE_NAME = 'Spendings';
 
-	static DATABASE_VERSION = 2024;
+	/**
+	 * Avoid initializing IDBs multiple times so we can update versions
+	 * @type {Array<SpendingCache>}
+	 */
+	static #initializedCaches = [];
 
 	static async getAll() {
-		const idb = new Idb(
+		const idb = await Idb.get(
 			SpendingCache.DATABASE_NAME,
-			SpendingCache.DATABASE_VERSION,
 			SpendingCache.upgradeSpendingsDb,
 		);
-		await idb.init();
-
 		const objectStores = idb.getObjectStores();
 		const spendingsArray = new Array(objectStores.length);
-		const initSpendingPromises = [];
 		for (let i = 0; i < objectStores.length; i += 1) {
 			const storeName = objectStores[i];
 			const spendingCache = new SpendingCache(storeName, idb);
 			spendingsArray[i] = (spendingCache);
-			initSpendingPromises.push(spendingCache.init());
 		}
-		await Promise.all(initSpendingPromises);
+		SpendingCache.#initializedCaches = spendingsArray;
 		return spendingsArray;
+	}
+
+	/**
+	 * Fetches or creates a Spending cache for the provided year
+	 * @param {number} forYear Year for which to retrieve the SpendingCache
+	 * @returns {SpendingCache}
+	 */
+	static async get(forYear) {
+		const cache = SpendingCache.#initializedCaches.find((c) => c.year === forYear);
+		if (cache) return cache;
+
+		const idb = await Idb.get(
+			SpendingCache.DATABASE_NAME,
+			SpendingCache.upgradeSpendingsDb,
+		);
+		const objectStores = idb.getObjectStores();
+		if (!objectStores.find((objectStore) => objectStore === `${forYear}`)) {
+			await idb.createObjectStores([`${forYear}`]);
+		}
+		const spendingCache = new SpendingCache(forYear, idb);
+		SpendingCache.#initializedCaches.push(spendingCache);
+		return spendingCache;
 	}
 
 	/**
@@ -34,21 +55,12 @@ export default class SpendingCache {
 
 	/**
 	 * @param {number} year Year for which to initialize current cache
+	 * @param {Idb} idb IndexedDB database associated with this object
 	 */
-	constructor(year) {
+	constructor(year, idb) {
 		this.year = +year;
-		this.idb = new Idb(
-			SpendingCache.DATABASE_NAME,
-			SpendingCache.DATABASE_VERSION,
-			SpendingCache.upgradeSpendingsDb,
-		);
-	}
-
-	/**
-	 * Initialize current instance of PlanningCache
-	 */
-	async init() {
-		await this.idb.init();
+		this.storeName = `${this.year}`;
+		this.idb = idb;
 	}
 
 	/**
@@ -133,17 +145,20 @@ export default class SpendingCache {
 	 * @param {IDBDatabase} db Database to upgrade
 	 * @param {number} oldVersion Version from which to update
 	 * @param {number} newVersion Version to which to update
+	 * @param {Array<string>} objectStores Object store names to create on upgrade
 	 * @returns {undefined}
 	 */
-	static upgradeSpendingsDb(db, oldVersion, newVersion) {
+	static upgradeSpendingsDb(db, oldVersion, newVersion, objectStores) {
 		if (!newVersion) {
 			return;
 		}
 
 		if (oldVersion < newVersion) {
-			const store = db.createObjectStore(`${newVersion}`, { autoIncrement: true });
-			store.createIndex('byBoughtDate', 'boughtOn', { unique: false });
-			store.createIndex('byCategory', 'category', { unique: false });
+			objectStores.forEach((objectStore) => {
+				const store = db.createObjectStore(objectStore, { autoIncrement: true });
+				store.createIndex('byBoughtDate', 'boughtOn', { unique: false });
+				store.createIndex('byCategory', 'category', { unique: false });
+			});
 		}
 	}
 }
