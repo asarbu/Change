@@ -3,43 +3,63 @@ export default class Idb {
 
 	static #READ_WRITE = 'readwrite';
 
+	/** @type {IDBDatabase} */
+	#db = undefined;
+
+	/** @type {upgradeCallback} */
+	#upgradeCallback = undefined;
+
 	/**
+	 * Avoid opening multiple IDBDatabases to be able to easily close the on update.
+	 * @type {Array<Idb>}
+	 * */
+	static #connectedIdbs = [];
+
+	/**
+	 * Constructs, opens and initializes an instance of Idb objects
+	 * @param {string} dbName Name of the database to open
+	 * @param {upgradeDbCallback} upgradeCallback function to call when updating db
+	 * @returns {Idb}
+	 */
+	static async of(dbName, upgradeCallback) {
+		const connectedIdb = Idb.#connectedIdbs.find((idb) => idb.#db.name === dbName);
+		if (connectedIdb) return connectedIdb;
+
+		const db = await Idb.#open(dbName, undefined, upgradeCallback);
+		const newIdb = new Idb(db, upgradeCallback);
+		Idb.#connectedIdbs.push(newIdb);
+		return newIdb;
+	}
+
+	/**
+	 * Recoomendation is to not construct Idb objects directly.
+	 * Use Idb.of() to initialize more efficient instances
 	 * @constructor
-	 * @param {string} dbName Database name
-	 * @param {number} dbVersion Database version
-	 * @param {upgradeDbCallback} upgradeCallback Callback function to call in case upgrade is needed
+	 * @param {IDBDatabase} db Database instance
+	 * @param {upgradeDbCallback} upgradeCallback function to call when creating new object stores
 	 */
-	constructor(dbName, dbVersion, upgradeCallback) {
-		this.dbName = dbName;
-		this.dbVersion = dbVersion;
-		this.upgradeCallback = upgradeCallback;
+	constructor(db, upgradeCallback) {
+		this.#db = db;
+		this.#upgradeCallback = upgradeCallback;
 	}
 
 	/**
-	 * Initializes this object of IDB. Mandatory to be called before use.
-	 * @returns An instance of this
-	 */
-	async init() {
-		await this.open(this.dbName, this.dbVersion, this.upgradeCallback);
-		return this;
-	}
-
-	/**
-	 * @typedef {function(db:db, number, number)} upgradeCallback
+	 * @typedef {function(db:db, number, number, Array<string>)} upgradeCallback
 	 * @callback upgradeDbCallback
 	 * @param {db} db Database to be upgraded.
 	 * @param {number} oldVersion Version from which to upgrade
 	 * @param {number} newVersion Version to which to upgrade.
+	 * @param {Array<string>} storeNames Store names to create on upgrade.
+	 * @returns {void}
 	 */
 
 	/**
 	 * Opens an IndexedDb Database
 	 * @param {string} dbName Database name
-	 * @param {number} version Version to upgrade this database
 	 * @param {upgradeDbCallback} upgradeCallback called in case the database needs upgrage
-	 * @returns {Promise<IndexedDb>}
+	 * @returns {Promise<IDBDatabase>}
 	 */
-	open(dbName, version, upgradeCallback) {
+	static #open(dbName, version, upgradeCallback) {
 		return new Promise((resolve, reject) => {
 			if (!window.indexedDB) {
 				return;
@@ -48,7 +68,6 @@ export default class Idb {
 
 			request.onsuccess = (event) => {
 				const db = event.target.result;
-				this.db = db;
 				resolve(db);
 			};
 
@@ -59,7 +78,8 @@ export default class Idb {
 			request.onupgradeneeded = (event) => {
 				const db = event.target.result;
 				if (upgradeCallback) {
-					upgradeCallback(db, event.oldVersion, event.newVersion);
+					const defaultStore = new Date().getFullYear();
+					upgradeCallback(db, event.oldVersion, event.newVersion, [defaultStore]);
 				}
 			};
 		});
@@ -67,7 +87,7 @@ export default class Idb {
 
 	/**
 	 * @param {string} storeName Database object store name
-	 * @returns {Promise<Array<PlanningContext>>}
+	 * @returns {Promise<Array<Object>>}
 	 */
 	openCursor(storeName) {
 		return new Promise((resolve) => {
@@ -161,6 +181,30 @@ export default class Idb {
 					values.push(cursor.value);
 					cursor.continue();
 				}
+			};
+
+			txn.oncomplete = () => {
+				resolve(values);
+			};
+		});
+	}
+
+	/**
+	 * Returns all the values from an object store
+	 * @param {string} storeName Store from which to get the data
+	 * @returns {Array<Object>}
+	 */
+	getAll(storeName) {
+		return new Promise((resolve) => {
+			const st = this.getStoreTransaction(storeName, Idb.#READ_ONLY);
+			const store = st[0];
+			const txn = st[1];
+
+			// console.log("Getting all by index", storeName, index, key)
+			let values = [];
+			const request = store.getAll();
+			request.onsuccess = () => {
+				values = request.result;
 			};
 
 			txn.oncomplete = () => {
@@ -281,7 +325,7 @@ export default class Idb {
 	 * @returns {Boolean}
 	 */
 	hasObjectStore(storeName) {
-		if (this.db.objectStoreNames.contains(storeName)) {
+		if (this.#db.objectStoreNames.contains(storeName)) {
 			return true;
 		}
 		return false;
@@ -292,7 +336,49 @@ export default class Idb {
 	 * @returns {Array<string>}
 	 */
 	getObjectStores() {
-		return this.db.objectStoreNames;
+		/** @type {Array<string>} */
+		const objectStoreNames = [];
+		/** @type {DOMStringList} */
+
+		const domStringList = this.#db.objectStoreNames;
+		for (let index = 0; index < domStringList.length; index += 1) {
+			objectStoreNames.push(domStringList.item(index));
+		}
+		return objectStoreNames;
+	}
+
+	/**
+	 * !! This increments the database version !!
+	 * @param {Array<string>} storeNames
+	 * @returns {Promise<IDBDatabase>}
+	 */
+	createObjectStores(storeNames) {
+		return new Promise((resolve, reject) => {
+			const { name, version } = this.#db;
+			this.#db.close();
+			const request = indexedDB.open(name, version + 1);
+
+			request.onsuccess = (event) => {
+				const db = event.target.result;
+				this.#db = db;
+				resolve(db);
+			};
+
+			request.onerror = (event) => {
+				reject(new Error(`Database error: ${event.target.error}`));
+			};
+
+			request.onupgradeneeded = (event) => {
+				const db = event.target.result;
+				if (this.#upgradeCallback) {
+					this.#upgradeCallback(db, event.oldVersion, event.newVersion, storeNames);
+				}
+			};
+
+			request.onblocked = (event) => {
+				throw Error(`Request was blocked: ${event.newVersion}`);
+			};
+		});
 	}
 
 	/**
@@ -302,11 +388,11 @@ export default class Idb {
 	 * @returns {Array<Object>}
 	 */
 	getStoreTransaction(storeName, mode) {
-		if (!this.db.objectStoreNames.contains(storeName)) {
+		if (!this.#db.objectStoreNames.contains(storeName)) {
 			return undefined;
 		}
 
-		const txn = this.db.transaction(storeName, mode);
+		const txn = this.#db.transaction(storeName, mode);
 		const store = txn.objectStore(storeName);
 
 		return [store, txn];
