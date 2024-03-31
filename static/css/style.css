@@ -165,8 +165,8 @@ nav {
 	/* Put blur at lowest level because backdrop filter doesn't work when there is another
 	element above it in the dom hierarchy which also has the blur effect as a backdrop-filter. */
 	background: rgba(128, 128, 128, 0.3);
-	backdrop-filter: blur(5px);
 	-webkit-backdrop-filter: blur(5px);
+	backdrop-filter: blur(5px);
 }
 
 button {
@@ -205,8 +205,8 @@ thead tr {
 	font-size: 1rem;
 	text-align: left;
 	background: rgba(200, 200, 200, 0.4);
-	backdrop-filter: blur(5px);
 	-webkit-backdrop-filter: blur(5px);
+	backdrop-filter: blur(5px);
 }
 
 table th,
@@ -244,14 +244,15 @@ tbody>tr:last-of-type {
 	background: rgba(255, 255, 255, 0.15);
 }
 
+/* TODO Remove this and use modals */
 .dropdown-content {
 	display: none;
 	margin: 1% 10% 0% 10%;
 	bottom: 0;
 	width: auto;
 	background: rgba(0, 0, 0, 0.4);
-	backdrop-filter: blur(5px);
 	-webkit-backdrop-filter: blur(5px);
+	backdrop-filter: blur(5px);
 }
 
 .dropdown-content > div {
@@ -263,28 +264,6 @@ tbody>tr:last-of-type {
 	position: relative;
 	left: 0;
 }
-
-.dropup-content {
-	display: none;
-	position: absolute;
-	bottom: 100%;
-	width: 100%;
-	background: rgba(0, 0, 0, 0.4);
-	backdrop-filter: blur(5px);
-	-webkit-backdrop-filter: blur(5px);
-	z-index: 7;
-}
-
-.dropup-content > div {
-	color: white;
-	padding: 12px 16px;
-	text-decoration: none;
-	display: block;
-	text-align: center;
-	position: relative;
-	left: 0;
-}
-
 /* The Modal (backdrop) */
 .modal {
 	visibility: hidden; /* Hidden by default */
@@ -312,8 +291,8 @@ tbody>tr:last-of-type {
 	z-index:6;
 	bottom: -75%;
 	background: rgba(0, 0, 0, 0.05);
-	backdrop-filter: blur(5px);
 	-webkit-backdrop-filter: blur(5px);
+	backdrop-filter: blur(5px);
 	border-radius:1rem 1rem 0 0;
 	border-top: 1px solid gainsboro;
   }
@@ -396,8 +375,8 @@ tbody>tr:last-of-type {
 	color: white;
 	border-radius: 0.5em;
 	background: rgba(255, 255, 255, 0.1);
-	backdrop-filter: blur(5px);
 	-webkit-backdrop-filter: blur(5px);
+	backdrop-filter: blur(5px);
 	justify-content: center;
 }
 .accordion-content {

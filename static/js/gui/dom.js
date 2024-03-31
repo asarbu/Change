@@ -2,8 +2,8 @@
  * Creates and decorates a new DOM Element
  * @param {string} ofType Type of element to be created
  * @param {Array} properties.classes Classes to be added to the DOM classlist
- * @param {DOMElement} withParent Parent to bind the newly created element to
- * @returns {DOMElement}
+ * @param {HTMLElement} withParent Parent to bind the newly created element to
+ * @returns {HTMLElement}
  */
 export function create(ofType, havingProperties, withParent) {
 	const elmt = document.createElement(ofType);
@@ -84,6 +84,11 @@ export default class Dom {
 
 	attr(name, value) {
 		this.elmt.setAttribute(name, value);
+		return this;
+	}
+
+	clear() {
+		this.elmt.innerHTML = '';
 		return this;
 	}
 

@@ -161,7 +161,7 @@ export default class GraphicEffects {
 
 	/* Nav panel */
 	openNav(ev) {
-		const { side } = ev.target.dataset;
+		const { side } = ev.currentTarget.dataset;
 		if (side === 'left') {
 			if (this.navOpen === 'left') {
 				this.closeNav();
@@ -174,8 +174,7 @@ export default class GraphicEffects {
 			this.$main.classList.add('main-shift-left');
 
 			this.navOpen = 'left';
-		}
-		else if (side === 'right') {
+		} else if (side === 'right') {
 			if (this.navOpen === 'right') {
 				this.closeNav();
 				return;
@@ -209,8 +208,7 @@ export default class GraphicEffects {
 	}
 }
 
-
-function createRow(table, data, options) {
+/* function createRow(table, data, options) {
 	var index = -1;
 	if (options.index) {
 		index = options.index;
@@ -283,4 +281,4 @@ function getColorForPercentage(pct) {
 	};
 	return 'rgb(' + [color.r, color.g, color.b].join(',') + ')';
 	// or output as hex if preferred
-};
+}; */
