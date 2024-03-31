@@ -6,13 +6,22 @@ export default class Idb {
 	/** @type {IDBDatabase} */
 	#db = undefined;
 
-	/** @type {{upgradeCallback}} */
+	/** @type {upgradeCallback} */
 	#upgradeCallback = undefined;
 
-	/** @type {Array<Idb>} */
+	/**
+	 * Avoid opening multiple IDBDatabases to be able to easily close the on update.
+	 * @type {Array<Idb>}
+	 * */
 	static #connectedIdbs = [];
 
-	static async get(dbName, upgradeCallback) {
+	/**
+	 * Constructs, opens and initializes an instance of Idb objects
+	 * @param {string} dbName Name of the database to open
+	 * @param {upgradeDbCallback} upgradeCallback function to call when updating db
+	 * @returns {Idb}
+	 */
+	static async of(dbName, upgradeCallback) {
 		const connectedIdb = Idb.#connectedIdbs.find((idb) => idb.#db.name === dbName);
 		if (connectedIdb) return connectedIdb;
 
@@ -23,7 +32,8 @@ export default class Idb {
 	}
 
 	/**
-	 * Do not construct IDB objects directly. Use Idb.get() to initialize more efficient instances
+	 * Recoomendation is to not construct Idb objects directly.
+	 * Use Idb.of() to initialize more efficient instances
 	 * @constructor
 	 * @param {IDBDatabase} db Database instance
 	 * @param {upgradeDbCallback} upgradeCallback function to call when creating new object stores

@@ -27,6 +27,7 @@ module.exports = {
 		indent: [1, 'tab'],
 		'linebreak-style': ['error', 'windows'],
 		'import/extensions': 0,
+		'object-shorthand': 0,
 		'newline-per-chained-call': [
 			'error',
 			{

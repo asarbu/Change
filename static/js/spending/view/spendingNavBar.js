@@ -1,23 +1,8 @@
 /* eslint-disable max-classes-per-file */
-import Dom from './dom.js';
-import icons from './icons.js';
-import Modal from './modal.js';
-
-export class SpendingNavBarEventHandlers {
-	onMonthChanged = undefined;
-
-	onYearChanged = undefined;
-
-	onClickEdit = undefined;
-
-	onClickSave = undefined;
-
-	onClickDelete = undefined;
-
-	onClickAddSpending = undefined;
-
-	onClickSummary = undefined;
-}
+import Dom from '../../gui/dom.js';
+import icons from '../../gui/icons.js';
+import Modal from '../../gui/modal.js';
+import SpendingNavBarEventHandlers from './spendingNavBarHandlers.js';
 
 export default class SpendingNavBar {
 	/** @type {Dom} */
@@ -64,7 +49,6 @@ export default class SpendingNavBar {
 		main.appendChild(this.buildMonthModal().toHtml());
 		main.appendChild(this.buildYearModal().toHtml());
 
-		const onClickYear = eventHandlers.onYearChanged ? eventHandlers.onYearChanged : () => {};
 		const onClickDelete = eventHandlers.onClickDelete ? eventHandlers.onClickDelete : () => {};
 		const onClickEdit = eventHandlers.onClickEdit ? eventHandlers.onClickEdit : () => {};
 		const onClickSave = eventHandlers.onClickSave ? eventHandlers.onClickSave : () => {};
