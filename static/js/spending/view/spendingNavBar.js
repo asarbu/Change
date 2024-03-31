@@ -49,9 +49,8 @@ export default class SpendingNavBar {
 		main.appendChild(this.buildMonthModal().toHtml());
 		main.appendChild(this.buildYearModal().toHtml());
 
-		const onClickDelete = eventHandlers.onClickDelete ? eventHandlers.onClickDelete : () => {};
-		const onClickEdit = eventHandlers.onClickEdit ? eventHandlers.onClickEdit : () => {};
-		const onClickSave = eventHandlers.onClickSave ? eventHandlers.onClickSave : () => {};
+		const onClickEdit = this.onClickEdit.bind(this);
+		const onClickSave = this.onClickSave.bind(this);
 		const onClickSummary = eventHandlers.onClickSummary ? eventHandlers.onClickSummary : () => {};
 		const onClickAdd = eventHandlers.onClickAddSpending
 			? eventHandlers.onClickAddSpending
@@ -61,20 +60,17 @@ export default class SpendingNavBar {
 
 		this.#navbar = new Dom('nav').append(
 			new Dom('div').cls('nav-header').append(
-				new Dom('button').cls('nav-item').hideable().onClick(onClickDelete).append(
-					new Dom('img').cls('white-fill').text('Delete').attr('alt', 'Delete').attr('src', icons.delete),
-				),
-				new Dom('button').id('edit-button').cls('nav-item').onClick(onClickEdit).append(
+				new Dom('button').id('spending-navbar-edit').cls('nav-item').onClick(onClickEdit).append(
 					new Dom('img').cls('white-fill').text('Edit').attr('alt', 'Edit').attr('src', icons.edit),
 				),
-				new Dom('button').id('save-button').cls('nav-item').onClick(onClickSave).hide()
+				new Dom('button').id('spending-navbar-save').cls('nav-item').onClick(onClickSave).hide()
 					.append(
 						new Dom('img').cls('white-fill').text('Save').attr('alt', 'Save').attr('src', icons.save),
 					),
-				new Dom('button').id('summary-button').cls('nav-item').onClick(onClickSummary).append(
+				new Dom('button').id('spending-navbar-summary').cls('nav-item').onClick(onClickSummary).append(
 					new Dom('img').cls('white-fill').text('Summary').attr('alt', 'Save').attr('src', icons.summary),
 				),
-				new Dom('button').cls('nav-item').onClick(onClickAdd).append(
+				new Dom('button').id('spending-navbar-add-spending').cls('nav-item').onClick(onClickAdd).append(
 					new Dom('img').cls('white-fill').text('Add').attr('alt', 'Add').attr('src', icons.hand_coin),
 				),
 			),
@@ -141,13 +137,6 @@ export default class SpendingNavBar {
 		this.updateMonthDropupText();
 	}
 
-	onMonthChanged(month) {
-		if (this.#eventHandlers.onMonthChanged) {
-			this.#eventHandlers.onMonthChanged(month);
-		}
-		this.#monthsDropup.close();
-	}
-
 	selectMonth(month) {
 		if (month === this.#selectedMonth) return;
 
@@ -198,6 +187,45 @@ export default class SpendingNavBar {
 
 	onClickYearDropup() {
 		this.#yearsDropup.open();
+	}
+
+	onMonthChanged(month) {
+		if (this.#eventHandlers.onMonthChanged) {
+			this.#eventHandlers.onMonthChanged(month);
+		}
+		this.#monthsDropup.close();
+	}
+
+	onClickEdit() {
+		const editButton = document.getElementById('spending-navbar-edit');
+		const saveButton = document.getElementById('spending-navbar-save');
+		const summaryButton = document.getElementById('spending-navbar-summary');
+		const addSpendingButton = document.getElementById('spending-navbar-add-spending');
+
+		editButton.style.display = 'none';
+		addSpendingButton.style.display = 'none';
+		summaryButton.style.display = 'none';
+		saveButton.style.display = '';
+
+		if (this.#eventHandlers.onClickEdit) {
+			this.#eventHandlers.onClickEdit();
+		}
+	}
+
+	onClickSave() {
+		const editButton = document.getElementById('spending-navbar-edit');
+		const saveButton = document.getElementById('spending-navbar-save');
+		const summaryButton = document.getElementById('spending-navbar-summary');
+		const addSpendingButton = document.getElementById('spending-navbar-add-spending');
+
+		editButton.style.display = '';
+		summaryButton.style.display = '';
+		addSpendingButton.style.display = '';
+		saveButton.style.display = 'none';
+
+		if (this.#eventHandlers.onClickSave) {
+			this.#eventHandlers.onClickSave();
+		}
 	}
 
 	// #endregion

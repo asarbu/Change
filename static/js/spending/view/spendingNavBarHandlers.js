@@ -7,8 +7,6 @@ export default class SpendingNavBarEventHandlers {
 
 	onClickSave = undefined;
 
-	onClickDelete = undefined;
-
 	onClickAddSpending = undefined;
 
 	onClickSummary = undefined;
