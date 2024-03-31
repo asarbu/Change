@@ -72,6 +72,7 @@ export default class SpendingController {
 			spendingReports.get(spendingMonth).appendSpending(spending);
 		});
 
+		/** @type {SpendingScreen} */
 		const spendingScreen = new SpendingScreen(
 			year,
 			spendingReports.get(currentMonth),
@@ -79,10 +80,9 @@ export default class SpendingController {
 		);
 		spendingScreen.init();
 		spendingScreen.updateMonth(spendingReports.get(currentMonth));
-		spendingScreen.onClickCreateCallback = this.onClickCreateSpending.bind(this);
-		spendingScreen.onClickDeleteCallback = this.onClickDeleteSpending.bind(this);
-		spendingScreen.onClickSaveCallback = this.onClickSaveSpendings.bind(this);
-		spendingScreen.onChangeSpendingCallback = this.onChangeSpending.bind(this);
+		spendingScreen.onCreateSpendingCallback = this.onCreateSpending.bind(this);
+		spendingScreen.onSaveReportCallback = this.onSaveReport.bind(this);
+		spendingScreen.onDeleteReportCallback = this.onDeleteReport.bind(this);
 
 		this.#spendingCaches.forEach((spendingCache) => {
 			spendingScreen.updateYear(spendingCache.year);
@@ -171,7 +171,7 @@ export default class SpendingController {
 	/**
 	 * @param {Spending} spending
 	 */
-	async onClickCreateSpending(spending) {
+	async onCreateSpending(spending) {
 		const year = spending.boughtOn.getFullYear();
 		const month = spending.boughtOn.getMonth();
 
@@ -186,38 +186,26 @@ export default class SpendingController {
 	}
 
 	/**
-	 * Sets deleted flag in cache for a spending
-	 * @param {Spending} spending
+	 * Sets deleted flag in cache for all spendings in a month
+	 * @param {SpendingReport} spendingReport
 	 */
-	async onClickDeleteSpending(spending) {
-		const year = spending.boughtOn.getFullYear();
+	async onDeleteReport(spendingReport) {
+		const year = spendingReport.year();
 		const cache = await this.openSpendingCache(year);
-		const localSpending = await cache.read(spending.id);
-		localSpending.deleted = true;
-		cache.insert(localSpending);
-	}
+		const spendings = spendingReport.spendings();
 
-	/**
-	 * Sets edited flag in cache for a spending
-	 * @param {Spending} spending
-	 */
-	async onChangeSpending(spending) {
-		const spendingYear = spending.boughtOn.getFullYear();
-		const cache = this.openSpendingCache(spendingYear);
-		const localSpending = await cache.read(spending.id);
-		localSpending.edited = true;
-		cache.insert(localSpending);
+		spendings.forEach(async (spending) => {
+			const localSpending = await cache.read(spending.id);
+			localSpending.deleted = true;
+			cache.insert(localSpending);
+		});
 	}
 
 	/**
 	 * Handler
 	 * @param {Array<Spending} spendings Spendings to be persisted
 	 */
-	async onClickSaveSpendings(spendings) {
-		spendings
-			.filter((spending) => spending.deleted)
-			.forEach((spending) => this.#spendingCache.delete(spending));
-
+	async onSaveReport(spendings) {
 		spendings
 			.filter((spending) => spending.edited)
 			.forEach((spending) => {
@@ -225,6 +213,10 @@ export default class SpendingController {
 				delete spendingCopy.edited;
 				this.#spendingCache.insert(spendingCopy);
 			});
+
+		spendings
+			.filter((spending) => spending.deleted)
+			.forEach((spending) => this.#spendingCache.delete(spending));
 
 		const month = spendings ? spendings[0].boughtOn.getMonth() : undefined;
 		const year = spendings ? spendings[0].boughtOn.getFullYear() : undefined;
