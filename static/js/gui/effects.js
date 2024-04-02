@@ -134,7 +134,7 @@ export default class GraphicEffects {
 	}
 
 	endSlider(e) {
-		if (!this.mouseDown || !e) return;
+		/*if (!this.mouseDown || !e) return;
 
 		this.mouseDown = false;
 		if (this.scrolling === 'horizontal') {
@@ -151,7 +151,7 @@ export default class GraphicEffects {
 			this.slideTo(this.currentIndex);
 		}
 		this.sliderWrapper.addEventListener('touchmove', this.startSliderEventListener, { passive: true });
-		this.scrolling = undefined;
+		this.scrolling = undefined;*/
 	}
 
 	refresh() {
