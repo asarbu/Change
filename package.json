@@ -6,7 +6,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "flask run",
-    "build": "rollup --format es --input static/js/planning/controller/planningController.js -o static/js/change.js && uglifyjs static/js/change.js -c -m -o dist/change.min.js"
+    "rollup": "rollup --format es --input ./static/js/planning/controller/planningController.js -o ./static/js/change.js",
+    "uglify": "uglifyjs ./static/js/change.js -c -m -o ./dist/change.min.js",
+    "build": "build.bat"
   },
   "repository": {
     "type": "git",
