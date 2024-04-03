@@ -5,7 +5,6 @@
 	box-sizing: border-box;
 	scroll-behavior: smooth;
 	font-family: Helvetica, sans-serif;
-	transition: all 0.25s;
 }
 
 :root {
@@ -51,8 +50,9 @@ h2 {
 	position: relative;
 	color: rgba(255, 255, 255, 0.75);
 	height: 1.5rem;
+	line-height: 1.5rem;
 	z-index: 5;
-	font-size: 1em;
+	font-size: 1.25rem;
 	font-weight: normal;
 }
 
@@ -89,6 +89,7 @@ h2 {
 	border-top-left-radius: 0.5rem;
 	border-top-right-radius: 0.5rem;
 }
+
 .bot-round {
 	border-bottom-left-radius: 0.5rem;
 	border-bottom-right-radius: 0.5rem;
@@ -255,7 +256,7 @@ tbody>tr:last-of-type {
 	backdrop-filter: blur(5px);
 }
 
-.dropdown-content > div {
+.dropdown-content>div {
 	color: white;
 	padding: 12px 16px;
 	text-decoration: none;
@@ -264,75 +265,91 @@ tbody>tr:last-of-type {
 	position: relative;
 	left: 0;
 }
+
 /* The Modal (backdrop) */
 .modal {
-	visibility: hidden; /* Hidden by default */
-	opacity:0;
-	position: fixed; /* Stay in place */
+	visibility: hidden;
+	/* Hidden by default */
+	opacity: 0;
+	position: fixed;
+	/* Stay in place */
 	z-index: 1;
 	left: 0;
 	top: 0;
 	width: 100%;
 	height: 100%;
-	overflow: auto; /* Enable scroll if needed */
-	background-color: rgba(0,0,0,0.3); /* Black w/ opacity */
+	overflow: auto;
+	/* Enable scroll if needed */
+	background-color: rgba(0, 0, 0, 0.3);
+	/* Black w/ opacity */
 	animation: fade 2s infinite;
-	z-index:6;
-  }
-  
-  /* Modal Content */
-  .modal-content {
+	z-index: 6;
+}
+
+/* Modal Content */
+.modal-content {
 	position: fixed;
 	flex: 1 0 100%;
 	display: flex;
 	flex-direction: column;
 	width: 100%;
-	height:75%;
-	z-index:6;
-	bottom: -75%;
+	height: 70%;
+	z-index: 6;
+	bottom: -70%;
 	background: rgba(0, 0, 0, 0.05);
 	-webkit-backdrop-filter: blur(5px);
 	backdrop-filter: blur(5px);
-	border-radius:1rem 1rem 0 0;
+	border-radius: 1rem 1rem 0 0;
 	border-top: 1px solid gainsboro;
-  }
-  .modal-header {
-	  height: 15%;
-	  padding:2%;
-	  text-align:center;
-  }
-  .modal-body {
-	  height: 80%;
-	  padding: 3%;
-  }
-  .modal-footer {
-	  height: 5%;
-	  margin: 5%;
-	  display: flex;
-	  justify-content: space-between;
-  }
-  h3:hover {
-	  text-decoration: underline;
-  }
-  .show-modal-backdrop{
+}
+
+.modal-header {
+	height: 5%;
+	margin: 2.5% 5%;
+}
+
+.modal-body {
+	height: 85%;
+	margin: 0 5%;
+	overflow-y: scroll;
+	position: relative;
+}
+
+.modal-footer {
+	height: 5%;
+	margin: 2.5% 5%;
+	display: flex;
+	justify-content: space-between;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+	display: none;
+}
+
+h3:hover {
+	text-decoration: underline;
+}
+
+.show-modal-backdrop {
 	visibility: visible;
 	opacity: 1;
-	transition: opacity 0.2s linear;
-  }
+	transition: opacity 0.2s ease;
+}
 
-  .show-modal-content {
-	transition: transform 0.2s linear;
+.show-modal-content {
+	transition: transform 0.2s ease;
 	transform: translateY(-100%);
-  }
+}
 
-  /*InputField. Taken from: https://www.codingnepalweb.com/create-glassmorphism-login-form-html-css/?fbclid=IwAR1RwE7thkqWvDRFphNTGGhOyrDGSzOknf5W1XT65gkeHicr-oK0hzsOv0I*/
-  .input-field {
+/*InputField. Taken from: https://www.codingnepalweb.com/create-glassmorphism-login-form-html-css/?fbclid=IwAR1RwE7thkqWvDRFphNTGGhOyrDGSzOknf5W1XT65gkeHicr-oK0hzsOv0I*/
+.input-field {
 	position: relative;
 	border-bottom: 2px solid #ccc;
 	margin: 15px 0;
 	color-scheme: dark;
-  }
-  .input-field label {
+}
+
+.input-field label {
 	position: absolute;
 	top: 50%;
 	left: 0;
@@ -341,8 +358,9 @@ tbody>tr:last-of-type {
 	font-size: 16px;
 	pointer-events: none;
 	transition: 0.15s ease;
-  }
-  .input-field input {
+}
+
+.input-field input {
 	width: 100%;
 	height: 40px;
 	background: transparent;
@@ -350,28 +368,30 @@ tbody>tr:last-of-type {
 	outline: none;
 	font-size: 16px;
 	color: #fff;
-  }
-  .input-field input:focus~label,
-  .input-field input:valid~label {
+}
+
+.input-field input:focus~label,
+.input-field input:valid~label {
 	font-size: 0.8rem;
 	top: 10px;
 	transform: translateY(-120%);
 	color: gainsboro;
-  }
-  
+}
+
 /*Accordion*/
 .accordion {
 	position: absolute;
-	transform: translate(-50%, -50%);
+	transform: translate(-50%, 0%);
 	left: 50%;
-	top: 50%;
 }
+
 .accordion-state {
 	display: none;
 	appearance: none;
 }
+
 .accordion-item {
-	margin: 0.5rem;
+	margin-bottom: 0.5rem;
 	color: white;
 	border-radius: 0.5em;
 	background: rgba(255, 255, 255, 0.1);
@@ -379,31 +399,37 @@ tbody>tr:last-of-type {
 	backdrop-filter: blur(5px);
 	justify-content: center;
 }
+
 .accordion-content {
 	color: white;
 }
+
 .accordion-header {
 	color: white;
 	cursor: pointer;
-	padding: 1em 1em;
+	padding: 0.75rem;
 	width: 100%;
 	display: block;
 }
-.accordion-state ~ .accordion-content {
+
+.accordion-state~.accordion-content {
 	max-height: 0;
 	overflow: hidden;
-	transition: 0.2s;
+	transition: 0.25s linear;
 }
-.accordion-state:checked ~ .accordion-content {
+
+.accordion-state:checked~.accordion-content {
 	max-height: 100vh;
-	transition: 1s;
+	transition: max-height 0.2s linear;
 }
+
 .accordion-secondary {
 	padding: 0.5rem;
 	margin: 0.5rem 1.5rem;
 	border-bottom: 1px solid white;
 	cursor: pointer;
 }
+
 /* Mobile M / L */
 @media (max-width:768px) {
 	.sidenav-right {

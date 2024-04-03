@@ -128,6 +128,11 @@ export default class Dom {
 		return this;
 	}
 
+	onTransitionEnd(listener) {
+		this.elmt.addEventListener('transitionend', listener, false);
+		return this;
+	}
+
 	text(text) {
 		this.elmt.textContent = text;
 		return this;

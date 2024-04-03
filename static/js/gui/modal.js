@@ -3,12 +3,17 @@ import Dom from './dom.js';
 export default class Modal {
 	constructor(id) {
 		this.id = id;
-		this.modal = new Dom('div').id(id).cls('modal').onClick(this.close.bind(this));
-		this.modalHtml = this.modal.toHtml();
-
+		const onClose = this.close.bind(this);
+		this.modalBackdrop = new Dom('div').cls('modal').onClick(onClose);
 		this.content = new Dom('div').cls('modal-content');
+		this.modal = new Dom('div').id(id).append(
+			this.modalBackdrop,
+			this.content,
+		);
+
+		this.modalHtml = this.modal.toHtml();
 		this.contentHtml = this.content.toHtml();
-		this.modalHtml.appendChild(this.contentHtml);
+		this.modalBackdropHtml = this.modalBackdrop.toHtml();
 	}
 
 	header(...domElements) {
@@ -22,7 +27,7 @@ export default class Modal {
 
 	body(...domElements) {
 		if (!this.bodyDom) {
-			this.bodyDom = new Dom('div').cls('modal-body');
+			this.bodyDom = new Dom('div').cls('modal-body', 'no-scrollbar');
 			this.content.append(this.bodyDom);
 		}
 
@@ -62,15 +67,26 @@ export default class Modal {
 	}
 
 	open() {
-		this.modalHtml.classList.add('show-modal-backdrop');
+		this.modalBackdropHtml.classList.add('show-modal-backdrop');
 		this.contentHtml.classList.add('show-modal-content');
+		return this;
 	}
 
 	close(event) {
-		// Force close if it function not triggered by an event (triggered by code)
-		if (!event || event.target === this.cancelButtonHtml || event.target === this.modalHtml) {
-			this.modalHtml.classList.remove('show-modal-backdrop');
+		// Force close if not triggered by an event (triggered by code)
+		if (!event || this.#triggeredCancelEvent(event)) {
+			this.modalBackdropHtml.classList.remove('show-modal-backdrop');
 			this.contentHtml.classList.remove('show-modal-content');
 		}
+		return this;
+	}
+
+	#triggeredCancelEvent(event) {
+		return event.target === this.cancelButtonHtml || event.target === this.modalBackdropHtml;
+	}
+
+	scrollable() {
+		this.bodyDom.elmt.classList.remove('no-scrollbar');
+		return this;
 	}
 }
