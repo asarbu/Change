@@ -95,6 +95,7 @@ out
 .nuxt
 dist/style.css
 dist/change.min.js
+dist/manifest.json
 
 # Gatsby files
 .cache/
