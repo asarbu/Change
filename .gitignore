@@ -96,6 +96,7 @@ out
 dist/style.css
 dist/change.min.js
 dist/manifest.json
+dist/planning.json
 
 # Gatsby files
 .cache/

@@ -5,14 +5,11 @@
   "main": "bundle.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "flask run",
-    "copy_css": "node -e \"const fs = require('fs'); fs.copyFile('./static/css/style.css', './dist/style.css', () => {});\"",
-    "copy_manifest": "node -e \"const fs = require('fs'); fs.copyFile('./manifest.json', './dist/manifest.json', () => {});\"",
-    "clean_temp": "node -e \"const fs = require('fs'); fs.unlink('./static/js/change.js', () => {});\"",
     "rollup": "rollup --format es --input ./static/js/spending/controller/spendingController.js -o ./static/js/change.js",
-    "uglify": "uglifyjs ./static/js/change.js -c -m -o ./dist/change.min.js",
-    "build": "npm run rollup && npm run uglify && npm run clean_temp && npm run copy_css && npm run copy_manifest",
-    "clean": "node -e \"const fs = require('fs'); fs.unlink('./static/js/change.js', () => {});\""
+    "uglify": "uglifyjs ./static/js/change.js -c -m -o ./dist/app.js",
+    "build": "npm run clean && npm run rollup && npm run uglify && node ./node_scripts/build.js",
+    "dev": "npm run clean && node ./node_scripts/dev.js",
+    "clean": "node node_scripts/clean.js"
   },
   "repository": {
     "type": "git",
