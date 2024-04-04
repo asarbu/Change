@@ -1,0 +1,485 @@
+/*Content - Generic*/
+* {
+	margin: 0px;
+	padding: 0px;
+	box-sizing: border-box;
+	scroll-behavior: smooth;
+	font-family: Helvetica, sans-serif;
+}
+
+:root {
+	--primary-900: #004D40;
+	--primary-700: #00796B;
+	/*Sampled from Paint to avoid transparent sticky headers*/
+	--primary-light: #4D9D94;
+	--primary-300: #4DB6AC;
+	--primary-200: #80CBC4;
+	--primary-100: #B2DFDB;
+	--primary-50: #E0F2F1;
+}
+
+body {
+	background: var(--primary-100);
+	display: grid;
+	place-items: center;
+	/*Needed because we have no percentage of any parent to relate to*/
+	height: 100vh;
+	color: white;
+	overscroll-behavior: none;
+	-webkit-user-select: none;
+	user-select: none;
+}
+
+main {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 100%;
+	overflow: hidden;
+	background: linear-gradient(0deg, var(--primary-900) 0%, var(--primary-700) 100%);
+}
+
+h1 {
+	padding: 5%;
+	text-align: center;
+}
+
+h2 {
+	text-align: center;
+	position: relative;
+	color: rgba(255, 255, 255, 0.75);
+	height: 1.5rem;
+	line-height: 1.5rem;
+	z-index: 5;
+	font-size: 1.25rem;
+	font-weight: normal;
+}
+
+.container {
+	overflow-x: hidden;
+	width: 100%;
+}
+
+.section {
+	display: flex;
+}
+
+.slice {
+	background: transparent;
+	flex: 1 0 100%;
+	height: 100vh;
+	overflow-y: scroll;
+	/* Hide bottom scrollbar. It creates white artifacts in corners*/
+	overflow-x: hidden;
+	padding-bottom: 20vh;
+}
+
+/*No firefox support*/
+::-webkit-scrollbar {
+	width: 0.5em;
+	background: rgba(0, 0, 0, 0.125);
+}
+
+::-webkit-scrollbar-thumb {
+	background: rgba(255, 255, 255, 0.5);
+}
+
+.top-round {
+	border-top-left-radius: 0.5rem;
+	border-top-right-radius: 0.5rem;
+}
+
+.bot-round {
+	border-bottom-left-radius: 0.5rem;
+	border-bottom-right-radius: 0.5rem;
+}
+
+/* The side navigation menu */
+.sidenav {
+	height: 100%;
+	position: absolute;
+	width: 0;
+	z-index: 3;
+	top: 0;
+	background: var(--primary-900);
+	overflow-x: hidden;
+	padding-top: 5%;
+}
+
+.view-link {
+	padding: 1rem;
+	font-size: 1.1rem;
+	color: gainsboro;
+	display: block;
+}
+
+.view-link:hover {
+	background: rgba(0, 0, 0, 0.2);
+}
+
+/*The bottom navigation menu*/
+nav {
+	position: absolute;
+	bottom: 0%;
+	left: 0;
+	height: 20%;
+	width: 100%;
+	display: block;
+	justify-content: space-evenly;
+	z-index: 2;
+}
+
+.nav-header {
+	height: 50%;
+	display: flex;
+	justify-content: space-evenly;
+}
+
+.nav-header:after {
+	content: '';
+	width: 100%;
+	height: 2px;
+	background: white;
+	position: absolute;
+}
+
+.nav-footer {
+	height: 50%;
+	display: flex;
+	justify-content: space-evenly;
+	border-top: 1px solid gainsboro;
+}
+
+.nav-item:hover {
+	background: rgba(0, 0, 0, 0.4);
+}
+
+.nav-item {
+	width: 100%;
+	height: 100%;
+	border: none;
+	background: transparent;
+	font-size: 1rem;
+	color: white;
+	position: relative;
+	/* Put blur at lowest level because backdrop filter doesn't work when there is another
+	element above it in the dom hierarchy which also has the blur effect as a backdrop-filter. */
+	background: rgba(128, 128, 128, 0.3);
+	-webkit-backdrop-filter: blur(5px);
+	backdrop-filter: blur(5px);
+}
+
+button {
+	width: 1.5rem;
+	height: 1.5rem;
+	background: transparent;
+	border: none;
+	margin: 0 auto;
+	display: block;
+}
+
+.large-text {
+	font-size: 1.5rem;
+}
+
+.white-50 {
+	color: rgba(255, 255, 255, 0.5);
+}
+
+img {
+	filter: invert(1);
+	height: 1.75rem;
+}
+
+/*Table styling*/
+table {
+	border-collapse: collapse;
+	overflow: hidden;
+	table-layout: fixed;
+	width: 90%;
+	margin: 5%;
+}
+
+thead tr {
+	font-weight: bold;
+	font-size: 1rem;
+	text-align: left;
+	background: rgba(200, 200, 200, 0.4);
+	-webkit-backdrop-filter: blur(5px);
+	backdrop-filter: blur(5px);
+}
+
+table th,
+table td {
+	padding: 0.75rem 1rem;
+	font-size: 1rem;
+}
+
+tbody>tr {
+	-webkit-transition: background-color .25s ease;
+	transition: background-color .25s ease;
+	border-bottom: 1px solid gainsboro;
+}
+
+tbody>tr:nth-child(odd) {
+	background: rgba(0, 0, 0, 0.1);
+}
+
+tbody>tr:nth-child(even) {
+	background: rgba(0, 0, 0, 0.2);
+}
+
+tbody>tr:hover {
+	background: rgba(0, 0, 0, 0.4);
+}
+
+.active {
+	background: rgba(0, 0, 0, 0.4);
+}
+
+tbody>tr:last-of-type {
+	/*Total row*/
+	border-bottom: none;
+	font-weight: bold;
+	background: rgba(255, 255, 255, 0.15);
+}
+
+/* TODO Remove this and use modals */
+.dropdown-content {
+	display: none;
+	margin: 1% 10% 0% 10%;
+	bottom: 0;
+	width: auto;
+	background: rgba(0, 0, 0, 0.4);
+	-webkit-backdrop-filter: blur(5px);
+	backdrop-filter: blur(5px);
+}
+
+.dropdown-content>div {
+	color: white;
+	padding: 12px 16px;
+	text-decoration: none;
+	display: block;
+	text-align: center;
+	position: relative;
+	left: 0;
+}
+
+/* The Modal (backdrop) */
+.modal {
+	visibility: hidden;
+	/* Hidden by default */
+	opacity: 0;
+	position: fixed;
+	/* Stay in place */
+	z-index: 1;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+	overflow: auto;
+	/* Enable scroll if needed */
+	background-color: rgba(0, 0, 0, 0.3);
+	/* Black w/ opacity */
+	animation: fade 2s infinite;
+	z-index: 6;
+}
+
+/* Modal Content */
+.modal-content {
+	position: fixed;
+	flex: 1 0 100%;
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	height: 70%;
+	z-index: 6;
+	bottom: -70%;
+	background: rgba(0, 0, 0, 0.05);
+	-webkit-backdrop-filter: blur(5px);
+	backdrop-filter: blur(5px);
+	border-radius: 1rem 1rem 0 0;
+	border-top: 1px solid gainsboro;
+}
+
+.modal-header {
+	height: 5%;
+	margin: 2.5% 5%;
+}
+
+.modal-body {
+	height: 85%;
+	margin: 0 5%;
+	overflow-y: scroll;
+	position: relative;
+}
+
+.modal-footer {
+	height: 5%;
+	margin: 2.5% 5%;
+	display: flex;
+	justify-content: space-between;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+	display: none;
+}
+
+h3:hover {
+	text-decoration: underline;
+}
+
+.show-modal-backdrop {
+	visibility: visible;
+	opacity: 1;
+	transition: opacity 0.2s ease;
+}
+
+.show-modal-content {
+	transition: transform 0.2s ease;
+	transform: translateY(-100%);
+}
+
+/*InputField. Taken from: https://www.codingnepalweb.com/create-glassmorphism-login-form-html-css/?fbclid=IwAR1RwE7thkqWvDRFphNTGGhOyrDGSzOknf5W1XT65gkeHicr-oK0hzsOv0I*/
+.input-field {
+	position: relative;
+	border-bottom: 2px solid #ccc;
+	margin: 15px 0;
+	color-scheme: dark;
+}
+
+.input-field label {
+	position: absolute;
+	top: 50%;
+	left: 0;
+	transform: translateY(-50%);
+	color: #fff;
+	font-size: 16px;
+	pointer-events: none;
+	transition: 0.15s ease;
+}
+
+.input-field input {
+	width: 100%;
+	height: 40px;
+	background: transparent;
+	border: none;
+	outline: none;
+	font-size: 16px;
+	color: #fff;
+}
+
+.input-field input:focus~label,
+.input-field input:valid~label {
+	font-size: 0.8rem;
+	top: 10px;
+	transform: translateY(-120%);
+	color: gainsboro;
+}
+
+/*Accordion*/
+.accordion {
+	position: absolute;
+	transform: translate(-50%, 0%);
+	left: 50%;
+}
+
+.accordion-state {
+	display: none;
+	appearance: none;
+}
+
+.accordion-item {
+	margin-bottom: 0.5rem;
+	color: white;
+	border-radius: 0.5em;
+	background: rgba(255, 255, 255, 0.1);
+	-webkit-backdrop-filter: blur(5px);
+	backdrop-filter: blur(5px);
+	justify-content: center;
+}
+
+.accordion-content {
+	color: white;
+}
+
+.accordion-header {
+	color: white;
+	cursor: pointer;
+	padding: 0.75rem;
+	width: 100%;
+	display: block;
+}
+
+.accordion-state~.accordion-content {
+	max-height: 0;
+	overflow: hidden;
+	transition: 0.25s linear;
+}
+
+.accordion-state:checked~.accordion-content {
+	max-height: 100vh;
+	transition: max-height 0.2s linear;
+}
+
+.accordion-secondary {
+	padding: 0.5rem;
+	margin: 0.5rem 1.5rem;
+	border-bottom: 1px solid white;
+	cursor: pointer;
+}
+
+/* Mobile M / L */
+@media (max-width:768px) {
+	.sidenav-right {
+		right: 0px;
+	}
+
+	.sidenav-left {
+		left: 0px;
+	}
+
+	.sidenav-open {
+		width: 25vw;
+	}
+
+	.main-shift-left {
+		margin-right: 0px;
+		margin-left: 25%
+	}
+
+	.main-shift-right {
+		margin-left: 0px;
+		margin-right: 25%
+	}
+}
+
+/* Tablet / Small laptop */
+@media(min-width: 768px) {
+	main {
+		height: 100%;
+		width: 80%;
+		left: 20%;
+	}
+
+	.sidenav {
+		width: 20%;
+		display: block;
+		left: 0;
+		box-shadow: 4px 0px 8px rgba(0, 0, 0, 0.5);
+	}
+
+	.nav-trigger {
+		display: none;
+	}
+
+	.nav-item {
+		width: 100%;
+	}
+
+	.container {
+		width: 50%;
+		box-shadow: 4px 0px 8px rgba(0, 0, 0, 0.5);
+	}
+}
