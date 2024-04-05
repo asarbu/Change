@@ -6,47 +6,73 @@ export default class PlanningCache {
 
 	static PLANNING_TEMPLATE_URI = '/planning.json';
 
-	/** @type {Idb} */
-	idb = undefined;
-
 	/**
-	 * Returns all planning caches in the database, initialized
-	 * @constructs PlanningCache
-	 * @returns {Promise<Array<PlanningCache>>}
+	 * Avoid initializing IDBs multiple times so we can update versions
+	 * @type {Array<PlanningCache>}
 	 */
+	static #initializedCaches = [];
+
 	static async getAll() {
 		const idb = await Idb.of(
 			PlanningCache.DATABASE_NAME,
 			PlanningCache.upgradePlanningDatabase,
 		);
-
 		const objectStores = idb.getObjectStores();
-		const planningsArray = new Array(objectStores.length);
-		const initPlanningPromises = [];
+		const planningssArray = new Array(objectStores.length);
 		for (let i = 0; i < objectStores.length; i += 1) {
 			const storeName = objectStores[i];
 			const planningCache = new PlanningCache(storeName, idb);
-			planningsArray[i] = (planningCache);
-			initPlanningPromises.push(planningCache.init());
+			planningssArray[i] = (planningCache);
 		}
-		await Promise.all(initPlanningPromises);
-		return planningsArray;
+		PlanningCache.#initializedCaches = planningssArray;
+		return planningssArray;
 	}
+
+	/**
+	 * Fetches or creates a Spending cache for the provided year
+	 * @param {number} forYear Year for which to retrieve the Planning Cache
+	 * @returns {Promise<PlanningCache>}
+	 */
+	static async get(forYear) {
+		const cache = PlanningCache.#initializedCaches.find((c) => c.year === forYear);
+		if (cache) return cache;
+
+		const idb = await Idb.of(
+			PlanningCache.DATABASE_NAME,
+			PlanningCache.upgradePlanningDatabase,
+		);
+		const objectStores = idb.getObjectStores();
+		if (!objectStores.find((objectStore) => objectStore === `${forYear}`)) {
+			await idb.createObjectStores([`${forYear}`]);
+		}
+		const planningCache = new PlanningCache(forYear, idb);
+		await planningCache.init();
+		PlanningCache.#initializedCaches.push(planningCache);
+		return planningCache;
+	}
+
+	/** @type {Idb} */
+	idb = undefined;
 
 	/**
 	 * Callback function to update a planning database
 	 * @param {IDBDatabase} db Database to upgrade
 	 * @param {number} oldVersion Version from which to update
 	 * @param {number} newVersion Version to which to update
+	 * @param {Array<string>} objectStores Object store names to create on upgrade
 	 * @returns {undefined}
 	 */
-	static upgradePlanningDatabase(db, oldVersion, newVersion) {
+	static upgradePlanningDatabase(db, oldVersion, newVersion, objectStores) {
 		if (!newVersion) {
 			return;
 		}
 
-		const store = db.createObjectStore(newVersion, { autoIncrement: true });
-		store.createIndex('byType', 'type', { unique: false });
+		if (oldVersion < newVersion) {
+			objectStores.forEach((objectStore) => {
+				const store = db.createObjectStore(objectStore, { autoIncrement: true });
+				store.createIndex('byType', 'type', { unique: false });
+			});
+		}
 	}
 
 	/**
@@ -99,7 +125,7 @@ export default class PlanningCache {
 	/**
 	 * Fetch only the categories of type "Expense"
 	 * @async
-	 * @returns {Array<Category>}
+	 * @returns {Promise<Array<Category>>}
 	 */
 	async readExpenseCategories() {
 		const keyRange = IDBKeyRange.only('Expense');

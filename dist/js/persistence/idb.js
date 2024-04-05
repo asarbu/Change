@@ -19,7 +19,7 @@ export default class Idb {
 	 * Constructs, opens and initializes an instance of Idb objects
 	 * @param {string} dbName Name of the database to open
 	 * @param {upgradeDbCallback} upgradeCallback function to call when updating db
-	 * @returns {Idb}
+	 * @returns {Promise<Idb>}
 	 */
 	static async of(dbName, upgradeCallback) {
 		const connectedIdb = Idb.#connectedIdbs.find((idb) => idb.#db.name === dbName);
