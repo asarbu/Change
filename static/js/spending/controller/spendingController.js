@@ -6,7 +6,7 @@ import SpendingReport from '../model/spendingReport.js';
 
 export default class SpendingController {
 	/** @type {Array<SpendingCache>} */
-	#spendingCaches = undefined;
+	#spendingCaches = [];
 
 	/** @type {SpendingCache} */
 	#spendingCache = undefined;
@@ -42,7 +42,7 @@ export default class SpendingController {
 	}
 
 	async init(forYear) {
-		this.#spendingCaches = await SpendingCache.getAll();
+		/* this.#spendingCaches = await SpendingCache.getAll();
 		this.#planningCaches = await PlanningCache.getAll();
 		const year = forYear || new Date().getFullYear();
 
@@ -54,7 +54,11 @@ export default class SpendingController {
 			}
 		}
 
-		await this.#planningCache?.init();
+		await this.#planningCache?.init(); */
+
+		const year = forYear || new Date().getFullYear();
+		this.#planningCache = await PlanningCache.get(year);
+		this.#spendingCache = await SpendingCache.get(year);
 
 		const expenseCategories = await this.#planningCache.readExpenseCategories();
 		const spendings = await this.#spendingCache.readAll();
