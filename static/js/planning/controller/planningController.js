@@ -15,7 +15,7 @@ export default class PlanningController {
 
 		let defaultYearCache;
 		for (let i = 0; i < this.#caches.length; i += 1) {
-			if (this.#caches[i].year === `${year}`) {
+			if (this.#caches[i].year === year) {
 				defaultYearCache = this.#caches[i];
 			}
 		}
