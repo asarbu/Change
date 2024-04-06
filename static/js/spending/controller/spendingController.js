@@ -42,20 +42,6 @@ export default class SpendingController {
 	}
 
 	async init(forYear) {
-		/* this.#spendingCaches = await SpendingCache.getAll();
-		this.#planningCaches = await PlanningCache.getAll();
-		const year = forYear || new Date().getFullYear();
-
-		for (let i = 0; i < this.#spendingCaches.length; i += 1) {
-			if (this.#spendingCaches[i].year === year) {
-				this.#spendingCache = this.#spendingCaches[i];
-				this.#planningCache = this.#planningCaches
-					.find((planningCache) => planningCache.year === year);
-			}
-		}
-
-		await this.#planningCache?.init(); */
-
 		const year = forYear || new Date().getFullYear();
 		this.#planningCache = await PlanningCache.get(year);
 		this.#spendingCache = await SpendingCache.get(year);
