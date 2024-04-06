@@ -5,11 +5,10 @@
   "main": "bundle.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "rollup": "rollup --format es --input ./static/js/spending/controller/spendingController.js -o ./static/js/change.js",
-    "uglify": "uglifyjs ./static/js/change.js -c -m -o ./dist/app.js",
-    "build": "npm run clean && npm run rollup && npm run uglify && node ./node_scripts/build.js",
-    "dev": "npm run clean && node ./node_scripts/dev.js",
-    "clean": "node node_scripts/clean.js"
+    "build": "node ./node_scripts/build.js",
+    "dev": "node ./node_scripts/dev.js",
+    "clean": "node node_scripts/clean.js",
+    "start": "http-server ./dist"
   },
   "repository": {
     "type": "git",
@@ -21,7 +20,7 @@
     "url": "https://github.com/alexandrusebastian/Change/issues"
   },
   "homepage": "https://github.com/alexandrusebastian/Change#readme",
-  "devDependencies": {
+  "dependencies": {
     "eslint": "^8.57.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-plugin-jsdoc": "^48.1.0",
