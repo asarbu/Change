@@ -112,6 +112,7 @@ h2 {
 	font-size: 1.1rem;
 	color: gainsboro;
 	display: block;
+	text-decoration: none;
 }
 
 .view-link:hover {

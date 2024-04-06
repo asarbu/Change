@@ -1,11 +1,15 @@
 /* eslint-disable class-methods-use-this */
 import GraphicEffects from '../../gui/effects.js';
+import Sidenav from '../../gui/sidenav.js';
 import { create, createChild, createImageButton } from '../../gui/dom.js';
 import { Statement, Category, Goal } from '../model/planningModel.js';
 import icons from '../../gui/icons.js';
 
 export default class PlanningScreen {
 	onClickUpdate = undefined;
+
+	/** @type {Sidenav} */
+	#sidenav = undefined;
 
 	/**
 	 * Constructor
@@ -230,6 +234,7 @@ export default class PlanningScreen {
 		mainElement.appendChild(this.container);
 		mainElement.appendChild(this.navbar);
 		this.gfx.init(this.container);
+		this.#sidenav = new Sidenav(this.gfx);
 	}
 
 	/**

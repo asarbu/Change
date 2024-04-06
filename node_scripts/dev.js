@@ -6,12 +6,15 @@ if (fs.existsSync('./dist')) {
 	fs.mkdirSync('./dist');
 }
 
-const jsPath = path.resolve('./dist/js');
+const distJsPath = path.resolve('./dist/js');
 const staticJsPath = path.resolve('./static/js');
-fs.symlink(staticJsPath, jsPath, 'junction', (error) => { if (error) throw new Error(error); });
+fs.symlink(staticJsPath, distJsPath, 'junction', (error) => { if (error) throw new Error(error); });
+
+const distCssPath = path.resolve('./dist/css');
+const staticCssPath = path.resolve('./static/css');
+fs.symlink(staticCssPath, distCssPath, 'junction', (error) => { if (error) throw new Error(error); });
 
 fs.copyFile('./static/js/planning.json', './dist/planning.json', () => {});
 fs.copyFile('./manifest.json', './dist/manifest.json', () => {});
-fs.copyFile('./static/css/style.css', './dist/style.css', () => {});
 fs.copyFile('./static/html/index.html', './dist/index.html', (error) => { if (error) throw new Error(error); });
 fs.copyFile('./static/html/planning.html', './dist/planning.html', (error) => { if (error) throw new Error(error); });
