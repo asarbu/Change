@@ -29,7 +29,7 @@ export default class SpendingCache {
 	/**
 	 * Fetches or creates a Spending cache for the provided year
 	 * @param {number} forYear Year for which to retrieve the SpendingCache
-	 * @returns {SpendingCache}
+	 * @returns {Promise<SpendingCache>}
 	 */
 	static async get(forYear) {
 		const cache = SpendingCache.#initializedCaches.find((c) => c.year === forYear);
@@ -85,7 +85,7 @@ export default class SpendingCache {
 	}
 
 	/**
-	 * @returns {Array<Spending>}
+	 * @returns {Promise<Array<Spending>>}
 	 */
 	async readAll() {
 		const spendings = this.idb.getAll(this.year);
