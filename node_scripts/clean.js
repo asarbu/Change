@@ -1,8 +1,8 @@
 const fs = require('fs');
 
-fs.unlink('./static/js/change.js', () => {});
-fs.unlink('./dist/planning.json', () => {});
-fs.unlink('./dist/manifest.json', () => {});
-fs.unlink('./dist/style.css', () => {});
-fs.unlink('./dist/planning.json', () => {});
-fs.unlink('./dist/change.min.js', () => {});
+if (fs.existsSync('./dist')) {
+	fs.rmSync('./dist', { recursive: true, force: true }, (error) => { if (error) throw new Error(error); });
+}
+if (!fs.existsSync('./dist')) {
+	fs.mkdirSync('./dist');
+}

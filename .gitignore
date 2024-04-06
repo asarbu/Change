@@ -93,10 +93,7 @@ out
 
 # Nuxt.js build / generate output
 .nuxt
-dist/style.css
-dist/change.min.js
-dist/manifest.json
-dist/planning.json
+dist
 
 # Gatsby files
 .cache/
