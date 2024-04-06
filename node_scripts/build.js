@@ -4,10 +4,10 @@ const rollup = require('rollup');
 
 if (fs.existsSync('./dist')) {
 	fs.rmSync('./dist', { recursive: true, force: true }, (error) => { if (error) throw new Error(error); });
-	fs.mkdirSync('./dist');
-	fs.mkdirSync('./dist/js');
-	fs.mkdirSync('./dist/css');
 }
+fs.mkdirSync('./dist');
+fs.mkdirSync('./dist/js');
+fs.mkdirSync('./dist/css');
 
 fs.copyFile('./static/js/planning.json', './dist/planning.json', (error) => { if (error) throw new Error(error); });
 fs.copyFile('./manifest.json', './dist/manifest.json', (error) => { if (error) throw new Error(error); });
