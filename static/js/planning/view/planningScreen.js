@@ -4,6 +4,7 @@ import Sidenav from '../../gui/sidenav.js';
 import { create, createChild, createImageButton } from '../../gui/dom.js';
 import { Statement, Category, Goal } from '../model/planningModel.js';
 import icons from '../../gui/icons.js';
+import PlanningNavBar from './planningNavbar.js';
 
 export default class PlanningScreen {
 	onClickUpdate = undefined;
@@ -13,26 +14,40 @@ export default class PlanningScreen {
 
 	/**
 	 * Constructor
-	 * @param {string} id Unique identifier of the screen
+	 * @param {string} year Unique identifier of the screen
 	 * @param {Array<Statement>} statements Statements to draw on the screen
 	 */
-	constructor(id, statements) {
+	constructor(year, statements, month) {
 		/** @type { Array<Statement> } */
 		this.statements = statements;
-		/** @type {string} */
-		this.id = id;
 		/** @type {boolean} */
 		this.editMode = false;
+		this.year = year;
+		this.month = month;
+		this.statement = statements[0].name;
 	}
 
 	/**
 	 * Initialize the current screen
 	 */
 	init() {
-		this.gfx = new GraphicEffects();
 		this.container = this.sketchAsFragment();
-		this.navbar = this.sketchNavBar();
+		this.navbar = new PlanningNavBar(this.year, this.month, this.statement);
+
+		const mainElement = document.getElementById('main');
+		mainElement.appendChild(this.container);
+		mainElement.appendChild(this.navbar.toHtml());
+		this.gfx = new GraphicEffects();
+		this.gfx.init(this.container);
+		this.#sidenav = new Sidenav(this.gfx);
+		this.navbar.selectYear(this.year);
 	}
+
+	// #region DOM update
+	updateYear(year) {
+		this.navbar.appendYear(year);
+	}
+	// #endregion
 
 	// #region DOM creation
 
@@ -41,7 +56,7 @@ export default class PlanningScreen {
 	 * @returns {DocumentFragment}
 	 */
 	sketchAsFragment() {
-		const container = create('div', { id: this.id, classes: ['container'] });
+		const container = create('div', { id: this.year, classes: ['container'] });
 		const section = create('div', { classes: ['section'] });
 
 		// TODO Merge this with navbar creation, since we are iterating through same array.
@@ -226,63 +241,6 @@ export default class PlanningScreen {
 		return dataCell;
 	}
 
-	/**
-	 * Activate the current screen and all its effects.
-	 */
-	activate() {
-		const mainElement = document.getElementById('main');
-		mainElement.appendChild(this.container);
-		mainElement.appendChild(this.navbar);
-		this.gfx.init(this.container);
-		this.#sidenav = new Sidenav(this.gfx);
-	}
-
-	/**
-	 * Creates and populates the navbar with relevant information for this screen
-	 * @returns {HTMLElement}
-	 */
-	sketchNavBar() {
-		const navbar = create('nav');
-		const navHeader = create('div', { classes: ['nav-header'] }, navbar);
-		const addStatementButton = createImageButton('Add', ['nav-item'], icons.add_file, navHeader, this.onClickAddStatement.bind(this));
-		this.editButton = createImageButton('Edit', ['nav-item'], icons.edit, navHeader, this.onClickEdit.bind(this));
-		this.saveButton = createImageButton('Save', ['nav-item'], icons.save, undefined, this.onClickSave.bind(this));
-		const deleteStatement = createImageButton('Add', ['nav-item'], icons.delete_file, navHeader, this.onClickDeleteStatement.bind(this));
-		addStatementButton.style.display = 'none';
-		addStatementButton.setAttribute('hideable', true);
-		deleteStatement.style.display = 'none';
-		deleteStatement.setAttribute('hideable', true);
-
-		const navFooter = create('div', { classes: ['nav-footer'] }, navbar);
-		const leftMenuButton = createImageButton('Menu', ['nav-item', 'nav-trigger'], icons.menu, navFooter);
-		leftMenuButton.setAttribute('data-side', 'left');
-		/* const yearDropup = create('button', {
-			textContent: `${this.id} `,
-			classes: ['dropup', 'nav-item'] },
-			navFooter
-		); */
-
-		const span = create('span', { textContent: '▲', classes: ['white-50'] });
-		const statementDropupButton = create('button', { classes: ['nav-item'], textContent: `${this.statements[0].name} ` }, navFooter);
-
-		const statementDropupContent = create('div', { classes: ['dropup-content', 'top-round'] });
-		statementDropupContent.style.display = 'none';
-		statementDropupButton.addEventListener('click', this.onClickDropup.bind(this, statementDropupContent));
-
-		for (let i = 0; i < this.statements.length; i += 1) {
-			const statement = this.statements[i];
-			const anchor = create('div', { textContent: statement.name });
-			anchor.setAttribute('data-slice-index', i);
-			anchor.addEventListener('click', this.onClickShowStatement.bind(this, statementDropupButton));
-			statementDropupContent.appendChild(anchor);
-		}
-
-		statementDropupButton.appendChild(span);
-		navbar.appendChild(statementDropupContent);
-		const rightMenuButton = createImageButton('Menu', ['nav-item', 'nav-trigger'], icons.menu, navFooter);
-		rightMenuButton.setAttribute('data-side', 'right');
-		return navbar;
-	}
 	// #endregion
 
 	// #region DOM manipulation
@@ -397,7 +355,7 @@ export default class PlanningScreen {
 		}
 
 		if (this.onClickUpdate) {
-			this.onClickUpdate(this.id, this.statements);
+			this.onClickUpdate(this.year, this.statements);
 		}
 
 		this.editMode = false;

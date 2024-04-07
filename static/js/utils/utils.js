@@ -18,6 +18,7 @@ export default class Utils {
 	 * @returns {string}
 	 */
 	static nameForMonth(month) {
+		if (month === undefined || month === null || Number.isNaN(month)) return undefined;
 		return Utils.#MONTH_NAMES.at(month);
 	}
 }

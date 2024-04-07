@@ -4,9 +4,11 @@ export default class Planning {
 	/**
 	 * @constructs Planning
 	 * @param {number} year
+	 * @param {number} month
 	 */
-	constructor(year) {
+	constructor(year, month) {
 		this.year = year;
+		this.month = month;
 		/**
 		 * @type{Array<Statement>}
 		 */
