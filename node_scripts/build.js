@@ -14,6 +14,8 @@ fs.copyFile('./manifest.json', './dist/manifest.json', (error) => { if (error) t
 fs.copyFile('./static/css/style.css', './dist/css/style.css', (error) => { if (error) throw new Error(error); });
 fs.copyFile('./static/html/index.html', './dist/index.html', (error) => { if (error) throw new Error(error); });
 fs.copyFile('./static/html/planning.html', './dist/planning.html', (error) => { if (error) throw new Error(error); });
+fs.copyFile('./static/icons/favicon.ico', './dist/favicon.ico', (error) => { if (error) throw new Error(error); });
+fs.cp('./static/icons', './dist/icons', { recursive: true }, (error) => { if (error) throw new Error(error); });
 
 const inputOptions = {
 	input: './static/js/app.js',
