@@ -19,11 +19,14 @@ export default class PlanningCache {
 		);
 		const objectStores = idb.getObjectStores();
 		const planningssArray = new Array(objectStores.length);
+		const planningsInitPromises = [];
 		for (let i = 0; i < objectStores.length; i += 1) {
 			const storeName = objectStores[i];
 			const planningCache = new PlanningCache(storeName, idb);
+			planningsInitPromises.push(planningCache.init());
 			planningssArray[i] = (planningCache);
 		}
+		await Promise.all(planningsInitPromises);
 		PlanningCache.#initializedCaches = planningssArray;
 		return planningssArray;
 	}
@@ -110,6 +113,10 @@ export default class PlanningCache {
 	 */
 	async readAll() {
 		return this.idb.openCursor(this.year);
+	}
+
+	async readAllForMonth(month) {
+		await 
 	}
 
 	/**

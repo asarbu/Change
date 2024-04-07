@@ -2,27 +2,32 @@ import PlanningCache from '../persistence/planningCache.js';
 import PlanningScreen from '../view/planningScreen.js';
 
 export default class PlanningController {
-	/**
-	 * Used for fast retreival of local caches.
-	 * @type {Array<PlanningCache>}
-	 * @private
-	 */
+	/** @type {Array<PlanningCache>} */
 	#caches = undefined;
 
-	async init(forYear) {
-		const year = forYear || new Date().getFullYear();
+	/** @type {PlanningCache} */
+	#cache = undefined;
+
+	/** @type {number} */
+	#defaultYear = undefined;
+
+	constructor() {
+		const queryString = window.location.search;
+		const urlParams = new URLSearchParams(queryString);
+		const year = +(urlParams.get('year'));
+
+		this.#defaultYear = year || new Date().getFullYear();
+	}
+
+	async init() {
 		this.#caches = await PlanningCache.getAll();
+		this.#cache = await PlanningCache.get(this.#defaultYear);
 
-		let defaultYearCache;
-		for (let i = 0; i < this.#caches.length; i += 1) {
-			if (this.#caches[i].year === year) {
-				defaultYearCache = this.#caches[i];
-			}
-		}
+		const currentYearScreen = await this.initPlanningScreen(this.#cache);
 
-		const currentYearScreen = await this.initPlanningScreen(defaultYearCache);
-		currentYearScreen.init();
-		currentYearScreen.activate();
+		this.#caches.forEach((cache) => {
+			currentYearScreen.updateYear(cache.year);
+		});
 
 		/* if(gdriveSync) {
 			this.initGDrive();
@@ -34,10 +39,14 @@ export default class PlanningController {
 	 * @param {PlanningCache} cache
 	 */
 	async initPlanningScreen(cache) {
-		const planningCache = cache;
-		const localCollections = await planningCache.readAll();
-		const planningScreen = new PlanningScreen(planningCache.year, localCollections);
+		const localCollections = await cache.readAll();
+		const planningScreen = new PlanningScreen(
+			cache.year,
+			localCollections,
+			cache.month,
+		);
 		planningScreen.onClickUpdate = this.onClickUpdate.bind(this);
+		planningScreen.init();
 		return planningScreen;
 	}
 
