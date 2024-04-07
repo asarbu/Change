@@ -117,7 +117,8 @@ export default class SpendingNavBar {
 	appendYear(year) {
 		if (this.#yearsInDropup.has(year)) return;
 
-		const yearDropupItem = new Dom('div').cls('accordion-secondary').text(year);
+		const onYearChanged = this.onYearChanged.bind(this, year);
+		const yearDropupItem = new Dom('div').cls('accordion-secondary').onClick(onYearChanged).text(year);
 		this.#yearsInDropup.set(year, yearDropupItem);
 		this.#yearsDropup.body(yearDropupItem);
 		this.updateYearDropupText();
@@ -194,6 +195,11 @@ export default class SpendingNavBar {
 			this.#eventHandlers.onMonthChanged(month);
 		}
 		this.#monthsDropup.close();
+	}
+
+	onYearChanged(year) {
+		this.#yearsDropup.close();
+		window.location.href = `${window.location.pathname}?year=${year}`;
 	}
 
 	onClickEdit() {
