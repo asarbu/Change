@@ -3,8 +3,8 @@ const path = require('path');
 
 if (fs.existsSync('./dist')) {
 	fs.rmSync('./dist', { recursive: true, force: true }, (error) => { if (error) throw new Error(error); });
-	fs.mkdirSync('./dist');
 }
+fs.mkdirSync('./dist');
 
 // Use symlinks to avoid needing to reload changed files during development
 const distJsPath = path.resolve('./dist/js');
