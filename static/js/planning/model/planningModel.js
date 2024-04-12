@@ -1,18 +1,21 @@
 // Too much overhead to split the planning model into individual files
 // eslint-disable-next-line max-classes-per-file
 export default class Planning {
+	/** @type {Array<Statement>} */
+	statements = [];
+
 	/**
 	 * @constructs Planning
 	 * @param {number} year
 	 * @param {number} month
 	 */
-	constructor(year, month) {
+	constructor(id, year, month, statements) {
+		this.id = id;
 		this.year = year;
 		this.month = month;
-		/**
-		 * @type{Array<Statement>}
-		 */
-		this.statements = [];
+		if (statements) {
+			this.statements = statements;
+		}
 	}
 }
 
