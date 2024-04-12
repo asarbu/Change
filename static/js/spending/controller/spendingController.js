@@ -43,7 +43,7 @@ export default class SpendingController {
 		this.#spendingCache = await SpendingCache.get(this.#defaultYear);
 		this.#spendingCaches = await SpendingCache.getAll();
 
-		const expenseCategories = await planningCache.readExpenseCategories();
+		const expenseCategories = await planningCache.readExpenseCategories(this.#defaultMonth);
 		const spendings = await this.#spendingCache.readAll();
 
 		/** @type {Map<number, SpendingReport>} */

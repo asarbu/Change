@@ -1,3 +1,4 @@
+import Utils from '../../utils/utils.js';
 import PlanningCache from '../persistence/planningCache.js';
 import PlanningScreen from '../view/planningScreen.js';
 
@@ -11,12 +12,17 @@ export default class PlanningController {
 	/** @type {number} */
 	#defaultYear = undefined;
 
+	/** @type {number} */
+	#defaultMonth = undefined;
+
 	constructor() {
 		const queryString = window.location.search;
 		const urlParams = new URLSearchParams(queryString);
 		const year = +(urlParams.get('year'));
+		const month = Utils.monthForName((urlParams.get('month')));
 
 		this.#defaultYear = year || new Date().getFullYear();
+		this.#defaultMonth = month || new Date().getMonth();
 	}
 
 	async init() {
@@ -39,12 +45,8 @@ export default class PlanningController {
 	 * @param {PlanningCache} cache
 	 */
 	async initPlanningScreen(cache) {
-		const localCollections = await cache.readAll();
-		const planningScreen = new PlanningScreen(
-			cache.year,
-			localCollections,
-			cache.month,
-		);
+		const planning = await cache.readForMonth(this.#defaultMonth);
+		const planningScreen = new PlanningScreen(planning);
 		planningScreen.onClickUpdate = this.onClickUpdate.bind(this);
 		planningScreen.init();
 		return planningScreen;

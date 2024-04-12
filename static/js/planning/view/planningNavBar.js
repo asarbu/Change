@@ -21,7 +21,7 @@ export default class PlanningNavBar {
 	#monthsDropup = undefined;
 
 	/** @type {Modal} */
-	#yearsDropup = undefined;
+	#statementDropup = undefined;
 
 	/** @type {Modal} */
 	#statementsDropup = undefined;
@@ -35,6 +35,9 @@ export default class PlanningNavBar {
 	/** @type {number} */
 	#selectedYear = undefined;
 
+	/** @type {number} */
+	#selectedStatement = undefined;
+
 	/**
 	 * Constructs an instance of Planning Navbar
 	 * @param {number} year default year to select in navbar
@@ -43,6 +46,12 @@ export default class PlanningNavBar {
 	 */
 	constructor(year, month, statement, eventHandlers) {
 		this.#yearsInDropup = new Map();
+		this.#monthsInDropup = new Map();
+		this.#statementsInDropup = new Map();
+
+		this.#selectedYear = year;
+		this.#selectedMonth = month;
+		this.#selectedStatement = statement;
 
 		const onClickEdit = undefined;
 		const onClickSave = undefined;
@@ -51,6 +60,7 @@ export default class PlanningNavBar {
 		const main = document.getElementById('main');
 		main.appendChild(this.buildYearModal().toHtml());
 		const onClickYearDropup = this.onClickYearDropup.bind(this);
+		const onClickStatementDropup = this.onClickStatementDropup.bind(this);
 
 		this.#navbar = new Dom('nav').append(
 			new Dom('div').cls('nav-header').append(
@@ -74,7 +84,7 @@ export default class PlanningNavBar {
 					new Dom('span').id('planning-month-text').text(`${Utils.nameForMonth(month)} `),
 					new Dom('span').id('planning-month-caret').cls('white-50').text(''),
 				),
-				new Dom('button').id('planning-stmt-right').cls('nav-item').onClick(onClickMonthDropup).append(
+				new Dom('button').id('planning-stmt-right').cls('nav-item').onClick(onClickStatementDropup).append(
 					new Dom('span').id('planning-stmt-text').text(`${statement} `),
 					new Dom('span').id('planning-stmt-caret').cls('white-50').text(''),
 				),
@@ -91,11 +101,11 @@ export default class PlanningNavBar {
 	}
 
 	buildYearModal() {
-		this.#yearsDropup = new Modal('planning-year-dropup')
+		this.#statementDropup = new Modal('planning-year-dropup')
 			.header(
-				new Dom('h2').text('Choose spending year'),
+				new Dom('h2').text('Choose planning year'),
 			).body().addCancelFooter();
-		return this.#yearsDropup;
+		return this.#statementDropup;
 	}
 
 	appendYear(year) {
@@ -104,7 +114,7 @@ export default class PlanningNavBar {
 		const onYearChanged = this.onYearChanged.bind(this, year);
 		const yearDropupItem = new Dom('div').cls('accordion-secondary').onClick(onYearChanged).text(year);
 		this.#yearsInDropup.set(year, yearDropupItem);
-		this.#yearsDropup.body(yearDropupItem);
+		this.#statementDropup.body(yearDropupItem);
 		this.updateYearDropupText();
 	}
 
@@ -130,11 +140,64 @@ export default class PlanningNavBar {
 	}
 
 	onClickYearDropup() {
-		this.#yearsDropup.open();
+		this.#statementDropup.open();
 	}
 
 	onYearChanged(year) {
-		this.#yearsDropup.close();
+		this.#statementDropup.close();
 		window.location.href = `${window.location.pathname}?year=${year}`;
+	}
+
+	buildStatementModal() {
+		this.#statementDropup = new Modal('planning-stmt-dropup')
+			.header(
+				new Dom('h2').text('Choose planning statement'),
+			).body().addCancelFooter();
+		return this.#statementDropup;
+	}
+
+	appendStatement(statement) {
+		if (this.#statementsInDropup.has(statement)) return;
+
+		const onStatementChanged = this.onStatementChanged.bind(this, statement);
+		const statementDropupItem = new Dom('div').cls('accordion-secondary').onClick(onStatementChanged).text(statement);
+		this.#statementsInDropup.set(statement, statementDropupItem);
+		this.#statementDropup.body(statementDropupItem);
+		this.updateStatementDropupText();
+	}
+
+	selectStatement(statement) {
+		if (statement === this.#selectedStatement) return;
+
+		this.#selectedStatement = statement;
+		this.updateStatementDropupText();
+	}
+
+	updateStatementDropupText() {
+		const statementText = document.getElementById('planning-stmt-text');
+		const newText = `${this.#selectedStatement} `;
+		if (statementText.textContent !== newText) {
+			statementText.textContent = newText;
+		}
+
+		const newCaret = this.#statementsInDropup.size > 1 ? '▲' : '';
+		const statementCaret = document.getElementById('planning-stmt-caret');
+		if (statementCaret.textContent !== newCaret) {
+			statementCaret.textContent = newCaret;
+		}
+	}
+
+	onClickStatementDropup() {
+		this.#statementDropup.open();
+	}
+
+	onStatementChanged(statement) {
+		this.#statementDropup.close();
+		// TODO replace this with slideTo
+		const { pathname } = window.location;
+		const year = this.#selectedYear;
+		const month = this.#selectedMonth;
+		const href = `${pathname}?year=${year}&month=${month}&statement=${statement}`;
+		window.location.href = href;
 	}
 }

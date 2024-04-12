@@ -1,5 +1,5 @@
 import Idb from '../../persistence/idb.js';
-import { Category, Statement } from '../model/planningModel.js';
+import Planning, { Category, Statement } from '../model/planningModel.js';
 
 export default class PlanningCache {
 	static DATABASE_NAME = 'Planning';
@@ -73,7 +73,8 @@ export default class PlanningCache {
 		if (oldVersion < newVersion) {
 			objectStores.forEach((objectStore) => {
 				const store = db.createObjectStore(objectStore, { autoIncrement: true });
-				store.createIndex('byType', 'type', { unique: false });
+				// store.createIndex('byType', 'type', { unique: false });
+				store.createIndex('byYear', 'year', { unique: false });
 			});
 		}
 	}
@@ -103,20 +104,31 @@ export default class PlanningCache {
 		if (storeCount === 0) {
 			await fetch(PlanningCache.PLANNING_TEMPLATE_URI)
 				.then((response) => response.json())
-				.then((planningFile) => this.idb.putAll(this.year, planningFile));
+				.then((planningFile) => {
+					const now = new Date();
+					const time = now.getTime();
+					const year = now.getFullYear();
+					const month = now.getMonth();
+					this.idb.insert(this.year, new Planning(time, year, month, planningFile), time);
+				});
 		}
 	}
 
 	/**
 	 * Read all planning statements from the cache
-	 * @returns {Promise<Array<Statement>>}
+	 * @returns { Promise<Array<Planning>> }
 	 */
 	async readAll() {
 		return this.idb.openCursor(this.year);
 	}
 
-	async readAllForMonth(month) {
-		await 
+	/**
+	 * Returns the planning for a single month
+	 * @param {string} month for which to search the cache
+	 * @returns {Promise<Planning>}
+	 */
+	async readForMonth(month) {
+		return (await this.readAll()).find((planning) => planning.month === month);
 	}
 
 	/**
@@ -134,14 +146,22 @@ export default class PlanningCache {
 	 * @async
 	 * @returns {Promise<Array<Category>>}
 	 */
-	async readExpenseCategories() {
-		const keyRange = IDBKeyRange.only('Expense');
+	async readExpenseCategories(forMonth) {
+		/* const keyRange = IDBKeyRange.only('Expense');
 		const expenseStatements = await this.idb.getAllByIndex(this.year, 'byType', keyRange);
 		const expenses = [];
 		for (let i = 0; i < expenseStatements.length; i += 1) {
 			expenses.push(...expenseStatements[i].categories);
 		}
-		return expenses;
+		return expenses; */
+		/** @type {Array<Planning>} */
+		const planningsForYear = await this.idb.getAll(this.year);
+		const planningForMonth = planningsForYear.find((planning) => planning.month === forMonth);
+		const expenseStatements = planningForMonth.statements.filter((statement) => statement.type === 'Expense');
+		return expenseStatements.reduce((categories, statement) => {
+			categories.push(...statement.categories);
+			return categories;
+		}, []);
 	}
 
 	/**
