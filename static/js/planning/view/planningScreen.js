@@ -56,11 +56,12 @@ export default class PlanningScreen {
 		const mainElement = document.getElementById('main');
 		mainElement.appendChild(this.navbar.toHtml());
 		this.navbar.selectYear(this.#defaultPlanning.year);
-		this.container = this.sketchAsFragment();
+		this.container = this.buildContainer();
 		mainElement.appendChild(this.container);
 		this.gfx = new GraphicEffects();
 		this.gfx.init(this.container);
 		this.#sidenav = new Sidenav(this.gfx);
+		document.body.appendChild(this.#sidenav.toHtml());
 	}
 
 	// #region DOM update
@@ -75,7 +76,7 @@ export default class PlanningScreen {
 	 * Creates all necessary objects needed to draw current screen
 	 * @returns {DocumentFragment}
 	 */
-	sketchAsFragment() {
+	buildContainer() {
 		const container = create('div', { id: this.#defaultPlanning.year, classes: ['container'] });
 		const section = create('div', { classes: ['section'] });
 		const { statements } = this.#defaultPlanning;
@@ -83,7 +84,7 @@ export default class PlanningScreen {
 		// TODO Merge this with navbar creation, since we are iterating through same array.
 		for (let i = 0; i < statements.length; i += 1) {
 			const statement = statements[i];
-			const htmlStatement = this.sketchStatement(statement);
+			const htmlStatement = this.buildStatement(statement);
 			htmlStatement.userData = statement;
 
 			section.appendChild(htmlStatement);
@@ -99,7 +100,7 @@ export default class PlanningScreen {
 	 * @param {Statement} statement Statement representing this slice
 	 * @returns {HTMLDivElement} Constructed and decorated DOM element
 	 */
-	sketchStatement(statement) {
+	buildStatement(statement) {
 		const slice = create('div', { classes: ['slice'] });
 		const h1 = create('h1', { textContent: statement.name });
 		h1.setAttribute('editable', 'true');
@@ -109,26 +110,20 @@ export default class PlanningScreen {
 		}
 		const span = create('span', { textContent: '▼', classes: ['white-50'] });
 
-		const statementTypeDropdown = create('div', { classes: ['dropdown-content', 'top-round', 'bot-round'] });
-		statementTypeDropdown.style.display = 'none';
 		const h2 = create('h2', { classes: [], textContent: `${statement.type} ` });
-		h2.addEventListener('click', this.onClickDropup.bind(this, statementTypeDropdown));
+		h2.addEventListener('click', this.onClickStatementType.bind(this));
 		h2.setAttribute('hideable', 'true');
 		if (!this.#editMode) h2.style.display = 'none';
 		const expenseAnchor = create('div', { textContent: Statement.EXPENSE });
 		expenseAnchor.addEventListener('click', this.onClickChangeStatementType.bind(this));
-		statementTypeDropdown.appendChild(expenseAnchor);
 
 		const incomeAnchor = create('div', { textContent: Statement.INCOME });
 		incomeAnchor.addEventListener('click', this.onClickChangeStatementType.bind(this));
-		statementTypeDropdown.appendChild(incomeAnchor);
 
 		const savingAnchor = create('div', { textContent: Statement.SAVING });
 		savingAnchor.addEventListener('click', this.onClickChangeStatementType.bind(this));
-		statementTypeDropdown.appendChild(savingAnchor);
 
 		h2.appendChild(span);
-		h2.appendChild(statementTypeDropdown);
 
 		const addCategoryButton = createImageButton('Add Category', [], icons.add_table, undefined, this.onClickAddCategory.bind(this));
 		addCategoryButton.setAttribute('hideable', 'true');
@@ -136,7 +131,7 @@ export default class PlanningScreen {
 		slice.appendChild(h1);
 		slice.appendChild(h2);
 
-		const tables = this.sketchCategory(statement.categories);
+		const tables = this.buildCategories(statement.categories);
 		slice.appendChild(tables);
 		slice.appendChild(addCategoryButton);
 
@@ -150,7 +145,7 @@ export default class PlanningScreen {
 	 * @param {Array<Category>} planningCategories Categories to draw inside parent statement
 	 * @returns {DocumentFragment} Document fragment with all of the created tables
 	 */
-	sketchCategory(planningCategories) {
+	buildCategories(planningCategories) {
 		const tableFragment = document.createDocumentFragment();
 		for (let i = 0; i < planningCategories.length; i += 1) {
 			const planningCategory = planningCategories[i];
@@ -183,7 +178,7 @@ export default class PlanningScreen {
 				const planningGoal = planningCategory.goals[j];
 
 				const deleteButton = createImageButton('Delete goal', [], icons.delete, undefined, this.onClickDeleteGoal.bind(this));
-				this.sketchRow(
+				this.buildRow(
 					table,
 					planningGoal,
 					{
@@ -210,7 +205,7 @@ export default class PlanningScreen {
 	 * @param {HTMLButtonElement} options.lastCellContent Optional element to add to last cell
 	 * @returns {HTMLTableRowElement} Row that was created and decorated. Contains Goal in userData
 	 */
-	sketchRow(table, item, options) {
+	buildRow(table, item, options) {
 		let index = -1;
 		if (Object.prototype.hasOwnProperty.call(options, 'index')) {
 			index = options.index;
@@ -219,10 +214,10 @@ export default class PlanningScreen {
 		row.id = item.id;
 		row.userData = item;
 
-		this.sketchDataCell(row, item.name, options);
-		this.sketchDataCell(row, item.daily, options);
-		this.sketchDataCell(row, item.monthly, options);
-		this.sketchDataCell(row, item.yearly, options);
+		this.buildDataCell(row, item.name, options);
+		this.buildDataCell(row, item.daily, options);
+		this.buildDataCell(row, item.monthly, options);
+		this.buildDataCell(row, item.yearly, options);
 
 		const buttonsCell = row.insertCell(-1);
 
@@ -246,7 +241,7 @@ export default class PlanningScreen {
 	 * @param {boolean} options.color Paints the text a certain color (#000000)
 	 * @returns {HTMLTableCellElement}
 	 */
-	sketchDataCell(row, text, options) {
+	buildDataCell(row, text, options) {
 		// console.log("Create data cell", text, options.readonly)
 		const dataCell = row.insertCell(-1);
 		dataCell.textContent = text;
@@ -270,7 +265,7 @@ export default class PlanningScreen {
 	/** Refresh screen */
 	refresh(statements) {
 		this.plannings = statements;
-		const newContainer = this.sketchAsFragment();
+		const newContainer = this.buildContainer();
 		const mainElement = document.getElementById('main');
 		mainElement.replaceChild(newContainer, this.container);
 		this.container = newContainer;
@@ -300,7 +295,7 @@ export default class PlanningScreen {
 				hideLastCell: true,
 				lastCellContent: addGoalButton,
 			};
-			lastRow = this.sketchRow(table, total, options);
+			lastRow = this.buildRow(table, total, options);
 		} else {
 			lastRow = table.tBodies[0].rows[table.tBodies[0].rows.length - 1];
 		}
@@ -383,7 +378,8 @@ export default class PlanningScreen {
 		this.#editMode = false;
 	}
 
-	onClickDropup(dropup, event) {
+	onClickStatementType(dropup, event) {
+		// TODO use modals
 		const button = event.currentTarget;
 		button.classList.toggle('active');
 		const dropupStyle = dropup.style;
@@ -454,7 +450,7 @@ export default class PlanningScreen {
 			index: index,
 			lastCellContent: button,
 		};
-		this.sketchRow(table, goal, options);
+		this.buildRow(table, goal, options);
 
 		table.userData.goals.push(goal);
 	}
