@@ -64,6 +64,7 @@ export default class SpendingScreen {
 		this.gfx.init(container);
 
 		this.#sidenav = new Sidenav(this.gfx);
+		document.body.appendChild(this.#sidenav.toHtml());
 	}
 
 	/**
