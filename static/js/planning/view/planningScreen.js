@@ -4,7 +4,8 @@ import Sidenav from '../../gui/sidenav.js';
 import { create, createChild, createImageButton } from '../../gui/dom.js';
 import Planning, { Statement, Category, Goal } from '../model/planningModel.js';
 import icons from '../../gui/icons.js';
-import PlanningNavBar from './planningNavbar.js';
+import PlanningNavbar from './planningNavbar.js';
+import PlanningNavbarEventHandlers from './planningNavbarEventHandlers.js';
 
 export default class PlanningScreen {
 	onClickUpdate = undefined;
@@ -40,10 +41,16 @@ export default class PlanningScreen {
 		if (this.#plannings[0].statements.length > 0) {
 			defaultStatementName = this.#plannings[0].statements[0].name;
 		}
-		this.navbar = new PlanningNavBar(
+
+		const handlers = new PlanningNavbarEventHandlers();
+		handlers.onClickSave = this.onClickSave.bind(this);
+		handlers.onClickEdit = this.onClickEdit.bind(this);
+
+		this.navbar = new PlanningNavbar(
 			this.#defaultPlanning.year,
 			this.#defaultPlanning.month,
 			defaultStatementName,
+			handlers,
 		);
 
 		const mainElement = document.getElementById('main');
@@ -356,7 +363,6 @@ export default class PlanningScreen {
 		}
 
 		this.#editMode = true;
-		this.editButton.parentNode.replaceChild(this.saveButton, this.editButton);
 	}
 
 	onClickSave() {
@@ -375,7 +381,6 @@ export default class PlanningScreen {
 		}
 
 		this.#editMode = false;
-		this.saveButton.parentNode.replaceChild(this.editButton, this.saveButton);
 	}
 
 	onClickDropup(dropup, event) {
