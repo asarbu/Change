@@ -28,6 +28,9 @@ export default class Sidenav {
 	/** @type {GraphicEffects} */
 	#gfx = undefined;
 
+	/** @type {HTMLElement} */
+	#fragment = undefined;
+
 	constructor(gfx) {
 		this.#sideNavDom = new Dom('div').id('sidenav').cls('sidenav').append(
 			new Dom('a').cls('view-link').attr('href', Sidenav.PLANNING_SUFFIX).text('Plannings'),
@@ -36,19 +39,22 @@ export default class Sidenav {
 			new Dom('a').cls('view-link').attr('href', Sidenav.SPENDING_SUFFIX).text('Settings'),
 		);
 
-		document.body.appendChild(this.#sideNavDom.toHtml());
-
+		this.#fragment = new DocumentFragment();
 		this.#sideNavLeft = this.#sideNavDom.toHtml();
 		this.#sideNavRight = this.#sideNavLeft.cloneNode(true);
 		this.#sideNavLeft.classList.add('sidenav-left');
 		this.#sideNavRight.classList.add('sidenav-right');
-		this.#sideNavLeft.parentNode.appendChild(this.#sideNavRight);
-		this.#main = document.getElementById('main');
+		this.#fragment.appendChild(this.#sideNavLeft);
+		this.#fragment.appendChild(this.#sideNavRight);
 
 		// TODO Remove this and add event listener individually to each dom element
 		document.querySelectorAll('.nav-trigger').forEach((el) => el.addEventListener('click', this.open.bind(this)));
 
 		this.#gfx = gfx;
+	}
+
+	toHtml() {
+		return this.#fragment;
 	}
 
 	/* Nav panel */
