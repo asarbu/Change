@@ -1,6 +1,9 @@
 import Dom from './dom.js';
 
 export default class Modal {
+	/** @type {boolean} */
+	#isOpen = false;
+
 	constructor(id) {
 		this.id = id;
 		const onClose = this.close.bind(this);
@@ -69,6 +72,7 @@ export default class Modal {
 	open() {
 		this.modalBackdropHtml.classList.add('show-modal-backdrop');
 		this.contentHtml.classList.add('show-modal-content');
+		this.#isOpen = true;
 		return this;
 	}
 
@@ -78,6 +82,7 @@ export default class Modal {
 			this.modalBackdropHtml.classList.remove('show-modal-backdrop');
 			this.contentHtml.classList.remove('show-modal-content');
 		}
+		this.#isOpen = false;
 		return this;
 	}
 
@@ -88,5 +93,9 @@ export default class Modal {
 	scrollable() {
 		this.bodyDom.elmt.classList.remove('no-scrollbar');
 		return this;
+	}
+
+	isOpen() {
+		return this.#isOpen;
 	}
 }
