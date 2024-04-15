@@ -1,7 +1,7 @@
 /* eslint-disable class-methods-use-this */
 import GraphicEffects from '../../gui/effects.js';
 import Sidenav from '../../gui/sidenav.js';
-import { create, createChild, createImageButton } from '../../gui/dom.js';
+import Dom, { create, createImageButton } from '../../gui/dom.js';
 import Planning, { Statement, Category, Goal } from '../model/planningModel.js';
 import icons from '../../gui/icons.js';
 import PlanningNavbar from './planningNavbar.js';
@@ -84,7 +84,7 @@ export default class PlanningScreen {
 		// TODO Merge this with navbar creation, since we are iterating through same array.
 		for (let i = 0; i < statements.length; i += 1) {
 			const statement = statements[i];
-			const htmlStatement = this.buildStatement(statement);
+			const htmlStatement = this.buildStatement(statement).toHtml();
 			htmlStatement.userData = statement;
 
 			section.appendChild(htmlStatement);
@@ -101,42 +101,19 @@ export default class PlanningScreen {
 	 * @returns {HTMLDivElement} Constructed and decorated DOM element
 	 */
 	buildStatement(statement) {
-		const slice = create('div', { classes: ['slice'] });
-		const h1 = create('h1', { textContent: statement.name });
-		h1.setAttribute('editable', 'true');
-		h1.addEventListener('keyup', this.onKeyUpStatementName.bind(this), false);
-		if (this.#editMode) {
-			h1.setAttribute('contenteditable', 'true');
-		}
-		const span = create('span', { textContent: '▼', classes: ['white-50'] });
-
-		const h2 = create('h2', { classes: [], textContent: `${statement.type} ` });
-		h2.addEventListener('click', this.onClickStatementType.bind(this));
-		h2.setAttribute('hideable', 'true');
-		if (!this.#editMode) h2.style.display = 'none';
-		const expenseAnchor = create('div', { textContent: Statement.EXPENSE });
-		expenseAnchor.addEventListener('click', this.onClickChangeStatementType.bind(this));
-
-		const incomeAnchor = create('div', { textContent: Statement.INCOME });
-		incomeAnchor.addEventListener('click', this.onClickChangeStatementType.bind(this));
-
-		const savingAnchor = create('div', { textContent: Statement.SAVING });
-		savingAnchor.addEventListener('click', this.onClickChangeStatementType.bind(this));
-
-		h2.appendChild(span);
-
-		const addCategoryButton = createImageButton('Add Category', [], icons.add_table, undefined, this.onClickAddCategory.bind(this));
-		addCategoryButton.setAttribute('hideable', 'true');
-		if (!this.#editMode) addCategoryButton.style.display = 'none';
-		slice.appendChild(h1);
-		slice.appendChild(h2);
-
-		const tables = this.buildCategories(statement.categories);
-		slice.appendChild(tables);
-		slice.appendChild(addCategoryButton);
+		const onKeyUp = this.onKeyUpStatementName.bind(this);
+		const onClickStatementType = this.onClickStatementType.bind(this);
+		const onClickAddCategory = this.onClickAddCategory.bind(this);
+		const slice = new Dom('div').cls('slice').append(
+			new Dom('h1').text(statement.name).editable().onKeyUp(onKeyUp).attr('contenteditable', this.#editMode),
+			new Dom('h2').text(`${statement.type} `).onClick(onClickStatementType).hideable(this.#editMode).append(
+				new Dom('span').cls('white-50').text('▼'),
+			),
+			...this.buildCategories(statement.categories),
+			Dom.imageButton('Add Category', icons.add_table).hideable(this.#editMode).onClick(onClickAddCategory),
+		);
 
 		this.navbar.appendStatement(statement.name);
-
 		return slice;
 	}
 
@@ -146,52 +123,43 @@ export default class PlanningScreen {
 	 * @returns {DocumentFragment} Document fragment with all of the created tables
 	 */
 	buildCategories(planningCategories) {
-		const tableFragment = document.createDocumentFragment();
+		const categories = [];
+		const onKeyUpCategoryName = this.onKeyUpCategoryName.bind(this);
+		const onClickDeleteGoal = this.onClickDeleteGoal.bind(this);
+		const onKeyUpGoal = this.onKeyUpGoal.bind(this);
+
 		for (let i = 0; i < planningCategories.length; i += 1) {
 			const planningCategory = planningCategories[i];
-			const table = create('table', { id: planningCategory.id, classes: ['top-round', 'bot-round'] });
-			tableFragment.appendChild(table);
-			const thead = createChild('thead', table);
-			createChild('tbody', table);
-
-			table.userData = planningCategory;
-
-			const headingRow = createChild('tr', thead);
-			const nameCol = create('th', { textContent: planningCategory.name }, headingRow);
-			nameCol.setAttribute('editable', 'true');
-			if (this.#editMode) {
-				nameCol.setAttribute('contenteditable', 'true');
-			}
-			nameCol.addEventListener('keyup', this.onKeyUpCategoryName.bind(this), false);
-
-			// TODO replace this with Add row
-			create('th', { textContent: 'Daily' }, headingRow);
-			create('th', { textContent: 'Monthly' }, headingRow);
-			create('th', { textContent: 'Yearly' }, headingRow);
-			const buttons = createChild('th', headingRow);
-			createImageButton('Delete Row', [], icons.delete, buttons, this.onClickDeleteCategory.bind(this));
-
-			buttons.setAttribute('hideable', 'true');
-			if (!this.#editMode) buttons.style.display = 'none';
-
-			for (let j = 0; j < planningCategory.goals.length; j += 1) {
-				const planningGoal = planningCategory.goals[j];
-
-				const deleteButton = createImageButton('Delete goal', [], icons.delete, undefined, this.onClickDeleteGoal.bind(this));
-				this.buildRow(
-					table,
-					planningGoal,
-					{
-						index: -1,
-						hideLastCell: true,
-						lastCellContent: deleteButton,
-					},
-				);
-			}
-			this.recomputeTotal(table, true);
+			const category = new Dom('table').id(planningCategory.id).cls('top-round', 'bot-round').append(
+				new Dom('thead').append(
+					new Dom('tr').append(
+						new Dom('th').text(planningCategory.name).editable().contentEditable(this.#editMode)
+							.onKeyUp(onKeyUpCategoryName),
+						new Dom('th').text('Daily'),
+						new Dom('th').text('Monthly'),
+						new Dom('th').text('Yearly'),
+						new Dom('th').hideable(this.#editMode).append(
+							Dom.imageButton('Delete row', icons.delete),
+						),
+					),
+				),
+				new Dom('tbody').append(
+					...planningCategory.goals.map((goal) => new Dom('tr').id(goal.id).userData(goal).append(
+						new Dom('td').text(goal.name).editable().contentEditable(this.#editMode).onKeyUp(onKeyUpGoal),
+						new Dom('td').text(goal.daily).editable().contentEditable(this.#editMode).onKeyUp(onKeyUpGoal),
+						new Dom('td').text(goal.monthly).editable().contentEditable(this.#editMode).onKeyUp(onKeyUpGoal),
+						new Dom('td').text(goal.yearly).editable().contentEditable(this.#editMode).onKeyUp(onKeyUpGoal),
+						new Dom('td').hideable(this.#editMode).onClick(onClickDeleteGoal).append(
+							Dom.imageButton('Delete goal', icons.delete),
+						),
+					)),
+					this.buildTotalRow(planningCategory),
+				),
+			).userData(planningCategory);
+			categories.push(category);
 		}
 
-		return tableFragment;
+		return categories;
 	}
 
 	/**
@@ -269,6 +237,25 @@ export default class PlanningScreen {
 		const mainElement = document.getElementById('main');
 		mainElement.replaceChild(newContainer, this.container);
 		this.container = newContainer;
+	}
+
+	/**
+	 * @param {Category} forCategory
+	 */
+	buildTotalRow(forCategory) {
+		const categorytDaily = forCategory.goals.reduce((acc, curr) => acc + curr.daily, 0);
+		const categoryMonthly = forCategory.goals.reduce((acc, curr) => acc + curr.monthly, 0);
+		const categoryYearly = forCategory.goals.reduce((acc, curr) => acc + curr.yearly, 0);
+
+		return new Dom('tr').append(
+			new Dom('td').text('Total'),
+			new Dom('td').text(categorytDaily),
+			new Dom('td').text(categoryMonthly),
+			new Dom('td').text(categoryYearly),
+			new Dom('td').hideable(this.#editMode).onClick(this.onClickAddGoal.bind(this)).append(
+				Dom.imageButton('Add row', icons.add_row),
+			),
+		);
 	}
 
 	// Recompute from DOM instead of memory/db/network to have real time updates in UI
@@ -440,7 +427,7 @@ export default class PlanningScreen {
 			yearly: 0,
 		};
 
-		const table = btn.parentNode.parentNode.parentNode.parentNode;
+		const table = btn.parentNode.parentNode.parentNode;
 		const tbody = table.tBodies[0];
 		// Subtract one for the bottom "Total" row.
 		const index = tbody.rows.length - 1;
