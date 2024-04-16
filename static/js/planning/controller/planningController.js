@@ -1,4 +1,5 @@
 import Utils from '../../utils/utils.js';
+import Planning, { Statement } from '../model/planningModel.js';
 import PlanningCache from '../persistence/planningCache.js';
 import PlanningScreen from '../view/planningScreen.js';
 
@@ -48,6 +49,7 @@ export default class PlanningController {
 		const planning = await cache.readForMonth(this.#defaultMonth);
 		const planningScreen = new PlanningScreen(planning);
 		planningScreen.onClickUpdate = this.onClickUpdate.bind(this);
+		// planningScreen.onClickAddStatement = this.onClickAddStatement.bind(this);
 		planningScreen.init();
 		return planningScreen;
 	}
@@ -65,11 +67,14 @@ export default class PlanningController {
 		}
 	} */
 
-	async onClickUpdate(id, statements) {
+	/**
+	 * @param {Planning} planning
+	 */
+	onClickUpdate(planning) {
 		// TODO repalce with a map
 		for (let i = 0; i < this.#caches.length; i += 1) {
-			if (this.#caches[i].year === id) {
-				this.#caches[i].updateAll(statements);
+			if (this.#caches[i].year === planning.year) {
+				this.#caches[i].updateAll([planning]);
 			}
 		}
 
@@ -82,5 +87,20 @@ export default class PlanningController {
 				M.toast({html: 'Updated from GDrive', classes: 'rounded'});
 			}
 		} */
+	}
+
+	/**
+	 * @param {Statement} statement
+	 */
+	async onClickAddStatement(statement) {
+		const date = new Date(statement.id);
+		const planningCache = this.#caches.find((cache) => cache.year === date.getFullYear());
+		if (planningCache) {
+			const planning = await planningCache.readForMonth(date.getMonth());
+			if (planning) {
+				planning.statements.push(statement);
+				planningCache.update(planning.id, planning);
+			}
+		}
 	}
 }
