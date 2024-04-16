@@ -33,12 +33,12 @@ export default class PlanningController {
 		const currentYearScreen = await this.initPlanningScreen(this.#cache);
 
 		this.#caches.forEach((cache) => {
-			currentYearScreen.updateYear(cache.year);
+			currentYearScreen.appendYear(cache.year);
 		});
-
-		/* if(gdriveSync) {
-			this.initGDrive();
-		} */
+		const planningsPerMonths = await this.#cache.readAll();
+		planningsPerMonths.forEach((planning) => {
+			currentYearScreen.appendMonth(planning.month);
+		})
 	}
 
 	/**
@@ -49,23 +49,10 @@ export default class PlanningController {
 		const planning = await cache.readForMonth(this.#defaultMonth);
 		const planningScreen = new PlanningScreen(planning);
 		planningScreen.onClickUpdate = this.onClickUpdate.bind(this);
-		// planningScreen.onClickAddStatement = this.onClickAddStatement.bind(this);
+		planningScreen.onStatementAdded = this.onClickAddStatement.bind(this);
 		planningScreen.init();
 		return planningScreen;
 	}
-
-	/*
-	async initGDrive() {
-		await this.planningGDrive.init();
-		const needsUpdate = await this.planningGDrive.syncGDrive();
-		if(needsUpdate) {
-			const localCollections = await this.planningCache.readAll();
-			for (const [id, planningCollection] of Object.entries(localCollections)) {
-				this.#tabs.get(id).update(planningCollection);
-			}
-			M.toast({html: 'Updated from GDrive', classes: 'rounded'});
-		}
-	} */
 
 	/**
 	 * @param {Planning} planning
@@ -77,16 +64,6 @@ export default class PlanningController {
 				this.#caches[i].updateAll([planning]);
 			}
 		}
-
-		/*
-		if(gdriveSync) {
-			localStorage.setItem(GDrive.MODIFIED_TIME_FIELD, new Date().toISOString());
-			const needsUpdate = await this.planningGDrive.syncGDrive();
-			if(needsUpdate) {
-				this.#tabs.get(id).update(planningCollection);
-				M.toast({html: 'Updated from GDrive', classes: 'rounded'});
-			}
-		} */
 	}
 
 	/**
@@ -94,7 +71,7 @@ export default class PlanningController {
 	 */
 	async onClickAddStatement(statement) {
 		const date = new Date(statement.id);
-		const planningCache = this.#caches.find((cache) => cache.year === date.getFullYear());
+		const planningCache = await PlanningCache.get(date.getFullYear());
 		if (planningCache) {
 			const planning = await planningCache.readForMonth(date.getMonth());
 			if (planning) {

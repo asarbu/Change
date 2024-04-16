@@ -6,4 +6,6 @@ export default class PlanningNavbarEventHandlers {
 	onStatementTypeChanged = undefined;
 
 	onClickAddStatement = undefined;
+
+	onStatementChanged = undefined;
 }

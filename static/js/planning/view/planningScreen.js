@@ -10,6 +10,8 @@ import PlanningNavbarEventHandlers from './planningNavbarEventHandlers.js';
 export default class PlanningScreen {
 	onClickUpdate = undefined;
 
+	onStatementAdded = undefined;
+
 	/** @type {Sidenav} */
 	#sidenav = undefined;
 
@@ -47,6 +49,7 @@ export default class PlanningScreen {
 		handlers.onClickEdit = this.onClickEdit.bind(this);
 		handlers.onStatementTypeChanged = this.onStatementTypeChanged.bind(this);
 		handlers.onClickAddStatement = this.onClickAddStatement.bind(this);
+		handlers.onStatementChanged = this.onClickShowStatement.bind(this);
 
 		this.navbar = new PlanningNavbar(
 			this.#defaultPlanning.year,
@@ -67,8 +70,14 @@ export default class PlanningScreen {
 	}
 
 	// #region DOM update
-	updateYear(year) {
+	appendYear(year) {
 		this.navbar.appendYear(year);
+		this.navbar.updateYearDropupText();
+	}
+
+	appendMonth(month) {
+		this.navbar.appendMonth(month);
+		this.navbar.updateMonthDropupText();
 	}
 	// #endregion
 
@@ -314,19 +323,17 @@ export default class PlanningScreen {
 		this.refresh(this.statements);
 	}
 
-	onClickAddStatement() {
-		const id = new Date().getTime(); // millisecond precision
-		const newStatement = new Statement(id, 'New statement', Statement.EXPENSE);
-		this.statements.unshift(newStatement);
+	onClickAddStatement(statement) {
+		if (this.onStatementAdded) {
+			this.onStatementAdded(statement);
+		}
 		this.refresh(this.statements);
 	}
 
-	onClickShowStatement(dropup, e) {
-		this.gfx.onClickSetSlice(e);
-		const sliceName = e.currentTarget.textContent;
-		const dropupText = dropup.firstChild;
-		dropupText.nodeValue = `${sliceName} `;
-		dropup.click();
+	onClickShowStatement(statementName) {
+		const { statements } = this.#defaultPlanning;
+		const index = statements.findIndex((statement) => statement.name === statementName);
+		this.gfx.slideTo(index);
 	}
 
 	onClickChangeStatementType(e) {
