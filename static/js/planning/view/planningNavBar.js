@@ -2,6 +2,7 @@ import Dom from '../../gui/dom.js';
 import icons from '../../gui/icons.js';
 import Modal from '../../gui/modal.js';
 import Utils from '../../utils/utils.js';
+import { Statement } from '../model/planningModel.js';
 import PlanningNavbarEventHandlers from './planningNavbarEventHandlers.js';
 
 export default class PlanningNavbar {
@@ -138,14 +139,6 @@ export default class PlanningNavbar {
 
 	onClickDeletePlanning() {
 
-	}
-
-	onClickStatementSave() {
-		this.#addStatementDropup.close();
-	}
-
-	onClickAddStatement() {
-		this.#addStatementDropup.open();
 	}
 
 	onClickDeleteStatement() {
@@ -341,36 +334,24 @@ export default class PlanningNavbar {
 	// #endregion
 
 	// #region Add Statement Modal
-	buildStatementTypeModal() {
-		const onStatementTypeChanged = this.onStatementTypeChanged.bind(this);
-		this.#statementTypeDropup = new Modal('add-statement').header(
-			new Dom('h2').text('Select Statement Type'),
-		).body(
-			new Dom('div').cls('accordion-secondary').text('Income').onClick(onStatementTypeChanged),
-			new Dom('div').cls('accordion-secondary').text('Expense').onClick(onStatementTypeChanged),
-			new Dom('div').cls('accordion-secondary').text('Savings').onClick(onStatementTypeChanged),
-		).addCancelFooter();
-
-		return this.#statementTypeDropup;
-	}
 
 	buildAddStatementModal() {
 		const onClickSave = this.onClickStatementSave.bind(this);
 		const onClickStatementType = this.onClickStatementType.bind(this, true);
-		this.#addStatementDropup = new Modal('statement-type').header(
+		this.#addStatementDropup = new Modal('add-statement').header(
 			new Dom('h2').text('Add Statement'),
 		).body(
 			new Dom('form').append(
 				new Dom('div').cls('input-field').append(
-					new Dom('input').id('date-input-field').type('date').attr('required', '').attr('value', new Date().toISOString().substring(0, 10)),
+					new Dom('input').id('statement-date-input').type('date').attr('required', '').attr('value', new Date().toISOString().substring(0, 10)),
 					new Dom('label').text('Date: '),
 				),
 				new Dom('div').cls('input-field').append(
-					new Dom('input').id('statement-input-field').type('text').attr('required', ''),
+					new Dom('input').id('statement-name-input').type('text').attr('required', ''),
 					new Dom('label').text('Statement name: '),
 				),
 				new Dom('div').cls('input-field').onClick().append(
-					new Dom('input').id('statement-type-input-field').onClick(onClickStatementType).type('text').attr('required', ''),
+					new Dom('input').id('statement-type-input').onClick(onClickStatementType).type('text').attr('required', ''),
 					new Dom('label').text('Type: '),
 				),
 				new Dom('input').type('submit').hide().onClick(onClickSave),
@@ -381,6 +362,37 @@ export default class PlanningNavbar {
 		);
 
 		return this.#addStatementDropup;
+	}
+
+	onClickStatementSave() {
+		const statementId = document.getElementById('statement-date-input').valueAsDate.getTime();
+		const statementName = document.getElementById('statement-name-input').value;
+		const statementType = document.getElementById('statement-type-input').value;
+		const newStatement = new Statement(statementId, statementName, statementType);
+
+		if (this.#eventHandlers.onClickAddStatement) {
+			this.#eventHandlers.onClickAddStatement(newStatement);
+		}
+		this.#addStatementDropup.close();
+	}
+
+	onClickAddStatement() {
+		this.#addStatementDropup.open();
+	}
+	// #endregion
+
+	// #region Statement Type modal
+	buildStatementTypeModal() {
+		const onStatementTypeChanged = this.onStatementTypeChanged.bind(this);
+		this.#statementTypeDropup = new Modal('statement-type').header(
+			new Dom('h2').text('Select Statement Type'),
+		).body(
+			new Dom('div').cls('accordion-secondary').text('Income').onClick(onStatementTypeChanged),
+			new Dom('div').cls('accordion-secondary').text('Expense').onClick(onStatementTypeChanged),
+			new Dom('div').cls('accordion-secondary').text('Savings').onClick(onStatementTypeChanged),
+		).addCancelFooter();
+
+		return this.#statementTypeDropup;
 	}
 
 	onClickStatementType() {
@@ -397,7 +409,11 @@ export default class PlanningNavbar {
 		if (this.#addSpendingPending) {
 			this.#addSpendingPending = false;
 			this.#addStatementDropup.open();
-			document.getElementById('statement-type-input-field').value = type;
+			document.getElementById('statement-type-input').value = type;
+		}
+
+		if (this.#eventHandlers.onStatementTypeChanged) {
+			this.#eventHandlers.onStatementTypeChanged(type);
 		}
 	}
 	// #endregion

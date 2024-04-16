@@ -45,6 +45,8 @@ export default class PlanningScreen {
 		const handlers = new PlanningNavbarEventHandlers();
 		handlers.onClickSave = this.onClickSave.bind(this);
 		handlers.onClickEdit = this.onClickEdit.bind(this);
+		handlers.onStatementTypeChanged = this.onStatementTypeChanged.bind(this);
+		handlers.onClickAddStatement = this.onClickAddStatement.bind(this);
 
 		this.navbar = new PlanningNavbar(
 			this.#defaultPlanning.year,
@@ -106,9 +108,10 @@ export default class PlanningScreen {
 		const onClickAddCategory = this.onClickAddCategory.bind(this);
 		const slice = new Dom('div').cls('slice').append(
 			new Dom('h1').text(statement.name).editable().onKeyUp(onKeyUp).attr('contenteditable', this.#editMode),
-			new Dom('h2').text(`${statement.type} `).onClick(onClickStatementType).hideable(this.#editMode).append(
-				new Dom('span').cls('white-50').text('▼'),
-			),
+			new Dom('h2').id('planning-statement-type').text(`${statement.type} `).onClick(onClickStatementType).hideable(this.#editMode)
+				.append(
+					new Dom('span').cls('white-50').text('▼'),
+				),
 			...this.buildCategories(statement.categories),
 			Dom.imageButton('Add Category', icons.add_table).hideable(this.#editMode).onClick(onClickAddCategory),
 		);
@@ -232,7 +235,7 @@ export default class PlanningScreen {
 	// #region DOM manipulation
 	/** Refresh screen */
 	refresh(statements) {
-		this.plannings = statements;
+		this.statements = statements;
 		const newContainer = this.buildContainer();
 		const mainElement = document.getElementById('main');
 		mainElement.replaceChild(newContainer, this.container);
@@ -307,15 +310,15 @@ export default class PlanningScreen {
 	// #region event handlers
 	// #region statement event handlers
 	onClickDeleteStatement() {
-		this.plannings.splice(this.gfx.selectedIndex(), 1);
-		this.refresh(this.plannings);
+		this.statements.splice(this.gfx.selectedIndex(), 1);
+		this.refresh(this.statements);
 	}
 
 	onClickAddStatement() {
 		const id = new Date().getTime(); // millisecond precision
 		const newStatement = new Statement(id, 'New statement', Statement.EXPENSE);
-		this.plannings.unshift(newStatement);
-		this.refresh(this.plannings);
+		this.statements.unshift(newStatement);
+		this.refresh(this.statements);
 	}
 
 	onClickShowStatement(dropup, e) {
@@ -328,9 +331,9 @@ export default class PlanningScreen {
 
 	onClickChangeStatementType(e) {
 		const newStatementType = e.currentTarget.textContent;
-		const statement = this.plannings[this.gfx.selectedIndex()];
+		const statement = this.statements[this.gfx.selectedIndex()];
 		statement.type = newStatementType;
-		this.refresh(this.plannings);
+		this.refresh(this.statements);
 	}
 
 	onClickEdit() {
@@ -347,7 +350,10 @@ export default class PlanningScreen {
 		this.#editMode = true;
 	}
 
-	onClickSave() {
+	/**
+	 * @param {Planning} forPlanning
+	 */
+	onClickSave(forPlanning) {
 		const editableElmts = document.querySelectorAll('[editable="true"]');
 		for (let i = 0; i < editableElmts.length; i += 1) {
 			editableElmts[i].contentEditable = 'false';
@@ -359,23 +365,24 @@ export default class PlanningScreen {
 		}
 
 		if (this.onClickUpdate) {
-			this.onClickUpdate(this.#defaultPlanning.year, this.plannings);
+			const planning = forPlanning || this.#defaultPlanning;
+			this.onClickUpdate(planning);
 		}
 
 		this.#editMode = false;
 	}
 
-	onClickStatementType(dropup, event) {
-		// TODO use modals
-		const button = event.currentTarget;
-		button.classList.toggle('active');
-		const dropupStyle = dropup.style;
-		if (dropupStyle.display === 'none') {
-			dropupStyle.display = 'block';
-		} else {
-			// No need to set arrow up because it'll be handled by setSliceButtonText
-			dropupStyle.display = 'none';
-		}
+	onClickStatementType() {
+		this.navbar.onClickStatementType();
+	}
+
+	onStatementTypeChanged(newType) {
+		/** @type {HTMLElement} */
+		const planningStatementType = document.getElementById('planning-statement-type');
+		/** @type {Statement} */
+		const statement = planningStatementType.parentNode.userData;
+		planningStatementType.firstChild.nodeValue = newType;
+		statement.type = newType;
 	}
 
 	onKeyUpStatementName(event) {
@@ -390,10 +397,10 @@ export default class PlanningScreen {
 		const id = new Date().getTime(); // millisecond precision
 		const category = new Category(id, 'New Category');
 		/** @type{Statement} */
-		const statement = this.plannings[this.gfx.selectedIndex()];
+		const statement = this.statements[this.gfx.selectedIndex()];
 		statement.categories.push(category);
 		// TODO update only the current statement, not all of them
-		this.refresh(this.plannings);
+		this.refresh(this.statements);
 	}
 
 	onClickDeleteCategory(event) {
@@ -448,11 +455,12 @@ export default class PlanningScreen {
 		const table = row.parentNode.parentNode;
 
 		const { cellIndex } = event.currentTarget;
+		/** @type {Goal} */
 		const goal = row.userData;
 
 		switch (cellIndex) {
 		case 0:
-			goal.itemName = cell.textContent;
+			goal.name = cell.textContent;
 			break;
 		case 1:
 			goal.daily = parseInt(cell.textContent, 10);
