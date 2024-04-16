@@ -320,7 +320,7 @@ export default class PlanningNavbar {
 	onStatementChanged(statement) {
 		this.#statementsDropup.close();
 		if (this.#eventHandlers.onStatementChanged) {
-			this.#eventHandlers.onStatementChanged(sta)
+			this.#eventHandlers.onStatementChanged(statement);
 		}
 	}
 
