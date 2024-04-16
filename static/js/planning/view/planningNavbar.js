@@ -66,9 +66,7 @@ export default class PlanningNavbar {
 
 		const main = document.getElementById('main');
 		main.appendChild(this.buildYearModal().toHtml());
-		this.appendYear(this.#selectedYear);
 		main.appendChild(this.buildMonthModal().toHtml());
-		this.appendMonth(this.#selectedMonth);
 		main.appendChild(this.buildStatementModal().toHtml());
 		main.appendChild(this.buildStatementTypeModal().toHtml());
 		main.appendChild(this.buildAddStatementModal().toHtml());
@@ -243,23 +241,24 @@ export default class PlanningNavbar {
 		const monthDropupItem = new Dom('div').cls('accordion-secondary').onClick(onMonthChanged).text(monthName);
 		this.#monthsInDropup.set(month, monthDropupItem);
 		this.#monthsDropup.body(monthDropupItem);
+
+		this.updateMonthDropupText();
 	}
 
 	selectMonth(month) {
 		if (month === this.#selectedMonth) return;
-
 		this.#selectedMonth = month;
-		this.updateMonthDropupText();
 	}
 
 	updateMonthDropupText() {
 		const monthText = document.getElementById('planning-month-text');
-		const newText = `${this.#selectedMonth} `;
+		const monthName = Utils.nameForMonth(this.#selectedMonth);
+		const newText = `${monthName} `;
 		if (monthText.textContent !== newText) {
 			monthText.textContent = newText;
 		}
 
-		const newCaret = this.#yearsInDropup.size > 1 ? '▲' : '';
+		const newCaret = this.#monthsInDropup.size > 1 ? '▲' : '';
 		const monthCaret = document.getElementById('planning-month-caret');
 		if (monthCaret.textContent !== newCaret) {
 			monthCaret.textContent = newCaret;
@@ -292,15 +291,12 @@ export default class PlanningNavbar {
 		const statementDropupItem = new Dom('div').cls('accordion-secondary').onClick(onStatementChanged).text(statement);
 		this.#statementsInDropup.set(statement, statementDropupItem);
 		this.#statementsDropup.body(statementDropupItem);
-
 		this.updateStatementDropupText();
 	}
 
 	selectStatement(statement) {
 		if (statement === this.#selectedStatement) return;
-
 		this.#selectedStatement = statement;
-		this.updateStatementDropupText();
 	}
 
 	updateStatementDropupText() {
@@ -323,12 +319,9 @@ export default class PlanningNavbar {
 
 	onStatementChanged(statement) {
 		this.#statementsDropup.close();
-		// TODO replace this with slideTo
-		const { pathname } = window.location;
-		const year = this.#selectedYear;
-		const month = this.#selectedMonth;
-		const href = `${pathname}?year=${year}&month=${month}&statement=${statement}`;
-		window.location.href = href;
+		if (this.#eventHandlers.onStatementChanged) {
+			this.#eventHandlers.onStatementChanged(sta)
+		}
 	}
 
 	// #endregion
