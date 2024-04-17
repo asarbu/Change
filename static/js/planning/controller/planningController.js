@@ -16,14 +16,19 @@ export default class PlanningController {
 	/** @type {number} */
 	#defaultMonth = undefined;
 
+	/** @type {string} */
+	#defaultStatement = undefined;
+
 	constructor() {
 		const queryString = window.location.search;
 		const urlParams = new URLSearchParams(queryString);
 		const year = +(urlParams.get('year'));
 		const month = Utils.monthForName((urlParams.get('month')));
+		const statement = urlParams.get('statement');
 
 		this.#defaultYear = year || new Date().getFullYear();
 		this.#defaultMonth = month || new Date().getMonth();
+		this.#defaultStatement = statement;
 	}
 
 	async init() {
@@ -38,12 +43,12 @@ export default class PlanningController {
 		const planningsPerMonths = await this.#cache.readAll();
 		planningsPerMonths.forEach((planning) => {
 			currentYearScreen.appendMonth(planning.month);
-		})
+		});
 	}
 
 	/**
-	 *
 	 * @param {PlanningCache} cache
+	 * @returns {PlanningScreen}
 	 */
 	async initPlanningScreen(cache) {
 		const planning = await cache.readForMonth(this.#defaultMonth);
@@ -51,6 +56,7 @@ export default class PlanningController {
 		planningScreen.onClickUpdate = this.onClickUpdate.bind(this);
 		planningScreen.onStatementAdded = this.onClickAddStatement.bind(this);
 		planningScreen.init();
+		planningScreen.onClickShowStatement(this.#defaultStatement);
 		return planningScreen;
 	}
 

@@ -333,7 +333,7 @@ export default class PlanningScreen {
 	onClickShowStatement(statementName) {
 		const { statements } = this.#defaultPlanning;
 		const index = statements.findIndex((statement) => statement.name === statementName);
-		this.gfx.slideTo(index);
+		if (index >= 0) this.gfx.slideTo(index);
 	}
 
 	onClickChangeStatementType(e) {
