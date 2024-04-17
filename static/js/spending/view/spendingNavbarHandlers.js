@@ -1,4 +1,4 @@
-export default class SpendingNavBarEventHandlers {
+export default class SpendingNavbarEventHandlers {
 	onMonthChanged = undefined;
 
 	onYearChanged = undefined;
