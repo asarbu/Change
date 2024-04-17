@@ -7,8 +7,8 @@ export default class PlanningController {
 	/** @type {Array<PlanningCache>} */
 	#caches = undefined;
 
-	/** @type {PlanningCache} */
-	#cache = undefined;
+	/** @type {PlanningScreen} */
+	#defaultScreen = undefined;
 
 	/** @type {number} */
 	#defaultYear = undefined;
@@ -33,14 +33,14 @@ export default class PlanningController {
 
 	async init() {
 		this.#caches = await PlanningCache.getAll();
-		this.#cache = await PlanningCache.get(this.#defaultYear);
+		const planningCache = await PlanningCache.get(this.#defaultYear);
 
-		const currentYearScreen = await this.initPlanningScreen(this.#cache);
+		const currentYearScreen = await this.initPlanningScreen(planningCache);
 
 		this.#caches.forEach((cache) => {
 			currentYearScreen.appendYear(cache.year);
 		});
-		const planningsPerMonths = await this.#cache.readAll();
+		const planningsPerMonths = await planningCache.readAll();
 		planningsPerMonths.forEach((planning) => {
 			currentYearScreen.appendMonth(planning.month);
 		});
@@ -48,7 +48,7 @@ export default class PlanningController {
 
 	/**
 	 * @param {PlanningCache} cache
-	 * @returns {PlanningScreen}
+	 * @returns {Promise<PlanningScreen>}
 	 */
 	async initPlanningScreen(cache) {
 		const planning = await cache.readForMonth(this.#defaultMonth);
@@ -79,11 +79,38 @@ export default class PlanningController {
 		const date = new Date(statement.id);
 		const planningCache = await PlanningCache.get(date.getFullYear());
 		if (planningCache) {
-			const planning = await planningCache.readForMonth(date.getMonth());
+			let planning = await planningCache.readForMonth(date.getMonth());
 			if (planning) {
 				planning.statements.push(statement);
-				planningCache.update(planning.id, planning);
+			} else {
+				planning = new Planning(date.getTime(), date.getFullYear(), date.getMonth(), [statement]);
 			}
+			planningCache.update(planning.id, planning);
+			this.navigateTo(date.getFullYear(), date.getMonth(), statement.name);
 		}
+	}
+
+	/**
+	 * Navigates to the planning statement of the provided parameters
+	 * @param {number} year
+	 * @param {number} month
+	 * @param {string} statementName
+	 */
+	navigateTo(year, month, statementName) {
+		if (year === this.#defaultYear && month === this.#defaultMonth) {
+			this.#defaultScreen.onClickShowStatement(statementName);
+			return;
+		}
+
+		if (!year) return;
+		let url = `${window.location.pathname}`;
+		url += `?${year}`;
+
+		if (!month) window.location.href = url;
+		url += `&${month}`;
+
+		if (!statementName) window.location.href = url;
+		url += `&${statementName}`;
+		window.location.href = url;
 	}
 }
