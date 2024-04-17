@@ -8,6 +8,7 @@ export default class Planning {
 	 * @constructs Planning
 	 * @param {number} year
 	 * @param {number} month
+	 * @param {Array<Statement>} statements
 	 */
 	constructor(id, year, month, statements) {
 		this.id = id;
