@@ -1,75 +1,116 @@
+import Utils from '../../utils/utils.js';
+import Planning, { Statement } from '../model/planningModel.js';
 import PlanningCache from '../persistence/planningCache.js';
 import PlanningScreen from '../view/planningScreen.js';
 
 export default class PlanningController {
-	/**
-	 * Used for fast retreival of local caches.
-	 * @type {Array<PlanningCache>}
-	 * @private
-	 */
+	/** @type {Array<PlanningCache>} */
 	#caches = undefined;
 
-	async init(forYear) {
-		const year = forYear || new Date().getFullYear();
+	/** @type {PlanningScreen} */
+	#defaultScreen = undefined;
+
+	/** @type {number} */
+	#defaultYear = undefined;
+
+	/** @type {number} */
+	#defaultMonth = undefined;
+
+	/** @type {string} */
+	#defaultStatement = undefined;
+
+	constructor() {
+		const queryString = window.location.search;
+		const urlParams = new URLSearchParams(queryString);
+		const year = +(urlParams.get('year'));
+		const month = Utils.monthForName((urlParams.get('month')));
+		const statement = urlParams.get('statement');
+
+		this.#defaultYear = year || new Date().getFullYear();
+		this.#defaultMonth = month || new Date().getMonth();
+		this.#defaultStatement = statement;
+	}
+
+	async init() {
 		this.#caches = await PlanningCache.getAll();
+		const planningCache = await PlanningCache.get(this.#defaultYear);
 
-		let defaultYearCache;
-		for (let i = 0; i < this.#caches.length; i += 1) {
-			if (this.#caches[i].year === `${year}`) {
-				defaultYearCache = this.#caches[i];
-			}
-		}
+		const currentYearScreen = await this.initPlanningScreen(planningCache);
 
-		const currentYearScreen = await this.initPlanningScreen(defaultYearCache);
-		currentYearScreen.init();
-		currentYearScreen.activate();
-
-		/* if(gdriveSync) {
-			this.initGDrive();
-		} */
+		this.#caches.forEach((cache) => {
+			currentYearScreen.appendYear(cache.year);
+		});
+		const planningsPerMonths = await planningCache.readAll();
+		planningsPerMonths.forEach((planning) => {
+			currentYearScreen.appendMonth(planning.month);
+		});
 	}
 
 	/**
-	 *
 	 * @param {PlanningCache} cache
+	 * @returns {Promise<PlanningScreen>}
 	 */
 	async initPlanningScreen(cache) {
-		const planningCache = cache;
-		const localCollections = await planningCache.readAll();
-		const planningScreen = new PlanningScreen(planningCache.year, localCollections);
+		const planning = await cache.readForMonth(this.#defaultMonth);
+		const planningScreen = new PlanningScreen(planning);
 		planningScreen.onClickUpdate = this.onClickUpdate.bind(this);
+		planningScreen.onStatementAdded = this.onClickAddStatement.bind(this);
+		planningScreen.init();
+		planningScreen.onClickShowStatement(this.#defaultStatement);
 		return planningScreen;
 	}
 
-	/*
-	async initGDrive() {
-		await this.planningGDrive.init();
-		const needsUpdate = await this.planningGDrive.syncGDrive();
-		if(needsUpdate) {
-			const localCollections = await this.planningCache.readAll();
-			for (const [id, planningCollection] of Object.entries(localCollections)) {
-				this.#tabs.get(id).update(planningCollection);
-			}
-			M.toast({html: 'Updated from GDrive', classes: 'rounded'});
-		}
-	} */
-
-	async onClickUpdate(id, statements) {
+	/**
+	 * @param {Planning} planning
+	 */
+	onClickUpdate(planning) {
 		// TODO repalce with a map
 		for (let i = 0; i < this.#caches.length; i += 1) {
-			if (this.#caches[i].year === id) {
-				this.#caches[i].updateAll(statements);
+			if (this.#caches[i].year === planning.year) {
+				this.#caches[i].updateAll([planning]);
 			}
 		}
+	}
 
-		/*
-		if(gdriveSync) {
-			localStorage.setItem(GDrive.MODIFIED_TIME_FIELD, new Date().toISOString());
-			const needsUpdate = await this.planningGDrive.syncGDrive();
-			if(needsUpdate) {
-				this.#tabs.get(id).update(planningCollection);
-				M.toast({html: 'Updated from GDrive', classes: 'rounded'});
+	/**
+	 * @param {Statement} statement
+	 */
+	async onClickAddStatement(statement) {
+		const date = new Date(statement.id);
+		const planningCache = await PlanningCache.get(date.getFullYear());
+		if (planningCache) {
+			let planning = await planningCache.readForMonth(date.getMonth());
+			if (planning) {
+				planning.statements.push(statement);
+			} else {
+				planning = new Planning(date.getTime(), date.getFullYear(), date.getMonth(), [statement]);
 			}
-		} */
+			planningCache.update(planning.id, planning);
+			this.navigateTo(date.getFullYear(), date.getMonth(), statement.name);
+		}
+	}
+
+	/**
+	 * Navigates to the planning statement of the provided parameters
+	 * @param {number} year
+	 * @param {number} month
+	 * @param {string} statementName
+	 */
+	navigateTo(year, month, statementName) {
+		if (year === this.#defaultYear && month === this.#defaultMonth) {
+			this.#defaultScreen.onClickShowStatement(statementName);
+			return;
+		}
+
+		if (!year) return;
+		let url = `${window.location.pathname}`;
+		url += `?${year}`;
+
+		if (!month) window.location.href = url;
+		url += `&${month}`;
+
+		if (!statementName) window.location.href = url;
+		url += `&${statementName}`;
+		window.location.href = url;
 	}
 }
