@@ -81,15 +81,15 @@ export default class PlanningNavbar {
 				new Dom('button').cls('nav-item', 'nav-trigger').attr('data-side', 'left').append(
 					new Dom('img').cls('white-fill').text('Menu').attr('alt', 'Menu').attr('src', icons.menu),
 				),
-				new Dom('button').id('planning-year-dropup').cls('nav-item').onClick(onClickYearDropup).append(
+				new Dom('button').cls('nav-item').onClick(onClickYearDropup).append(
 					new Dom('span').id('planning-year-text').text(`${year} `),
 					new Dom('span').id('planning-year-caret').cls('white-50').text(''),
 				),
-				new Dom('button').id('planning-month-dropup').cls('nav-item').onClick(onClickMonthDropup).append(
+				new Dom('button').cls('nav-item').onClick(onClickMonthDropup).append(
 					new Dom('span').id('planning-month-text').text(`${Utils.nameForMonth(month)} `),
 					new Dom('span').id('planning-month-caret').cls('white-50').text(''),
 				),
-				new Dom('button').id('planning-stmt-right').cls('nav-item').onClick(onClickStatementDropup).append(
+				new Dom('button').cls('nav-item').onClick(onClickStatementDropup).append(
 					new Dom('span').id('planning-stmt-text').text(`${statement} `),
 					new Dom('span').id('planning-stmt-caret').cls('white-50').text(''),
 				),
