@@ -12,6 +12,10 @@ export default class PlanningCache {
 	 */
 	static #initializedCaches = [];
 
+	/**
+	 * Fetches or creates a Planning cache for all years
+	 * @returns {Promise<Array<PlanningCache>>}
+	 */
 	static async getAll() {
 		const idb = await Idb.of(
 			PlanningCache.DATABASE_NAME,
@@ -32,7 +36,7 @@ export default class PlanningCache {
 	}
 
 	/**
-	 * Fetches or creates a Spending cache for the provided year
+	 * Fetches or creates a Planning cache for the provided year
 	 * @param {number} forYear Year for which to retrieve the Planning Cache
 	 * @returns {Promise<PlanningCache>}
 	 */
@@ -45,8 +49,8 @@ export default class PlanningCache {
 			PlanningCache.upgradePlanningDatabase,
 		);
 		const objectStores = idb.getObjectStores();
-		if (!objectStores.find((objectStore) => objectStore === `${forYear}`)) {
-			await idb.createObjectStores([`${forYear}`]);
+		if (!objectStores.find((objectStore) => objectStore === forYear)) {
+			await idb.createObjectStores([forYear]);
 		}
 		const planningCache = new PlanningCache(forYear, idb);
 		PlanningCache.#initializedCaches.push(planningCache);
@@ -99,6 +103,10 @@ export default class PlanningCache {
 		}
 	}
 
+	/**
+	 * Fetch default planning template from the server and store it in cache
+	 * // TODO move this in controller? We can use a new count method in tests as well
+	 */
 	async storeFromTemplate() {
 		const storeCount = await this.idb.count(this.year);
 		if (storeCount === 0) {
@@ -114,6 +122,10 @@ export default class PlanningCache {
 		}
 	}
 
+	/**
+	 * @param {Planning} planning
+	 * @param {string} key
+	 */
 	async insert(planning, key) {
 		await this.idb.insert(this.year, planning, key);
 	}
@@ -138,7 +150,7 @@ export default class PlanningCache {
 	/**
 	 * Updates all of the statements from the current object store
 	 * @async
-	 * @param {Array<Planning>} plannings Statenents to be updated in dabatase
+	 * @param {Promise<Array<Planning>>} plannings Statenents to be updated in dabatase
 	 */
 	async updateAll(plannings) {
 		await this.idb.clear(this.year);
@@ -164,7 +176,7 @@ export default class PlanningCache {
 	/**
 	 * Fetch only the planning categories from the current object store
 	 * @async
-	 * @returns {Array<Category>}
+	 * @returns {Promise<Array<Category>>}
 	 */
 	async readCategories() {
 		return this.idb.openCursor(this.year);
@@ -174,7 +186,7 @@ export default class PlanningCache {
 	 * Fetch only the planning statement corresponding to the key
 	 * @async
 	 * @param {string} key Key to lookup in the datastore
-	 * @returns {Planning}
+	 * @returns {Promise<Planning>}
 	 */
 	async read(key) {
 		return this.idb.get(this.year, key);
@@ -185,7 +197,7 @@ export default class PlanningCache {
 	 * @async
 	 * @param {string} key Key to lookup in the datastore
 	 * @param {Planning} value Value to update
-	 * @returns {Planning} Updated value
+	 * @returns {Promise<Planning>} Updated value
 	 */
 	async update(key, value) {
 		await this.idb.insert(this.year, value, key);
@@ -195,7 +207,7 @@ export default class PlanningCache {
 	 * Delete a single Planning statenent in the database
 	 * @async
 	 * @param {string} key Key to lookup in the datastore
-	 * @returns {Planning} Deleted value
+	 * @returns {Promise<Planning>} Deleted value
 	 */
 	async delete(key) {
 		await this.idb.delete(this.year, key);
