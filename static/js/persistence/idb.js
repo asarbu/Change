@@ -61,9 +61,6 @@ export default class Idb {
 	 */
 	static #open(dbName, version, upgradeCallback) {
 		return new Promise((resolve, reject) => {
-			if (!window.indexedDB) {
-				return;
-			}
 			const request = indexedDB.open(dbName, version);
 
 			request.onsuccess = (event) => {
