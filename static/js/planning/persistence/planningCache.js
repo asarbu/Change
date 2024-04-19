@@ -49,7 +49,6 @@ export default class PlanningCache {
 			await idb.createObjectStores([`${forYear}`]);
 		}
 		const planningCache = new PlanningCache(forYear, idb);
-		await planningCache.init();
 		PlanningCache.#initializedCaches.push(planningCache);
 		return planningCache;
 	}
@@ -84,15 +83,7 @@ export default class PlanningCache {
 	 * @param {Idb} idb Idb instance
 	 */
 	constructor(year, idb) {
-		if (!idb) {
-			this.idb = Idb.of(
-				PlanningCache.DATABASE_NAME,
-				PlanningCache.upgradePlanningDatabase,
-			);
-		} else {
-			this.idb = idb;
-		}
-
+		this.idb = idb;
 		this.year = +year;
 	}
 
@@ -100,6 +91,15 @@ export default class PlanningCache {
 	 * Initialize current instance of PlanningCache
 	 */
 	async init() {
+		if (!this.idb) {
+			this.idb = Idb.of(
+				PlanningCache.DATABASE_NAME,
+				PlanningCache.upgradePlanningDatabase,
+			);
+		}
+	}
+
+	async storeFromTemplate() {
 		const storeCount = await this.idb.count(this.year);
 		if (storeCount === 0) {
 			await fetch(PlanningCache.PLANNING_TEMPLATE_URI)
