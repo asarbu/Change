@@ -38,6 +38,11 @@
     "transform": {},
     "setupFiles": [
       "fake-indexeddb/auto"
-    ]
+    ],
+    "collectCoverage": true,
+    "moduleFileExtensions": ["js", "json"],
+    "coverageReporters": ["html", "text"],
+    "coverageDirectory": "coverage",
+    "verbose": true
   }
 }
