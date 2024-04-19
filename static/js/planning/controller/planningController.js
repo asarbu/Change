@@ -34,6 +34,8 @@ export default class PlanningController {
 	async init() {
 		this.#caches = await PlanningCache.getAll();
 		const planningCache = await PlanningCache.get(this.#defaultYear);
+		// TODO allow user to confirm if he wants default plannings
+		planningCache.storeFromTemplate();
 
 		const currentYearScreen = await this.initPlanningScreen(planningCache);
 
