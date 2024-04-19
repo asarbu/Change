@@ -6,14 +6,9 @@ module.exports = {
 	extends: 'airbnb-base',
 	overrides: [
 		{
+			files: ['tests/**/*'],
 			env: {
-				node: true,
-			},
-			files: [
-				'.eslintrc.{js,cjs}',
-			],
-			parserOptions: {
-				sourceType: 'script',
+				jest: true,
 			},
 		},
 	],
