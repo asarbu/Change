@@ -144,12 +144,12 @@ export default class PlanningCache {
 	 * @returns {Promise<Planning>}
 	 */
 	async readForMonth(month) {
+		// TODO do this with a key range
 		return (await this.readAll()).find((planning) => planning.month === month);
 	}
 
 	/**
 	 * Updates all of the statements from the current object store
-	 * @async
 	 * @param {Promise<Array<Planning>>} plannings Statenents to be updated in dabatase
 	 */
 	async updateAll(plannings) {
@@ -159,7 +159,7 @@ export default class PlanningCache {
 
 	/**
 	 * Fetch only the categories of type "Expense"
-	 * @async
+	 * // TODO move this to controller
 	 * @returns {Promise<Array<Category>>}
 	 */
 	async readExpenseCategories(forMonth) {
@@ -171,15 +171,6 @@ export default class PlanningCache {
 			categories.push(...statement.categories);
 			return categories;
 		}, []);
-	}
-
-	/**
-	 * Fetch only the planning categories from the current object store
-	 * @async
-	 * @returns {Promise<Array<Category>>}
-	 */
-	async readCategories() {
-		return this.idb.openCursor(this.year);
 	}
 
 	/**
