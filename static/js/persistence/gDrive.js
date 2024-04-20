@@ -7,26 +7,30 @@ export default class GDrive {
 
 	static ROOT_DIRECTORY_NAME = 'root';
 
+	static GDRIVE_MIME_TYPE_FOLDER = 'application/vnd.google-apps.folder';
+
 	/**
 	 * Constructs and initializes an instance of GDrive connector
-	 * @returns {GDrive}
+	 * TODO gtoup client data together
+	 * @returns {Promise<GDrive>}
 	 */
-	static async get() {
+	static async get(rememberLogin) {
 		// TODO put secret environment variables
 		const CLIENT_ID = '48008571695-vjj7lrnm4dv8i49ioi3a4tq3pbl1j67h.apps.googleusercontent.com';
 		const CLIENT_SECRET = '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';
 		const FILES_API = 'https://www.googleapis.com/drive/v3/files';
 		const redirectUri = window.location.href;
-		GDrive.#instance = new GDrive(CLIENT_ID, CLIENT_SECRET, FILES_API, redirectUri);
+		GDrive.#instance = new GDrive(CLIENT_ID, CLIENT_SECRET, FILES_API, redirectUri, rememberLogin);
 		await GDrive.#instance.init();
 		return GDrive.#instance;
 	}
 
-	constructor(clientId, clientSecret, accessType, redirectUri) {
+	constructor(clientId, clientSecret, accessType, redirectUri, rememberLogin) {
 		this.clientId = clientId;
 		this.clientSecret = clientSecret;
 		this.accessType = accessType;
 		this.redirectUri = redirectUri;
+		this.#rememberLogin = rememberLogin;
 
 		this.oauth2 = {
 			name: 'oauth2',
@@ -43,6 +47,7 @@ export default class GDrive {
 		this.initialized = true;
 	}
 
+	// TODO remove this ?
 	rememberLogin() {
 		this.#rememberLogin = true;
 	}
@@ -57,43 +62,45 @@ export default class GDrive {
 
 	async processOAuth2OfflineFlow() {
 		const locationString = window.location.href;
-		console.log(`Processing OAuth2 offline flow ${locationString}`);
-		const paramString = new RegExp('(.*)[?](.*)').exec(locationString);
-		if (paramString == null && this.loggedIn()) {
-			console.log('No parameters found. Returning...');
-			return;
-		}
+		const paramString = /(.*)[?](.*)/.exec(locationString);
+		if (paramString === null) return;
+
+		const loggedIn = await this.login();
+		if (!loggedIn) return;
 
 		// Parse query string to see if page request is coming from OAuth 2.0 server.
 		const params = {};
-		const regex = /([^&=]+)=([^&]*)/g; let
-			match;
-		this.redirectUri = paramString[1];
-		while (match = regex.exec(paramString[2])) {
+		const regex = /([^&=]+)=([^&]*)/g;
+
+		[, this.redirectUri] = paramString;
+		let match = regex.exec(paramString[2]);
+		while (match) {
 			params[decodeURIComponent(match[1])] = decodeURIComponent(match[2]);
+			match = regex.exec(paramString[2]);
 		}
 		if (Object.keys(params).length > 0) {
 			if (params.state && params.state === this.oauth2.state) {
 				if (localStorage.getItem(this.oauth2.refreshToken) === null) {
 					await this.getRefreshToken(params);
 				} else {
-					await this.tryRefreshAccessToken();
+					await this.refreshAccessToken();
 				}
 			}
 		}
 	}
 
 	processOAuth2OnlineFlow() {
-		const fragmentString = location.hash.substring(1);
+		const fragmentString = window.location.hash.substring(1);
 		// Parse query string to see if page request is coming from OAuth 2.0 server.
 		const params = {};
-		const regex = /([^&=]+)=([^&]*)/g; let
-			m;
-		while (m = regex.exec(fragmentString)) {
+		const regex = /([^&=]+)=([^&]*)/g;
+		let	m = regex.exec(fragmentString);
+		while (m) {
 			params[decodeURIComponent(m[1])] = decodeURIComponent(m[2]);
+			m = regex.exec(fragmentString);
 		}
 		if (Object.keys(params).length > 0) {
-			if (params.state && params.state == this.oauth2.state) {
+			if (params.state && params.state === this.oauth2.state) {
 				params.refreshed_at = new Date().getTime();
 				params.expires_at = params.refreshed_at + params.expires_in * 1000;
 				localStorage.setItem(this.oauth2.token, JSON.stringify(params));
@@ -112,11 +119,7 @@ export default class GDrive {
 			redirect_uri: this.redirectUri,
 			grant_type: 'authorization_code',
 		};
-		// console.log("Data:" , data)
 		const url = new URL('https://oauth2.googleapis.com/token');
-		const jsonheaders = {
-			'Content-Type': 'application/json',
-		};
 		const request = {
 			method: 'POST',
 			headers: {
@@ -125,27 +128,11 @@ export default class GDrive {
 			body: JSON.stringify(data),
 		};
 
-		// console.log(JSON.stringify(request));
-
+		// TODO handle error messages
 		const json = await fetch(url, request)
 			.then((response) => response.json())
-			.then((json) => json)
-			.catch((error) => {
-				if (typeof error.json === 'function') {
-					error.json().then((jsonError) => {
-						console.log('Json error from API');
-						console.log(jsonError);
-					}).catch((genericError) => {
-						console.log('Generic error from API');
-						console.log(error.statusText);
-					});
-				} else {
-					console.log('Fetch error');
-					console.log(error);
-				}
-			});
+			.then((responseJson) => responseJson);
 
-		// console.log("Received token", json);
 		if (json.refresh_token) {
 			localStorage.setItem(this.oauth2.refreshToken, json.refresh_token);
 			delete json.refresh_token;
@@ -156,64 +143,53 @@ export default class GDrive {
 		localStorage.setItem(this.oauth2.token, JSON.stringify(json));
 	}
 
-	async getAccessToken() {
-		// console.log("Getting Access token")
-		if (await this.loggedIn()) {
-			const params = JSON.parse(localStorage.getItem(this.oauth2.token));
-			if (!params) { return false; }
-			const access_token = params[this.oauth2.accessToken];
-			return access_token;
-		}
+	async #getAccessToken() {
+		if (!await this.login()) return undefined;
+
+		const params = JSON.parse(localStorage.getItem(this.oauth2.token));
+		if (!params) return undefined;
+
+		const accessToken = params[this.oauth2.accessToken];
+		return accessToken;
 	}
 
-	async loggedIn() {
-		// console.log("Checking login")
-		if (gdriveKeepLoggedin) {
-			if (localStorage.getItem(this.oauth2.token) === null) {
-				console.log('No token found. Requesting one from server');
-				return await this.tryRefreshAccessToken();
-			}
-			const token = JSON.parse(localStorage.getItem(this.oauth2.token));
-			if (this.tokenExpired(token)) {
-				console.log('Token expired');
-				if (!await this.tryRefreshAccessToken()) {
-					// Refreshing did not succeed. Refresh token expired or revoked.
-					localStorage.removeItem(this.oauth2.refreshToken);
-					localStorage.removeItem(this.oauth2.token);
-					this.#processOAuth2Flow();
+	/**
+	 * Handles the logic of automatic login or redirects to login screen, if necessary
+	 * @returns {boolean} logged in successfully
+	 */
+	async login() {
+		const token = localStorage.getItem(this.oauth2.token);
+		const isValidToken = token !== null
+			&& token.expires_at !== undefined
+			&& token.expires_at < new Date().getTime();
+		if (!isValidToken) {
+			if (this.#rememberLogin) {
+				const tokenRefreshed = await this.refreshAccessToken();
+				if (!tokenRefreshed) {
+					this.oauth2OfflineSignIn();
 				}
-			}
-		} else {
-			const token = localStorage.getItem(this.oauth2.token);
-			if (!token || this.tokenExpired(JSON.parse(token))) {
+			} else {
 				this.oauth2OnlineSignIn();
 			}
 		}
 		return true;
 	}
 
-	tokenExpired(token) {
-		const now = new Date().getTime();
-		if (token.expires_at === undefined || token.expires_at < now) {
-			console.log('Token expired', token.expires_at, now);
-			return true;
-		}
-		return false;
-	}
-
-	async tryRefreshAccessToken() {
-		console.log('Refreshing access token');
-		// If there is no refresh token, we cannot get an access token.
-		if (localStorage.getItem(this.oauth2.refreshToken) === null) {
-			console.log('No refresh token on local storage. Doing offline sign in');
+	/**
+	 * Handles refresh logic of offline authentication
+	 * @returns {Promise<boolean>} True if token was refreshed
+	 */
+	async refreshAccessToken() {
+		const refreshToken = localStorage.getItem(this.oauth2.refreshToken);
+		if (!refreshToken) {
 			this.oauth2OfflineSignIn();
 			return false;
 		}
-		const refresh_token = localStorage.getItem(this.oauth2.refreshToken);
+
 		const data = {
-			client_id: this.CLIENT_ID,
-			client_secret: this.CLIENT_SECRET,
-			refresh_token: refresh_token,
+			client_id: this.clientId,
+			client_secret: this.clientSecret,
+			refresh_token: refreshToken,
 			grant_type: 'refresh_token',
 		};
 		const url = new URL('https://oauth2.googleapis.com/token');
@@ -226,7 +202,6 @@ export default class GDrive {
 			headers: headers,
 			body: JSON.stringify(data),
 		});
-		// console.log(response);
 		if (!response.ok) {
 			return false;
 		}
@@ -236,8 +211,7 @@ export default class GDrive {
 			json.refreshed_at = new Date().getTime();
 			json.expires_at = json.refreshed_at + json.expires_in * 1000;
 		} else {
-			console.error('Refreshing token did not succeed', json);
-			return false;
+			throw Error('Refreshing token did not succeed', json);
 		}
 
 		localStorage.setItem(this.oauth2.token, JSON.stringify(json));
@@ -245,7 +219,6 @@ export default class GDrive {
 	}
 
 	oauth2OfflineSignIn() {
-		console.log('OAuth 2.0 offline sign in');
 		// Google's OAuth 2.0 endpoint for requesting an access token
 		const oauth2Endpoint = 'https://accounts.google.com/o/oauth2/v2/auth';
 
@@ -256,7 +229,7 @@ export default class GDrive {
 
 		// Parameters to pass to OAuth 2.0 endpoint.
 		const params = {
-			client_id: this.CLIENT_ID,
+			client_id: this.clientId,
 			redirect_uri: this.redirectUri,
 			scope: 'https://www.googleapis.com/auth/drive',
 			state: 'change-application-nonce',
@@ -267,6 +240,7 @@ export default class GDrive {
 			prompt: 'consent',
 		};
 
+		// TODO replace form with fetch request
 		// Add form parameters as hidden input values.
 		for (const p in params) {
 			const input = document.createElement('input');
@@ -277,15 +251,11 @@ export default class GDrive {
 		}
 
 		// Add form to page and submit it to open the OAuth 2.0 endpoint.
-		console.log('Sumbitting form: ', params);
 		document.body.appendChild(form);
-		/* console.trace();
-		alert(this.redirectUri) */
 		form.submit();
 	}
 
 	oauth2OnlineSignIn() {
-		console.log('OAuth 2.0 sign in');
 		// Google's OAuth 2.0 endpoint for requesting an access token
 		const oauth2Endpoint = 'https://accounts.google.com/o/oauth2/v2/auth';
 
@@ -318,6 +288,26 @@ export default class GDrive {
 		form.submit();
 	}
 
+	async #getHeader() {
+		const token = await this.#getAccessToken();
+		if (token) {
+			return new Headers({
+				Authorization: `Bearer ${token}`,
+				Accept: 'application/json',
+				'Content-Type': 'application/json',
+			});
+		}
+		return undefined;
+	}
+
+	/**
+	 * Write data to a file with a given parent ID
+	 * @param {string} parent Parent ID where to write the file
+	 * @param {string} fileName Name of the file where to write data
+	 * @param {Blob} data Data to write to the file
+	 * @param {boolean} overwrite true if the file should be overwritten
+	 * @returns {string} id of the file where data was written
+	 */
 	async writeFile(parent, fileName, data, overwrite) {
 		let fileId = localStorage.getItem(fileName);
 		if (!fileId) fileId = await this.findFile(fileName, parent);
@@ -329,32 +319,28 @@ export default class GDrive {
 		return fileId;
 	}
 
-	async getHeader() {
-		const token = await this.getAccessToken();
+	/**
+	 * Find a file with a name under a folder
+	 * @param {string} name Name of file to search
+	 * @param {string} parentId Parent under which to search
+	 * @param {string} mimeType Type of file to search (file, folder or shortcut)
+	 * @returns {Promise<string>} File id if the fle was found or undefined
+	 */
+	async find(name, parentId, mimeType) {
+		const token = await this.#getAccessToken();
 		if (token) {
-			return new Headers({
-				Authorization: `Bearer ${token}`,
-				Accept: 'application/json',
-				'Content-Type': 'application/json',
-			});
-		}
-	}
-
-	async find(name, parent, type) {
-		const token = await this.getAccessToken();
-		if (token) {
-			parent = parent || this.ROOT;
+			const parent = parentId || this.ROOT;
 
 			let q = `name='${name}' and trashed=false and '${parent}' in parents`;
-			if (type) {
-				q += ` and mimeType='${type}'`;
+			if (mimeType) {
+				q += ` and mimeType='${mimeType}'`;
 			}
-			// console.log(q)
 
-			const header = await this.getHeader();
+			const header = await this.#getHeader();
 			const url = new URL(this.FILES_API);
 			url.searchParams.append('q', q);
 
+			// TODO do proper error handling
 			const id = await fetch(url, {
 				method: 'GET',
 				headers: header,
@@ -362,15 +348,14 @@ export default class GDrive {
 				.then((response) => response.json())
 				.then((json) => {
 					if (json && json.files && json.files.length > 0) {
-					// console.log(json);
 						return json.files[0].id;
 					}
-				})
-				.catch((err) => console.log(err));
+					return undefined;
+				});
 
-			// console.log("Found ", name, " under ", parent, " with id ", id)
 			return id;
 		}
+		return undefined;
 	}
 
 	async findChangeAppFolder() {
@@ -378,10 +363,10 @@ export default class GDrive {
 		const fileId = await this.find(APP_FOLDER);
 
 		const fileType = await this.readFileMetadata(fileId, 'shortcutDetails, mimeType');
-		if (fileType.mimeType === 'application/vnd.google-apps.folder') {
+		if (fileType.mimeType === GDrive.GDRIVE_MIME_TYPE_FOLDER) {
 			return fileId;
 		} if (fileType.mimeType === 'application/vnd.google-apps.shortcut') {
-			if (fileType.shortcutDetails?.targetMimeType === 'application/vnd.google-apps.folder') {
+			if (fileType.shortcutDetails?.targetMimeType === GDrive.GDRIVE_MIME_TYPE_FOLDER) {
 				return fileType.shortcutDetails.targetId;
 			}
 		}
@@ -389,46 +374,42 @@ export default class GDrive {
 	}
 
 	async findFolder(name, parent) {
-		return await this.find(name, parent, 'application/vnd.google-apps.folder');
+		return this.find(name, parent, GDrive.GDRIVE_MIME_TYPE_FOLDER);
 	}
 
 	async findFile(name, parent) {
-		return await this.find(name, parent);
+		return this.find(name, parent);
 	}
 
 	async getChildren(folderId) {
-		const token = await this.getAccessToken();
+		const token = await this.#getAccessToken();
 		if (token) {
-			folderId = folderId || this.ROOT;
+			const folder = folderId || this.ROOT;
 
-			const q = `trashed=false and '${folderId}' in parents`;
-			// console.log(q);
+			const q = `trashed=false and '${folder}' in parents`;
 
-			const header = await this.getHeader();
+			const header = await this.#getHeader();
 			const url = new URL(this.FILES_API);
 			url.searchParams.append('q', q);
 
-			// console.log(url);
-			const j = await fetch(url, {
+			const children = await fetch(url, {
 				method: 'GET',
 				headers: header,
 			})
 				.then((response) => response.json())
 				.then((json) => {
 					if (json && json.files && json.files.length > 0) {
-					// console.log(json);
 						return json;
 					}
-				})
-				.catch((err) => console.log(err));
-
-			// console.log("Found ", name, " under ", parent, " with id ", id)
-			return j;
+					return undefined;
+				});
+			return children;
 		}
+		return undefined;
 	}
 
 	async createFolder(name, parent) {
-		const token = await this.getAccessToken();
+		const token = await this.#getAccessToken();
 		if (token) {
 			const metadata = {
 				name: name,
@@ -436,7 +417,7 @@ export default class GDrive {
 				parents: [parent || this.ROOT],
 			};
 
-			const headers = await this.getHeader();
+			const headers = await this.#getHeader();
 			const url = new URL(this.FILES_API);
 
 			const id = await fetch(url, {
@@ -445,13 +426,13 @@ export default class GDrive {
 				body: JSON.stringify(metadata),
 			}).then((res) => res.json()).then((json) => json.id);
 
-			// console.log("Created folder", name," with id", id)
 			return id;
 		}
+		return undefined;
 	}
 
 	async update(fileId, data) {
-		const token = await this.getAccessToken();
+		const token = await this.#getAccessToken();
 		if (token) {
 			const fileContent = JSON.stringify(data);
 			const file = new Blob([fileContent], { type: 'text/plain' });
@@ -476,10 +457,11 @@ export default class GDrive {
 
 			return updatedFileId;
 		}
+		return undefined;
 	}
 
 	async write(name, parent, data) {
-		const token = await this.getAccessToken();
+		const token = await this.#getAccessToken();
 		if (token) {
 			const fileContent = JSON.stringify(data);
 			const file = new Blob([fileContent], { type: 'text/plain' });
@@ -506,16 +488,17 @@ export default class GDrive {
 			}).then((res) => res.json()).then((json) => json.id);
 			return fileId;
 		}
+		return undefined;
 	}
 
 	async readFileMetadata(fileId, fields) {
-		const token = await this.getAccessToken();
+		const token = await this.#getAccessToken();
 		if (token) {
 			if (!fileId) {
-				console.error('No file id provided: ');
+				throw Error('No file id provided: ');
 			}
 
-			const header = await this.getHeader();
+			const header = await this.#getHeader();
 			const url = new URL(`${this.FILES_API}/${fileId}`);
 			url.searchParams.append('fields', fields);
 
@@ -525,25 +508,23 @@ export default class GDrive {
 			});
 
 			if (!response.ok) {
-				console.log(fileId, fields);
-				console.trace();
-				return;
+				throw Error(`Fetch error while reading metadata ${fileId}, ${fields}`);
 			}
 
 			const json = await response.json();
 			return json;
 		}
+		return undefined;
 	}
 
 	async readFile(fileId) {
-		const token = await this.getAccessToken();
+		const token = await this.#getAccessToken();
 		if (token) {
 			if (!fileId) {
-				console.error('No file id provided: ');
-				console.trace();
+				throw Error('No file id provided to read');
 			}
 
-			const header = await this.getHeader();
+			const header = await this.#getHeader();
 			const url = new URL(`${this.FILES_API}/${fileId}`);
 			url.searchParams.append('alt', 'media');
 
@@ -553,14 +534,12 @@ export default class GDrive {
 			});
 
 			if (!response.ok) {
-				return;
+				throw Error(`Fetch error while reading file ${fileId}`);
 			}
 
-			// const json = await response.json();
-			// return json;
 			const text = await response.text();
-			// console.log(text);
 			return JSON.parse(text);
 		}
+		return undefined;
 	}
 }
