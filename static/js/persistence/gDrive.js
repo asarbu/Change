@@ -9,6 +9,8 @@ export default class GDrive {
 
 	static GDRIVE_MIME_TYPE_FOLDER = 'application/vnd.google-apps.folder';
 
+	static FILES_API = 'https://www.googleapis.com/drive/v3/files';
+
 	/**
 	 * Constructs and initializes an instance of GDrive connector
 	 * TODO gtoup client data together
@@ -18,17 +20,15 @@ export default class GDrive {
 		// TODO put secret environment variables
 		const CLIENT_ID = '48008571695-vjj7lrnm4dv8i49ioi3a4tq3pbl1j67h.apps.googleusercontent.com';
 		const CLIENT_SECRET = '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';
-		const FILES_API = 'https://www.googleapis.com/drive/v3/files';
 		const redirectUri = window.location.href;
-		GDrive.#instance = new GDrive(CLIENT_ID, CLIENT_SECRET, FILES_API, redirectUri, rememberLogin);
+		GDrive.#instance = new GDrive(CLIENT_ID, CLIENT_SECRET, redirectUri, rememberLogin);
 		await GDrive.#instance.init();
 		return GDrive.#instance;
 	}
 
-	constructor(clientId, clientSecret, accessType, redirectUri, rememberLogin) {
+	constructor(clientId, clientSecret, redirectUri, rememberLogin) {
 		this.clientId = clientId;
 		this.clientSecret = clientSecret;
-		this.accessType = accessType;
 		this.redirectUri = redirectUri;
 		this.#rememberLogin = rememberLogin;
 
@@ -65,9 +65,6 @@ export default class GDrive {
 		const paramString = /(.*)[?](.*)/.exec(locationString);
 		if (paramString === null) return;
 
-		const loggedIn = await this.login();
-		if (!loggedIn) return;
-
 		// Parse query string to see if page request is coming from OAuth 2.0 server.
 		const params = {};
 		const regex = /([^&=]+)=([^&]*)/g;
@@ -83,7 +80,7 @@ export default class GDrive {
 				if (localStorage.getItem(this.oauth2.refreshToken) === null) {
 					await this.getRefreshToken(params);
 				} else {
-					await this.refreshAccessToken();
+					await this.#refreshAccessToken();
 				}
 			}
 		}
@@ -106,7 +103,7 @@ export default class GDrive {
 				localStorage.setItem(this.oauth2.token, JSON.stringify(params));
 			}
 		} else if (!localStorage.getItem(this.oauth2.token)) {
-			this.oauth2OnlineSignIn();
+			this.#oauth2OnlineSignIn();
 		}
 	}
 
@@ -114,8 +111,8 @@ export default class GDrive {
 		// console.log("Getting refresh token. Redirect URI ",window.location.href);
 		const data = {
 			code: authorizationCode.code,
-			client_id: this.CLIENT_ID,
-			client_secret: this.CLIENT_SECRET,
+			client_id: this.clientId,
+			client_secret: this.clientSecret,
 			redirect_uri: this.redirectUri,
 			grant_type: 'authorization_code',
 		};
@@ -144,46 +141,48 @@ export default class GDrive {
 	}
 
 	async #getAccessToken() {
-		if (!await this.login()) return undefined;
-
 		const params = JSON.parse(localStorage.getItem(this.oauth2.token));
-		if (!params) return undefined;
+		if (!params) return this.login();
 
-		const accessToken = params[this.oauth2.accessToken];
-		return accessToken;
+		const token = params[this.oauth2.accessToken];
+		if (!token) return this.login();
+
+		const tokenExpired = token.expires_at === undefined || token.expires_at < new Date().getTime();
+		if (tokenExpired) {
+			if (this.#rememberLogin) {
+				const refreshedToken = await this.#refreshAccessToken();
+				if (refreshedToken) {
+					return refreshedToken.access_token;
+				}
+			}
+			await this.login();
+		}
+
+		return token.access_token;
 	}
 
 	/**
 	 * Handles the logic of automatic login or redirects to login screen, if necessary
-	 * @returns {boolean} logged in successfully
+	 * @returns {Promise<boolean>} logged in successfully
 	 */
 	async login() {
-		const token = localStorage.getItem(this.oauth2.token);
-		const isValidToken = token !== null
-			&& token.expires_at !== undefined
-			&& token.expires_at < new Date().getTime();
-		if (!isValidToken) {
-			if (this.#rememberLogin) {
-				const tokenRefreshed = await this.refreshAccessToken();
-				if (!tokenRefreshed) {
-					this.oauth2OfflineSignIn();
-				}
-			} else {
-				this.oauth2OnlineSignIn();
-			}
+		if (this.#rememberLogin) {
+			this.#oauth2OfflineSignIn();
+			throw new Error('Login required');
 		}
-		return true;
+
+		this.#oauth2OnlineSignIn();
+		throw new Error('Login required');
 	}
 
 	/**
 	 * Handles refresh logic of offline authentication
-	 * @returns {Promise<boolean>} True if token was refreshed
+	 * @returns {Promise<string>} True if token was refreshed
 	 */
-	async refreshAccessToken() {
+	async #refreshAccessToken() {
 		const refreshToken = localStorage.getItem(this.oauth2.refreshToken);
 		if (!refreshToken) {
-			this.oauth2OfflineSignIn();
-			return false;
+			return undefined;
 		}
 
 		const data = {
@@ -203,7 +202,7 @@ export default class GDrive {
 			body: JSON.stringify(data),
 		});
 		if (!response.ok) {
-			return false;
+			return undefined;
 		}
 
 		const json = await response.json();
@@ -215,10 +214,10 @@ export default class GDrive {
 		}
 
 		localStorage.setItem(this.oauth2.token, JSON.stringify(json));
-		return true;
+		return json;
 	}
 
-	oauth2OfflineSignIn() {
+	#oauth2OfflineSignIn() {
 		// Google's OAuth 2.0 endpoint for requesting an access token
 		const oauth2Endpoint = 'https://accounts.google.com/o/oauth2/v2/auth';
 
@@ -240,22 +239,21 @@ export default class GDrive {
 			prompt: 'consent',
 		};
 
-		// TODO replace form with fetch request
 		// Add form parameters as hidden input values.
-		for (const p in params) {
+		Object.entries(params).forEach(([key, value]) => {
 			const input = document.createElement('input');
 			input.setAttribute('type', 'hidden');
-			input.setAttribute('name', p);
-			input.setAttribute('value', params[p]);
+			input.setAttribute('name', key);
+			input.setAttribute('value', value);
 			form.appendChild(input);
-		}
+		});
 
 		// Add form to page and submit it to open the OAuth 2.0 endpoint.
 		document.body.appendChild(form);
 		form.submit();
 	}
 
-	oauth2OnlineSignIn() {
+	#oauth2OnlineSignIn() {
 		// Google's OAuth 2.0 endpoint for requesting an access token
 		const oauth2Endpoint = 'https://accounts.google.com/o/oauth2/v2/auth';
 
@@ -275,13 +273,13 @@ export default class GDrive {
 		};
 
 		// Add form parameters as hidden input values.
-		for (const p in params) {
+		Object.entries(params).forEach(([name, value]) => {
 			const input = document.createElement('input');
 			input.setAttribute('type', 'hidden');
-			input.setAttribute('name', p);
-			input.setAttribute('value', params[p]);
+			input.setAttribute('name', name);
+			input.setAttribute('value', value);
 			form.appendChild(input);
-		}
+		});
 
 		// Add form to page and submit it to open the OAuth 2.0 endpoint.
 		document.body.appendChild(form);
@@ -329,7 +327,7 @@ export default class GDrive {
 	async find(name, parentId, mimeType) {
 		const token = await this.#getAccessToken();
 		if (token) {
-			const parent = parentId || this.ROOT;
+			const parent = parentId || GDrive.ROOT_DIRECTORY_NAME;
 
 			let q = `name='${name}' and trashed=false and '${parent}' in parents`;
 			if (mimeType) {
@@ -337,7 +335,7 @@ export default class GDrive {
 			}
 
 			const header = await this.#getHeader();
-			const url = new URL(this.FILES_API);
+			const url = new URL(GDrive.FILES_API);
 			url.searchParams.append('q', q);
 
 			// TODO do proper error handling
@@ -358,6 +356,9 @@ export default class GDrive {
 		return undefined;
 	}
 
+	/**
+	 * @returns {string} folder ID
+	 */
 	async findChangeAppFolder() {
 		const APP_FOLDER = 'Change!';
 		const fileId = await this.find(APP_FOLDER);
@@ -384,12 +385,12 @@ export default class GDrive {
 	async getChildren(folderId) {
 		const token = await this.#getAccessToken();
 		if (token) {
-			const folder = folderId || this.ROOT;
+			const folder = folderId || GDrive.ROOT_DIRECTORY_NAME;
 
 			const q = `trashed=false and '${folder}' in parents`;
 
 			const header = await this.#getHeader();
-			const url = new URL(this.FILES_API);
+			const url = new URL(GDrive.FILES_API);
 			url.searchParams.append('q', q);
 
 			const children = await fetch(url, {
@@ -414,11 +415,11 @@ export default class GDrive {
 			const metadata = {
 				name: name,
 				mimeType: 'application/vnd.google-apps.folder',
-				parents: [parent || this.ROOT],
+				parents: [parent || GDrive.ROOT_DIRECTORY_NAME],
 			};
 
 			const headers = await this.#getHeader();
-			const url = new URL(this.FILES_API);
+			const url = new URL(GDrive.FILES_API);
 
 			const id = await fetch(url, {
 				method: 'POST',
@@ -499,7 +500,7 @@ export default class GDrive {
 			}
 
 			const header = await this.#getHeader();
-			const url = new URL(`${this.FILES_API}/${fileId}`);
+			const url = new URL(`${GDrive.FILES_API}/${fileId}`);
 			url.searchParams.append('fields', fields);
 
 			const response = await fetch(url, {
@@ -525,7 +526,7 @@ export default class GDrive {
 			}
 
 			const header = await this.#getHeader();
-			const url = new URL(`${this.FILES_API}/${fileId}`);
+			const url = new URL(`${GDrive.FILES_API}/${fileId}`);
 			url.searchParams.append('alt', 'media');
 
 			const response = await fetch(url, {

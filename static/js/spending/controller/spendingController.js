@@ -93,9 +93,14 @@ export default class SpendingController {
 
 		this.spendingScreen = spendingScreen;
 
+		/**
 		const spendingGdrive = SpendingGDrive.get(this.#defaultYear, true);
 		(await spendingGdrive).init();
-		(await spendingGdrive).fetchCacheToGDrive(this.#defaultMonth, []);
+		(await spendingGdrive).getAll();
+		*/
+
+		const children = await SpendingGDrive.getAll();
+		console.log(children);
 
 		/* if(gdriveSync) {
 			this.initGDrive(monthName);

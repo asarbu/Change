@@ -18,11 +18,22 @@ export default class SpendingGDrive {
 	/** @type {Array<SpendingGDrive>} */
 	static #initializedGDrives = [];
 
-	static async get(forYear, rememberLogin) {
+	static async getAll() {
+		const rememberLogin = true;
+		const gDrive = await GDrive.get(rememberLogin);
+		await gDrive.init();
+		const root = await gDrive.findChangeAppFolder();
+		const children = await gDrive.getChildren(root);
+		return children;
+	}
+
+	static async get(forYear) {
+		const rememberLogin = true;
 		const initializedSpending = this.#initializedGDrives.find((init) => init.#year === forYear);
 		if (initializedSpending) return initializedSpending;
 
 		const gDrive = await GDrive.get(rememberLogin);
+		gDrive.init();
 		const spendingGDrive = new SpendingGDrive(forYear, gDrive);
 		this.#initializedGDrives.push(spendingGDrive);
 		return spendingGDrive;
