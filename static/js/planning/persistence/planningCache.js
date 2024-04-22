@@ -49,8 +49,8 @@ export default class PlanningCache {
 			PlanningCache.upgradePlanningDatabase,
 		);
 		const objectStores = idb.getObjectStores();
-		if (!objectStores.find((objectStore) => objectStore === forYear)) {
-			await idb.createObjectStores([forYear]);
+		if (!objectStores.find((objectStore) => objectStore === `${forYear}`)) {
+			await idb.createObjectStores([`${forYear}`]);
 		}
 		const planningCache = new PlanningCache(forYear, idb);
 		PlanningCache.#initializedCaches.push(planningCache);
@@ -58,7 +58,10 @@ export default class PlanningCache {
 	}
 
 	/** @type {Idb} */
-	idb = undefined;
+	#idb = undefined;
+
+	/** @type {string} */
+	#storeName = undefined;
 
 	/**
 	 * Callback function to update a planning database
@@ -87,16 +90,17 @@ export default class PlanningCache {
 	 * @param {Idb} idb Idb instance
 	 */
 	constructor(year, idb) {
-		this.idb = idb;
+		this.#idb = idb;
 		this.year = +year;
+		this.#storeName = `${this.year}`;
 	}
 
 	/**
 	 * Initialize current instance of PlanningCache
 	 */
 	async init() {
-		if (!this.idb) {
-			this.idb = Idb.of(
+		if (!this.#idb) {
+			this.#idb = Idb.of(
 				PlanningCache.DATABASE_NAME,
 				PlanningCache.upgradePlanningDatabase,
 			);
@@ -108,7 +112,7 @@ export default class PlanningCache {
 	 * // TODO move this in controller? We can use a new count method in tests as well
 	 */
 	async storeFromTemplate() {
-		const storeCount = await this.idb.count(this.year);
+		const storeCount = await this.#idb.count(this.#storeName);
 		if (storeCount === 0) {
 			await fetch(PlanningCache.PLANNING_TEMPLATE_URI)
 				.then((response) => response.json())
@@ -127,7 +131,7 @@ export default class PlanningCache {
 	 * @param {string} key
 	 */
 	async insert(planning, key) {
-		await this.idb.insert(this.year, planning, key);
+		await this.#idb.insert(this.#storeName, planning, key);
 	}
 
 	/**
@@ -135,7 +139,7 @@ export default class PlanningCache {
 	 * @returns { Promise<Array<Planning>> }
 	 */
 	async readAll() {
-		return this.idb.openCursor(this.year);
+		return this.#idb.openCursor(this.#storeName);
 	}
 
 	/**
@@ -153,8 +157,8 @@ export default class PlanningCache {
 	 * @param {Promise<Array<Planning>>} plannings Statenents to be updated in dabatase
 	 */
 	async updateAll(plannings) {
-		await this.idb.clear(this.year);
-		await this.idb.putAll(this.year, plannings);
+		await this.#idb.clear(this.#storeName);
+		await this.#idb.putAll(this.#storeName, plannings);
 	}
 
 	/**
@@ -164,7 +168,7 @@ export default class PlanningCache {
 	 */
 	async readExpenseCategories(forMonth) {
 		/** @type {Array<Planning>} */
-		const planningsForYear = await this.idb.getAll(this.year);
+		const planningsForYear = await this.#idb.getAll(this.#storeName);
 		const planningForMonth = planningsForYear.find((planning) => planning.month === forMonth);
 		const expenseStatements = planningForMonth.statements.filter((statement) => statement.type === 'Expense');
 		return expenseStatements.reduce((categories, statement) => {
@@ -180,7 +184,7 @@ export default class PlanningCache {
 	 * @returns {Promise<Planning>}
 	 */
 	async read(key) {
-		return this.idb.get(this.year, key);
+		return this.#idb.get(this.#storeName, key);
 	}
 
 	/**
@@ -191,7 +195,7 @@ export default class PlanningCache {
 	 * @returns {Promise<Planning>} Updated value
 	 */
 	async update(key, value) {
-		await this.idb.insert(this.year, value, key);
+		await this.#idb.insert(this.#storeName, value, key);
 	}
 
 	/**
@@ -201,6 +205,6 @@ export default class PlanningCache {
 	 * @returns {Promise<Planning>} Deleted value
 	 */
 	async delete(key) {
-		await this.idb.delete(this.year, key);
+		await this.#idb.delete(this.#storeName, key);
 	}
 }
