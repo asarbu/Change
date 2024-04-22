@@ -71,8 +71,14 @@ describe('Planning cache', () => {
 		defaultPlanningCache = await PlanningCache.get(new Date().getFullYear());
 	});
 
-	test('is defined for current year', () => {
-		expect(defaultPlanningCache).toBeDefined();
+	test('is defined for current year', async() => {
+		const now = new Date();
+		expect(defaultPlanningCache.year).toBe(now.getFullYear());
+	});
+
+	test('is defined for past year', async () => {
+		const planningCache = await PlanningCache.get(1970);
+		expect(planningCache.year).toBe(1970);
 	});
 
 	test('stores one empty Planning object', async () => {
@@ -104,6 +110,30 @@ describe('Planning cache', () => {
 		await defaultPlanningCache.update(addedPlanning.id, addedPlanning);
 		const updatedPlanning = await defaultPlanningCache.read(addedPlanning.id);
 		const dbStatement = updatedPlanning.statements.find((stmt) => stmt.id === newStatement.id);
+		expect(dbStatement).toBeDefined();
+	});
+
+	test('stores statement created in last day of the year', async () => {
+		const addedPlanning = storeEmptyPlanningCache();
+		const lastDayofYear = Date.parse('12-31-2024');
+		const newStatement = new Statement(lastDayofYear, 'Dummy', Statement.EXPENSE);
+		addedPlanning.statements = [newStatement];
+		await defaultPlanningCache.update(addedPlanning.id, addedPlanning);
+		const updatedPlanning = await defaultPlanningCache.read(addedPlanning.id);
+		const dbStatement = updatedPlanning.statements.find((stmt) => stmt.id === newStatement.id);
+		expect(dbStatement.id).toBe(lastDayofYear);
+		expect(dbStatement).toBeDefined();
+	});
+
+	test('stores statement created in first day of the year', async () => {
+		const addedPlanning = storeEmptyPlanningCache();
+		const firstDayOfYear = Date.parse('01-01-2024');
+		const newStatement = new Statement(firstDayOfYear, 'Dummy', Statement.EXPENSE);
+		addedPlanning.statements = [newStatement];
+		await defaultPlanningCache.update(addedPlanning.id, addedPlanning);
+		const updatedPlanning = await defaultPlanningCache.read(addedPlanning.id);
+		const dbStatement = updatedPlanning.statements.find((stmt) => stmt.id === newStatement.id);
+		expect(dbStatement.id).toBe(firstDayOfYear);
 		expect(dbStatement).toBeDefined();
 	});
 });

@@ -76,7 +76,7 @@ export default class Idb {
 				const db = event.target.result;
 				if (upgradeCallback) {
 					const defaultStore = new Date().getFullYear();
-					upgradeCallback(db, event.oldVersion, event.newVersion, [defaultStore]);
+					upgradeCallback(db, event.oldVersion, event.newVersion, [`${defaultStore}`]);
 				}
 			};
 		});
@@ -388,7 +388,7 @@ export default class Idb {
 		if (!this.#db.objectStoreNames.contains(storeName)) {
 			return undefined;
 		}
-
+		
 		const txn = this.#db.transaction(storeName, mode);
 		const store = txn.objectStore(storeName);
 
