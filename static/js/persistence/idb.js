@@ -129,7 +129,7 @@ export default class Idb {
 			};
 
 			query.onerror = (event) => {
-				reject(event.target.errorCode);
+				reject(new Error(event.target.errorCode));
 			};
 		});
 	}
@@ -147,7 +147,7 @@ export default class Idb {
 
 			query.onsuccess = (event) => {
 				if (!event.target.result) {
-					reject(new Error(`The value with key ${key} not found`));
+					reject(new Error(`The value with key ${key} not found in store ${storeName}. ${this}`));
 				} else {
 					const value = event.target.result;
 					resolve(value);

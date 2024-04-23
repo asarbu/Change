@@ -34,8 +34,19 @@ export default class PlanningController {
 	async init() {
 		this.#caches = await PlanningCache.getAll();
 		const planningCache = await PlanningCache.get(this.#defaultYear);
-		// TODO allow user to confirm if he wants default plannings
-		planningCache.storeFromTemplate();
+		const emptyCache = (await planningCache.count()) === 0;
+		// TODO ask user if he wants to fetch defaults from server
+		if(emptyCache) {
+			await fetch(PlanningCache.PLANNING_TEMPLATE_URI)
+				.then((response) => response.json())
+				.then((planningFile) => {
+					const now = new Date();
+					const time = now.getTime();
+					const year = now.getFullYear();
+					const month = now.getMonth();
+					planningCache.insert(new Planning(time, year, month, planningFile), time);
+				});
+		}
 
 		const currentYearScreen = await this.initPlanningScreen(planningCache);
 
@@ -53,7 +64,8 @@ export default class PlanningController {
 	 * @returns {Promise<PlanningScreen>}
 	 */
 	async initPlanningScreen(cache) {
-		const planning = await cache.readForMonth(this.#defaultMonth);
+		// TODO handle multiple months. Keep only the most recent one
+		const planning = await cache.readForMonth(this.#defaultMonth)[0];
 		const planningScreen = new PlanningScreen(planning);
 		planningScreen.onClickUpdate = this.onClickUpdate.bind(this);
 		planningScreen.onStatementAdded = this.onClickAddStatement.bind(this);
@@ -81,13 +93,13 @@ export default class PlanningController {
 		const date = new Date(statement.id);
 		const planningCache = await PlanningCache.get(date.getFullYear());
 		if (planningCache) {
-			let planning = await planningCache.readForMonth(date.getMonth());
+			let planning = await planningCache.readForMonth(date.getMonth())[0];
 			if (planning) {
 				planning.statements.push(statement);
 			} else {
 				planning = new Planning(date.getTime(), date.getFullYear(), date.getMonth(), [statement]);
 			}
-			planningCache.update(planning.id, planning);
+			planningCache.storePlanning(planning);
 			this.navigateTo(date.getFullYear(), date.getMonth(), statement.name);
 		}
 	}

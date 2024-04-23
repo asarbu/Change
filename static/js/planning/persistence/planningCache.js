@@ -72,10 +72,6 @@ export default class PlanningCache {
 	 * @returns {undefined}
 	 */
 	static upgradePlanningDatabase(db, oldVersion, newVersion, objectStores) {
-		if (!newVersion) {
-			return;
-		}
-
 		if (oldVersion < newVersion) {
 			objectStores.forEach((objectStore) => {
 				const store = db.createObjectStore(objectStore, { autoIncrement: true });
@@ -97,41 +93,20 @@ export default class PlanningCache {
 
 	/**
 	 * Initialize current instance of PlanningCache
+	 * @returns {Promise<PlanningCache>} initialized planning cache.
 	 */
 	async init() {
 		if (!this.#idb) {
-			this.#idb = Idb.of(
+			this.#idb = await Idb.of(
 				PlanningCache.DATABASE_NAME,
 				PlanningCache.upgradePlanningDatabase,
 			);
 		}
+		return this;
 	}
 
-	/**
-	 * Fetch default planning template from the server and store it in cache
-	 * // TODO move this in controller? We can use a new count method in tests as well
-	 */
-	async storeFromTemplate() {
-		const storeCount = await this.#idb.count(this.#storeName);
-		if (storeCount === 0) {
-			await fetch(PlanningCache.PLANNING_TEMPLATE_URI)
-				.then((response) => response.json())
-				.then((planningFile) => {
-					const now = new Date();
-					const time = now.getTime();
-					const year = now.getFullYear();
-					const month = now.getMonth();
-					this.insert(new Planning(time, year, month, planningFile), time);
-				});
-		}
-	}
-
-	/**
-	 * @param {Planning} planning
-	 * @param {string} key
-	 */
-	async insert(planning, key) {
-		await this.#idb.insert(this.#storeName, planning, key);
+	async count() {
+		return this.#idb.count(this.#storeName);
 	}
 
 	/**
@@ -143,22 +118,23 @@ export default class PlanningCache {
 	}
 
 	/**
-	 * Returns the planning for a single month
+	 * Returns the first planning for a single month
 	 * @param {number} month for which to search the cache
-	 * @returns {Promise<Planning>}
+	 * @returns {Promise<Array<Planning>>}
 	 */
 	async readForMonth(month) {
 		// TODO do this with a key range
-		return (await this.readAll()).find((planning) => planning.month === month);
+		return (await this.readAll()).filter((planning) => planning.month === month);
 	}
 
 	/**
 	 * Updates all of the statements from the current object store
-	 * @param {Promise<Array<Planning>>} plannings Statenents to be updated in dabatase
+	 * @param {Array<Planning>} plannings Statenents to be updated in dabatase
+	 * @returns {Promise<undefined>}
 	 */
 	async updateAll(plannings) {
 		await this.#idb.clear(this.#storeName);
-		await this.#idb.putAll(this.#storeName, plannings);
+		return await this.#idb.putAll(this.#storeName, plannings);
 	}
 
 	/**
@@ -184,18 +160,19 @@ export default class PlanningCache {
 	 * @returns {Promise<Planning>}
 	 */
 	async read(key) {
-		return this.#idb.get(this.#storeName, key);
+		return await this.#idb.get(this.#storeName, key);
+		//return (await this.readAll()).find((planning) => planning.id === key);
 	}
 
 	/**
-	 * Update a single Planning statement in the database
+	 * Insert / Update a single Planning statement in the database
 	 * @async
-	 * @param {string} key Key to lookup in the datastore
-	 * @param {Planning} value Value to update
-	 * @returns {Promise<Planning>} Updated value
+	 * @param {Planning} planning Value to store
+	 * @returns {Promise<Planning>} Stored value
 	 */
-	async update(key, value) {
-		await this.#idb.insert(this.#storeName, value, key);
+	async storePlanning(planning) {
+		const [, storedPlanning] = await this.#idb.insert(this.#storeName, planning, planning.id);
+		return storedPlanning;
 	}
 
 	/**
