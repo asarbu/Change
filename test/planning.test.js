@@ -22,12 +22,10 @@ async function storeEmptyPlanningCachesForAYear() {
 	return true;
 }
 
-function storeFullPlanningCache() {
-	// TODO 
-	const now = new Date();
-	const planning = new Planning(now.getTime(), now.getFullYear(), now.getMonth());
-	defaultPlanningCache.storePlanning(planning);
-	return planning;
+let planningYear = 1970;
+function nextAvailablePlanningDate() {
+	planningYear += 1;
+	return new Date(planningYear, 0);
 }
 
 /**
@@ -36,7 +34,7 @@ function storeFullPlanningCache() {
  */
 function expectEqualGoals(these, those) {
 	these.forEach((thisGoal) => {
-		const thatGoal = those.find((that) => that.id === thisGoal.id);
+		const thatGoal = those.find((that) => that.name === thisGoal.name);
 		expect(thatGoal).toBeDefined();
 		expect(thatGoal.name).toBe(thisGoal.name);
 		expect(thatGoal.daily).toBe(thisGoal.daily);
@@ -88,6 +86,20 @@ describe('Planning cache', () => {
 	beforeAll(async () => {
 		defaultPlanningCache = await PlanningCache.get(new Date().getFullYear());
 	});
+
+	test('is retrieved for more than one year', async() => {
+		let planningCaches = (await PlanningCache.getAll())
+		const planningCachesCount = planningCaches.length;
+		let maxPlanningYear = 0;
+		planningCaches.forEach((planningCache) => {
+			maxPlanningYear = Math.max(maxPlanningYear, planningCache.year);
+		})
+		maxPlanningYear += 1;
+		//Create extra planning cache
+		await PlanningCache.get(maxPlanningYear);
+		planningCaches = await PlanningCache.getAll();
+		expect(planningCaches.length).toBeGreaterThan(planningCachesCount);
+	})
 
 	test('is defined for current year', async() => {
 		const now = new Date();
@@ -158,6 +170,49 @@ describe('Planning cache', () => {
 		planningsForCurrentMonth.forEach((planning) => {
 			expect(planning.month).toBe(currentMonth);
 		});
+	})
+
+	test('reads all expense categories for a planning object', async() => {
+		const availableDate = nextAvailablePlanningDate();
+		const expenseGoalOne = new Goal('expenseGoalOne', 10, 300, 3650);
+		const expenseGoalTwo = new Goal('expenseGoalTwo', 10, 300, 3650);
+		const expenseCategoryOne = new Category(1,'expenseCategoryOne', 
+			[expenseGoalOne, expenseGoalTwo]);
+		const expenseGoalThree = new Goal('expenseGoalThree', 10, 300, 3650);
+		const expenseGoalFour = new Goal('expenseGoalFour', 10, 300, 3650);
+		const expenseCategoryTwo = new Category(2, 'expenseCategoryTwo',
+			[expenseGoalThree, expenseGoalFour]);
+		const expenseStatement = new Statement(1, 'Statement1', Statement.EXPENSE,
+			[expenseCategoryOne, expenseCategoryTwo]);
+		
+		const incomeGoalOne = new Goal('incomeGoalOne', 10, 300, 3650);
+		const incomeGoalTwo = new Goal('incomeGoalTwo', 10, 300, 3650);
+		const incomeGoalThree = new Goal('incomeGoalThree', 10, 300, 3650);
+		const incomeGoalFour = new Goal('incomeGoalFour', 10, 300, 3650);
+		const incomeCategoryOne = new Category(1, 'incomeCategoryOne', 
+			[incomeGoalOne, incomeGoalTwo]);
+		const incomeCategoryTwo = new Category(2, 'incomeCategoryTwo', 
+			[incomeGoalThree, incomeGoalFour]);
+		const incomeStatement = new Statement(1, 'Statement1', Statement.INCOME,
+			[incomeCategoryOne, incomeCategoryTwo]);
+		
+		const savingGoalOne = new Goal('savingGoalOne', 10, 300, 3650);
+		const savingGoalTwo = new Goal('savingGoalTwo', 10, 300, 3650);
+		const savingGoalThree = new Goal('savingGoalThree', 10, 300, 3650);
+		const savingGoalFour = new Goal('savingGoalFour', 10, 300, 3650);
+		const savingCategoryOne = new Category(1, 'savingCategoryOne', 
+			[savingGoalOne, savingGoalTwo]);
+		const savingCategoryTwo = new Category(2, 'savingCategoryTwo', 
+			[savingGoalThree, savingGoalFour]);
+		const savingStatement = new Statement(1, 'Statement1', Statement.SAVING,
+			[savingCategoryOne, savingCategoryTwo]);
+
+		const planning = new Planning(1, availableDate.getFullYear(), availableDate.getMonth(), 
+		[expenseStatement, incomeStatement, savingStatement]); 
+		const planningCache = await PlanningCache.get(availableDate.getFullYear());
+		planningCache.storePlanning(planning);
+		const expenseCategories = await planningCache.readExpenseCategories(availableDate.getMonth());
+		expectEqualCategories(expenseCategories, [expenseCategoryOne, expenseCategoryTwo]);
 	})
 
 	test('deletes one empty Planning object', async () => {
