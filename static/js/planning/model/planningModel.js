@@ -35,8 +35,9 @@ export class Statement {
 	 * @param {string} id Unique identifier of the statement
 	 * @param {string} name User friendly name of statement
 	 * @param {String} type Statically defined statement type
+	 * @param {Array<Category>} categories categories associated with this statement
 	 */
-	constructor(id, name, type) {
+	constructor(id, name, type, categories = []) {
 		/**
 		 * @type{number}
 		 */
@@ -52,7 +53,7 @@ export class Statement {
 		/**
 		 * @type{Array<PlanningCategory>}
 		 */
-		this.categories = [];
+		this.categories = categories;
 	}
 }
 
@@ -61,8 +62,9 @@ export class Category {
 	 *
 	 * @param {string} id
 	 * @param {string} name
+	 * @param {Array<Goal>} goals 
 	 */
-	constructor(id, name) {
+	constructor(id, name, goals = []) {
 		/**
 		 * @type{string}
 		 */
@@ -74,7 +76,7 @@ export class Category {
 		/**
 		 * @type{Array<Goal>}
 		 */
-		this.goals = [];
+		this.goals = goals;
 	}
 }
 
