@@ -72,13 +72,11 @@ export default class PlanningCache {
 	 * @returns {undefined}
 	 */
 	static upgradePlanningDatabase(db, oldVersion, newVersion, objectStores) {
-		if (oldVersion < newVersion) {
-			objectStores.forEach((objectStore) => {
-				const store = db.createObjectStore(objectStore, { autoIncrement: true });
-				// store.createIndex('byType', 'type', { unique: false });
-				store.createIndex('byYear', 'year', { unique: false });
-			});
-		}
+		objectStores.forEach((objectStore) => {
+			const store = db.createObjectStore(objectStore, { autoIncrement: true });
+			// store.createIndex('byType', 'type', { unique: false });
+			store.createIndex('byYear', 'year', { unique: false });
+		});
 	}
 
 	/**
