@@ -61,9 +61,6 @@ export default class Idb {
 	 */
 	static #open(dbName, version, upgradeCallback) {
 		return new Promise((resolve, reject) => {
-			if (!window.indexedDB) {
-				return;
-			}
 			const request = indexedDB.open(dbName, version);
 
 			request.onsuccess = (event) => {
@@ -79,7 +76,7 @@ export default class Idb {
 				const db = event.target.result;
 				if (upgradeCallback) {
 					const defaultStore = new Date().getFullYear();
-					upgradeCallback(db, event.oldVersion, event.newVersion, [defaultStore]);
+					upgradeCallback(db, event.oldVersion, event.newVersion, [`${defaultStore}`]);
 				}
 			};
 		});
@@ -132,7 +129,7 @@ export default class Idb {
 			};
 
 			query.onerror = (event) => {
-				reject(event.target.errorCode);
+				reject(new Error(event.target.errorCode));
 			};
 		});
 	}
@@ -150,7 +147,7 @@ export default class Idb {
 
 			query.onsuccess = (event) => {
 				if (!event.target.result) {
-					reject(new Error(`The value with key ${key} not found`));
+					reject(new Error(`The value with key ${key} not found in store ${storeName}. ${this}`));
 				} else {
 					const value = event.target.result;
 					resolve(value);
@@ -391,7 +388,7 @@ export default class Idb {
 		if (!this.#db.objectStoreNames.contains(storeName)) {
 			return undefined;
 		}
-
+		
 		const txn = this.#db.transaction(storeName, mode);
 		const store = txn.objectStore(storeName);
 
