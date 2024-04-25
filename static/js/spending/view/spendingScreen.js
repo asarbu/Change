@@ -5,9 +5,8 @@ import Dom from '../../gui/dom.js';
 import icons from '../../gui/icons.js';
 import GraphicEffects from '../../gui/effects.js';
 import Modal from '../../gui/modal.js';
-import SpendingNavbar from './spendingNavbar.js';
-import SpendingNavbarEventHandlers from './spendingNavbarHandlers.js';
-import Sidenav from '../../gui/sidenav.js';
+import SpendingNavBar from './spendingNavBar.js';
+import SpendingNavBarEventHandlers from './spendingNavBarHandlers.js';
 
 export default class SpendingScreen {
 	onCreateSpendingCallback = undefined;
@@ -28,9 +27,6 @@ export default class SpendingScreen {
 	/** @type {Modal} */
 	#categoryModal = undefined;
 
-	/** @type {Sidenav} */
-	#sidenav = undefined;
-
 	/**
 	 * @param {number} year
 	 * @param {SpendingReport} defaultSpendingReport
@@ -43,17 +39,15 @@ export default class SpendingScreen {
 	}
 
 	init() {
-		const eventHandlers = new SpendingNavbarEventHandlers();
+		const eventHandlers = new SpendingNavBarEventHandlers();
 		eventHandlers.onClickAddSpending = this.onClickAddSpending.bind(this);
 		eventHandlers.onClickEdit = this.onClickEdit.bind(this);
 		eventHandlers.onClickSave = this.onClickSave.bind(this);
 		eventHandlers.onClickSummary = this.onClickSummary.bind(this);
 		eventHandlers.onMonthChanged = this.slideToMonth.bind(this);
-		this.navbar = new SpendingNavbar(this.year, this.defaultSpendingReport, eventHandlers);
+		this.navbar = new SpendingNavBar(this.year, this.defaultSpendingReport, eventHandlers);
 		const main = document.getElementById('main');
 		main.appendChild(this.navbar.toHtml());
-		this.navbar.selectMonth(this.defaultSpendingReport.month());
-		this.navbar.selectYear(this.year);
 
 		main.appendChild(this.buildCategoryModal(this.categories).toHtml());
 		main.appendChild(this.buildAddSpendingModal().toHtml());
@@ -63,8 +57,8 @@ export default class SpendingScreen {
 		this.gfx = new GraphicEffects();
 		this.gfx.init(container);
 
-		this.#sidenav = new Sidenav(this.gfx);
-		document.body.appendChild(this.#sidenav.toHtml());
+		this.navbar.selectMonth(this.defaultSpendingReport.month());
+		this.navbar.selectYear(this.year);
 	}
 
 	/**

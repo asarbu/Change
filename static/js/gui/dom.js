@@ -70,13 +70,6 @@ export default class Dom {
 		this.elmt = document.createElement(tagName);
 	}
 
-	// Todo replace all occurences of below instances with this static factory method
-	static imageButton(text, src) {
-		return new Dom('button').append(
-			new Dom('img').cls('white-fill').text(text).attr('alt', text).attr('src', src),
-		);
-	}
-
 	/**
 	 * Appends the obj instances to the current DOM
 	 * @param {Array<Dom>} children Object to append to current DOM instance
@@ -101,15 +94,6 @@ export default class Dom {
 
 	cls(...classes) {
 		this.elmt.classList.add(...classes);
-		return this;
-	}
-
-	contentEditable(value) {
-		let isEditable = true;
-		if (value !== undefined) {
-			isEditable = value;
-		}
-		this.elmt.setAttribute('contenteditable', isEditable);
 		return this;
 	}
 

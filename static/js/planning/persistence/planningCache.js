@@ -1,5 +1,5 @@
 import Idb from '../../persistence/idb.js';
-import Planning, { Category } from '../model/planningModel.js';
+import { Category, Statement } from '../model/planningModel.js';
 
 export default class PlanningCache {
 	static DATABASE_NAME = 'Planning';
@@ -19,14 +19,11 @@ export default class PlanningCache {
 		);
 		const objectStores = idb.getObjectStores();
 		const planningssArray = new Array(objectStores.length);
-		const planningsInitPromises = [];
 		for (let i = 0; i < objectStores.length; i += 1) {
 			const storeName = objectStores[i];
 			const planningCache = new PlanningCache(storeName, idb);
-			planningsInitPromises.push(planningCache.init());
 			planningssArray[i] = (planningCache);
 		}
-		await Promise.all(planningsInitPromises);
 		PlanningCache.#initializedCaches = planningssArray;
 		return planningssArray;
 	}
@@ -73,8 +70,7 @@ export default class PlanningCache {
 		if (oldVersion < newVersion) {
 			objectStores.forEach((objectStore) => {
 				const store = db.createObjectStore(objectStore, { autoIncrement: true });
-				// store.createIndex('byType', 'type', { unique: false });
-				store.createIndex('byYear', 'year', { unique: false });
+				store.createIndex('byType', 'type', { unique: false });
 			});
 		}
 	}
@@ -104,45 +100,26 @@ export default class PlanningCache {
 		if (storeCount === 0) {
 			await fetch(PlanningCache.PLANNING_TEMPLATE_URI)
 				.then((response) => response.json())
-				.then((planningFile) => {
-					const now = new Date();
-					const time = now.getTime();
-					const year = now.getFullYear();
-					const month = now.getMonth();
-					this.insert(new Planning(time, year, month, planningFile), time);
-				});
+				.then((planningFile) => this.idb.putAll(this.year, planningFile));
 		}
-	}
-
-	async insert(planning, key) {
-		await this.idb.insert(this.year, planning, key);
 	}
 
 	/**
 	 * Read all planning statements from the cache
-	 * @returns { Promise<Array<Planning>> }
+	 * @returns {Promise<Array<Statement>>}
 	 */
 	async readAll() {
 		return this.idb.openCursor(this.year);
 	}
 
 	/**
-	 * Returns the planning for a single month
-	 * @param {number} month for which to search the cache
-	 * @returns {Promise<Planning>}
-	 */
-	async readForMonth(month) {
-		return (await this.readAll()).find((planning) => planning.month === month);
-	}
-
-	/**
 	 * Updates all of the statements from the current object store
 	 * @async
-	 * @param {Array<Planning>} plannings Statenents to be updated in dabatase
+	 * @param {Array<Statement>} statements Statenents to be updated in dabatase
 	 */
-	async updateAll(plannings) {
+	async updateAll(statements) {
 		await this.idb.clear(this.year);
-		await this.idb.putAll(this.year, plannings);
+		await this.idb.putAll(this.year, statements);
 	}
 
 	/**
@@ -150,15 +127,14 @@ export default class PlanningCache {
 	 * @async
 	 * @returns {Promise<Array<Category>>}
 	 */
-	async readExpenseCategories(forMonth) {
-		/** @type {Array<Planning>} */
-		const planningsForYear = await this.idb.getAll(this.year);
-		const planningForMonth = planningsForYear.find((planning) => planning.month === forMonth);
-		const expenseStatements = planningForMonth.statements.filter((statement) => statement.type === 'Expense');
-		return expenseStatements.reduce((categories, statement) => {
-			categories.push(...statement.categories);
-			return categories;
-		}, []);
+	async readExpenseCategories() {
+		const keyRange = IDBKeyRange.only('Expense');
+		const expenseStatements = await this.idb.getAllByIndex(this.year, 'byType', keyRange);
+		const expenses = [];
+		for (let i = 0; i < expenseStatements.length; i += 1) {
+			expenses.push(...expenseStatements[i].categories);
+		}
+		return expenses;
 	}
 
 	/**
@@ -174,7 +150,7 @@ export default class PlanningCache {
 	 * Fetch only the planning statement corresponding to the key
 	 * @async
 	 * @param {string} key Key to lookup in the datastore
-	 * @returns {Planning}
+	 * @returns {Statement}
 	 */
 	async read(key) {
 		return this.idb.get(this.year, key);
@@ -184,8 +160,8 @@ export default class PlanningCache {
 	 * Update a single Planning statement in the database
 	 * @async
 	 * @param {string} key Key to lookup in the datastore
-	 * @param {Planning} value Value to update
-	 * @returns {Planning} Updated value
+	 * @param {Statement} value Value to update
+	 * @returns {Statement} Updated value
 	 */
 	async update(key, value) {
 		await this.idb.insert(this.year, value, key);
@@ -195,7 +171,7 @@ export default class PlanningCache {
 	 * Delete a single Planning statenent in the database
 	 * @async
 	 * @param {string} key Key to lookup in the datastore
-	 * @returns {Planning} Deleted value
+	 * @returns {Statement} Deleted value
 	 */
 	async delete(key) {
 		await this.idb.delete(this.year, key);

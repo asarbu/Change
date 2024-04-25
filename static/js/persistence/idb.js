@@ -192,7 +192,7 @@ export default class Idb {
 	/**
 	 * Returns all the values from an object store
 	 * @param {string} storeName Store from which to get the data
-	 * @returns {Promise<Array<Object>>}
+	 * @returns {Array<Object>}
 	 */
 	getAll(storeName) {
 		return new Promise((resolve) => {

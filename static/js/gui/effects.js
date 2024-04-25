@@ -51,6 +51,16 @@ export default class GraphicEffects {
 		window.addEventListener('touchend', this.endSliderEventListener);
 		window.addEventListener('resize', this.refreshEventListener, true);
 		// this.setSlide(this.currentIndex);
+
+		/* nav panel */
+		this.$main = document.getElementById('main');
+		this.$sidenav_left = document.getElementById('sidenav');
+		this.$sidenav_right = this.$sidenav_left.cloneNode(true);
+		this.$sidenav_left.classList.add('sidenav-left');
+		this.$sidenav_right.classList.add('sidenav-right');
+		this.$sidenav_left.parentNode.appendChild(this.$sidenav_right);
+
+		document.querySelectorAll('.nav-trigger').forEach((el) => el.addEventListener('click', this.openNav.bind(this)));
 	}
 
 	slideTo(index) {
@@ -124,7 +134,7 @@ export default class GraphicEffects {
 	}
 
 	endSlider(e) {
-		if (!this.mouseDown || !e) return;
+		/*if (!this.mouseDown || !e) return;
 
 		this.mouseDown = false;
 		if (this.scrolling === 'horizontal') {
@@ -141,12 +151,60 @@ export default class GraphicEffects {
 			this.slideTo(this.currentIndex);
 		}
 		this.sliderWrapper.addEventListener('touchmove', this.startSliderEventListener, { passive: true });
-		this.scrolling = undefined;
+		this.scrolling = undefined;*/
 	}
 
 	refresh() {
 		this.containerWidth = this.rootContainer.clientWidth;
 		this.slideTo(this.currentIndex);
+	}
+
+	/* Nav panel */
+	openNav(ev) {
+		const { side } = ev.currentTarget.dataset;
+		if (side === 'left') {
+			if (this.navOpen === 'left') {
+				this.closeNav();
+				return;
+			}
+
+			this.$sidenav_right.classList.remove('sidenav-open');
+			this.$sidenav_left.classList.add('sidenav-open');
+			this.$main.classList.remove('main-shift-right');
+			this.$main.classList.add('main-shift-left');
+
+			this.navOpen = 'left';
+		} else if (side === 'right') {
+			if (this.navOpen === 'right') {
+				this.closeNav();
+				return;
+			}
+
+			this.$sidenav_left.classList.remove('sidenav-open');
+			this.$sidenav_right.classList.add('sidenav-open');
+			this.$main.classList.remove('main-shift-left');
+			this.$main.classList.add('main-shift-right');
+
+			this.navOpen = 'right';
+		}
+
+		this.$main.addEventListener('transitionend', function transitioned() {
+			this.$main.removeEventListener('transitionend', transitioned);
+			this.refresh();
+		}.bind(this));
+	}
+
+	closeNav() {
+		this.$sidenav_left.classList.remove('sidenav-open');
+		this.$sidenav_right.classList.remove('sidenav-open');
+		this.$main.classList.remove('main-shift-left');
+		this.$main.classList.remove('main-shift-right');
+
+		this.navOpen = undefined;
+		this.$main.addEventListener('transitionend', function transitioned() {
+			this.$main.removeEventListener('transitionend', transitioned);
+			this.refresh();
+		}.bind(this));
 	}
 }
 

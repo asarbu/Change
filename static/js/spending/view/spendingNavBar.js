@@ -2,9 +2,9 @@
 import Dom from '../../gui/dom.js';
 import icons from '../../gui/icons.js';
 import Modal from '../../gui/modal.js';
-import SpendingNavbarEventHandlers from './spendingNavbarHandlers.js';
+import SpendingNavBarEventHandlers from './spendingNavBarHandlers.js';
 
-export default class SpendingNavbar {
+export default class SpendingNavBar {
 	/** @type {Dom} */
 	#navbar = undefined;
 
@@ -20,7 +20,7 @@ export default class SpendingNavbar {
 	/** @type {Modal} */
 	#yearsDropup = undefined;
 
-	/** @type {SpendingNavbarEventHandlers} */
+	/** @type {SpendingNavBarEventHandlers} */
 	#eventHandlers = undefined;
 
 	/** @type {number} */
@@ -36,7 +36,7 @@ export default class SpendingNavbar {
 	 * Constructs an instance of Spending Navbar
 	 * @param {number} year default year to show in navbar
 	 * @param {number} month default month to show in navbar
-	 * @param {SpendingNavbarEventHandlers} eventHandlers Callbacks for when navbar events take place
+	 * @param {SpendingNavBarEventHandlers} eventHandlers Callbacks for when navbar events take place
 	 */
 	constructor(year, month, eventHandlers) {
 		this.year = year;
@@ -83,7 +83,7 @@ export default class SpendingNavbar {
 					new Dom('span').id('dropup-left-caret').cls('white-50').text(''),
 				),
 				new Dom('button').id('dropup-right').cls('nav-item').onClick(onClickMonthDropup).append(
-					new Dom('span').id('dropup-right-text').text(`${SpendingNavbar.#MONTH_NAMES[month]} `),
+					new Dom('span').id('dropup-right-text').text(`${SpendingNavBar.#MONTH_NAMES[month]} `),
 					new Dom('span').id('dropup-right-caret').cls('white-50').text(''),
 				),
 				new Dom('button').cls('nav-item', 'nav-trigger').attr('data-side', 'right').append(
@@ -117,8 +117,7 @@ export default class SpendingNavbar {
 	appendYear(year) {
 		if (this.#yearsInDropup.has(year)) return;
 
-		const onYearChanged = this.onYearChanged.bind(this, year);
-		const yearDropupItem = new Dom('div').cls('accordion-secondary').onClick(onYearChanged).text(year);
+		const yearDropupItem = new Dom('div').cls('accordion-secondary').text(year);
 		this.#yearsInDropup.set(year, yearDropupItem);
 		this.#yearsDropup.body(yearDropupItem);
 		this.updateYearDropupText();
@@ -130,7 +129,7 @@ export default class SpendingNavbar {
 		const onMonthChanged = this.onMonthChanged.bind(this, month);
 		const monthDropupItem = new Dom('div')
 			.cls('accordion-secondary')
-			.text(SpendingNavbar.#MONTH_NAMES[month])
+			.text(SpendingNavBar.#MONTH_NAMES[month])
 			.onClick(onMonthChanged);
 
 		this.#monthsInDropup.set(month, monthDropupItem);
@@ -168,7 +167,7 @@ export default class SpendingNavbar {
 
 	updateMonthDropupText() {
 		const dropupRightText = document.getElementById('dropup-right-text');
-		const newText = `${SpendingNavbar.#MONTH_NAMES[this.#selectedMonth]} `;
+		const newText = `${SpendingNavBar.#MONTH_NAMES[this.#selectedMonth]} `;
 		if (dropupRightText.textContent !== newText) {
 			dropupRightText.textContent = newText;
 		}
@@ -195,11 +194,6 @@ export default class SpendingNavbar {
 			this.#eventHandlers.onMonthChanged(month);
 		}
 		this.#monthsDropup.close();
-	}
-
-	onYearChanged(year) {
-		this.#yearsDropup.close();
-		window.location.href = `${window.location.pathname}?year=${year}`;
 	}
 
 	onClickEdit() {
