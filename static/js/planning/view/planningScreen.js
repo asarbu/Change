@@ -137,8 +137,6 @@ export default class PlanningScreen {
 	buildCategories(planningCategories) {
 		const categories = [];
 		const onKeyUpCategoryName = this.onKeyUpCategoryName.bind(this);
-		const onClickDeleteGoal = this.onClickDeleteGoal.bind(this);
-		const onKeyUpGoal = this.onKeyUpGoal.bind(this);
 
 		for (let i = 0; i < planningCategories.length; i += 1) {
 			const planningCategory = planningCategories[i];
@@ -156,15 +154,7 @@ export default class PlanningScreen {
 					),
 				),
 				new Dom('tbody').append(
-					...planningCategory.goals.map((goal) => new Dom('tr').id(goal.id).userData(goal).append(
-						new Dom('td').text(goal.name).editable().contentEditable(this.#editMode).onKeyUp(onKeyUpGoal),
-						new Dom('td').text(goal.daily).editable().contentEditable(this.#editMode).onKeyUp(onKeyUpGoal),
-						new Dom('td').text(goal.monthly).editable().contentEditable(this.#editMode).onKeyUp(onKeyUpGoal),
-						new Dom('td').text(goal.yearly).editable().contentEditable(this.#editMode).onKeyUp(onKeyUpGoal),
-						new Dom('td').hideable(this.#editMode).onClick(onClickDeleteGoal).append(
-							Dom.imageButton('Delete goal', icons.delete),
-						),
-					)),
+					...planningCategory.goals.map((goal) => this.buildGoal(goal)),
 					this.buildTotalRow(planningCategory),
 				),
 			).userData(planningCategory);
@@ -172,6 +162,24 @@ export default class PlanningScreen {
 		}
 
 		return categories;
+	}
+
+	/**
+	 * @param {Goal} goal to build
+	 * @returns {Dom}
+	 */
+	buildGoal(goal) {
+		const onClickDeleteGoal = this.onClickDeleteGoal.bind(this);
+		const onKeyUpGoal = this.onKeyUpGoal.bind(this);
+		return new Dom('tr').id(goal.id).userData(goal).append(
+			new Dom('td').text(goal.name).editable().contentEditable(this.#editMode).onKeyUp(onKeyUpGoal),
+			new Dom('td').text(goal.daily).editable().contentEditable(this.#editMode).onKeyUp(onKeyUpGoal),
+			new Dom('td').text(goal.monthly).editable().contentEditable(this.#editMode).onKeyUp(onKeyUpGoal),
+			new Dom('td').text(goal.yearly).editable().contentEditable(this.#editMode).onKeyUp(onKeyUpGoal),
+			new Dom('td').hideable(this.#editMode).onClick(onClickDeleteGoal).append(
+				Dom.imageButton('Delete goal', icons.delete),
+			),
+		)
 	}
 
 	/**
