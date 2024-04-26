@@ -39,19 +39,19 @@ export class Statement {
 	 */
 	constructor(id, name, type, categories = []) {
 		/**
-		 * @type{number}
+		 * @type {number}
 		 */
 		this.id = id;
 		/**
-		 * @type{string}
+		 * @type {string}
 		 */
 		this.name = name;
 		/**
-		 * @type{string}
+		 * @type {string}
 		 */
 		this.type = type;
 		/**
-		 * @type{Array<PlanningCategory>}
+		 * @type {Array<Category>}
 		 */
 		this.categories = categories;
 	}
@@ -62,25 +62,40 @@ export class Category {
 	 *
 	 * @param {string} id
 	 * @param {string} name
-	 * @param {Array<Goal>} goals 
+	 * @param {Array<Goal>} goals
 	 */
 	constructor(id, name, goals = []) {
 		/**
-		 * @type{string}
+		 * @type {string}
 		 */
 		this.id = id;
 		/**
-		 * @type{string}
+		 * @type {string}
 		 */
 		this.name = name;
 		/**
-		 * @type{Array<Goal>}
+		 * @type {Array<Goal>}
 		 */
 		this.goals = goals;
+	}
+
+	totalDaily() {
+		return this.goals.reduce((acc, curr) => acc + curr.daily, 0);
+	}
+
+	totalMonthly() {
+		return this.goals.reduce((acc, curr) => acc + curr.monthly, 0);
+	}
+
+	totalYearly() {
+		return this.goals.reduce((acc, curr) => acc + curr.yearly, 0);
 	}
 }
 
 export class Goal {
+	// TODO Create static factory methods for goals that autocomplete other fields
+	// e.g. Goal.fromDaylyAmount(amount), Goal.fromMonthlyAmount(amount), etc.
+
 	/**
 	 * @param {Object} goal - Unit to store in object.
 	 * @param {string} goal.name - The name of the goal.
@@ -95,19 +110,19 @@ export class Goal {
 		yearly,
 	) {
 		/**
-		 * @type{string}
+		 * @type {number}
 		 */
 		this.name = name;
 		/**
-		 * @type{integer}
+		 * @type {number}
 		 */
 		this.daily = daily;
 		/**
-		 * @type{integer}
+		 * @type {number}
 		 */
 		this.monthly = monthly;
 		/**
-		 * @type{integer}
+		 * @type {number}
 		 */
 		this.yearly = yearly;
 	}
