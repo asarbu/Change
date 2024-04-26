@@ -18,6 +18,9 @@ export default class PlanningScreen {
 	/** @type {Array<Planning>>} */
 	#plannings = [];
 
+	/** @type {Map<string, Dom>} */
+	#categoryDoms = new Map();
+
 	/** @type {Planning} */
 	#defaultPlanning = undefined;
 
@@ -99,6 +102,7 @@ export default class PlanningScreen {
 			htmlStatement.userData = statement;
 
 			section.appendChild(htmlStatement);
+			this.navbar.appendStatement(statement.name);
 		}
 
 		container.appendChild(section);
@@ -109,9 +113,11 @@ export default class PlanningScreen {
 	/**
 	 * Creates a DOM statement
 	 * @param {Statement} statement Statement representing this slice
-	 * @returns {HTMLDivElement} Constructed and decorated DOM element
+	 * @returns {Dom | undefined} Constructed and decorated DOM element
 	 */
 	buildStatement(statement) {
+		if (!statement) return undefined;
+
 		const onKeyUp = this.onKeyUpStatementName.bind(this);
 		const onClickStatementType = this.onClickStatementType.bind(this);
 		const onClickAddCategory = this.onClickAddCategory.bind(this);
@@ -125,25 +131,24 @@ export default class PlanningScreen {
 			Dom.imageButton('Add Category', icons.add_table).hideable(this.#editMode).onClick(onClickAddCategory),
 		);
 
-		this.navbar.appendStatement(statement.name);
 		return slice;
 	}
 
 	/**
-	 * Creates a Document Fragment containing all of the tables constructed from the categories.
+	 * Creates a Dom array containing all of the tables constructed from the categories.
 	 * @param {Array<Category>} planningCategories Categories to draw inside parent statement
-	 * @returns {DocumentFragment} Document fragment with all of the created tables
+	 * @returns {Array<Dom>} Document fragment with all of the created tables
 	 */
 	buildCategories(planningCategories) {
 		const categories = [];
 		const onKeyUpCategoryName = this.onKeyUpCategoryName.bind(this);
 
 		for (let i = 0; i < planningCategories.length; i += 1) {
-			const planningCategory = planningCategories[i];
-			const category = new Dom('table').id(planningCategory.id).cls('top-round', 'bot-round').append(
+			const category = planningCategories[i];
+			const categoryDom = new Dom('table').id(category.id).cls('top-round', 'bot-round').append(
 				new Dom('thead').append(
 					new Dom('tr').append(
-						new Dom('th').text(planningCategory.name).editable().contentEditable(this.#editMode)
+						new Dom('th').text(category.name).editable().contentEditable(this.#editMode)
 							.onKeyUp(onKeyUpCategoryName),
 						new Dom('th').text('Daily'),
 						new Dom('th').text('Monthly'),
@@ -154,21 +159,22 @@ export default class PlanningScreen {
 					),
 				),
 				new Dom('tbody').append(
-					...planningCategory.goals.map((goal) => this.buildGoal(goal)),
-					this.buildTotalRow(planningCategory),
+					...category.goals.map((goal) => this.buildGoal(goal)),
+					this.buildTotalRow(category),
 				),
-			).userData(planningCategory);
-			categories.push(category);
+			).userData(category);
+			categories.push(categoryDom);
+			this.#categoryDoms.set(category.id, categoryDom);
 		}
-
 		return categories;
 	}
 
 	/**
 	 * @param {Goal} goal to build
-	 * @returns {Dom}
+	 * @returns {Dom | undefined}
 	 */
 	buildGoal(goal) {
+		if (!goal) return undefined;
 		const onClickDeleteGoal = this.onClickDeleteGoal.bind(this);
 		const onKeyUpGoal = this.onKeyUpGoal.bind(this);
 		return new Dom('tr').id(goal.id).userData(goal).append(
@@ -179,74 +185,8 @@ export default class PlanningScreen {
 			new Dom('td').hideable(this.#editMode).onClick(onClickDeleteGoal).append(
 				Dom.imageButton('Delete goal', icons.delete),
 			),
-		)
+		);
 	}
-
-	/**
-	 * Creates a new row in the table, fills the data and decorates it.
-	 * @param {HTMLTableElement} table Table where to append row
-	 * @param {Goal} item Goal data to fill in the row
-	 * @param {Object} options Format options for the row
-	 * @param {Number} options.index Position to add the row to. Defaults to -1 (last)
-	 * @param {Boolean} options.hideLastCell Hide last cell of the row
-	 * @param {Boolean} options.readonly Make the row uneditable
-	 * @param {HTMLButtonElement} options.lastCellContent Optional element to add to last cell
-	 * @returns {HTMLTableRowElement} Row that was created and decorated. Contains Goal in userData
-	 */
-	buildRow(table, item, options) {
-		let index = -1;
-		if (Object.prototype.hasOwnProperty.call(options, 'index')) {
-			index = options.index;
-		}
-		const row = table.tBodies[0].insertRow(index);
-		row.id = item.id;
-		row.userData = item;
-
-		this.buildDataCell(row, item.name, options);
-		this.buildDataCell(row, item.daily, options);
-		this.buildDataCell(row, item.monthly, options);
-		this.buildDataCell(row, item.yearly, options);
-
-		const buttonsCell = row.insertCell(-1);
-
-		if (options?.lastCellContent) {
-			buttonsCell.appendChild(options.lastCellContent);
-		}
-
-		buttonsCell.setAttribute('hideable', 'true');
-		if (options?.hideLastCell && !this.#editMode) {
-			buttonsCell.style.display = 'none';
-		}
-		return row;
-	}
-
-	/**
-	 * Creates and decorates a new data cell to be appended in a table row
-	 * @param {HTMLTableRowElement} row Row to populate with data cells
-	 * @param {string} text Text to display
-	 * @param {Object} options Miscelatious options for this data cell
-	 * @param {boolean} options.readonly Makes the cell uneditable
-	 * @param {boolean} options.color Paints the text a certain color (#000000)
-	 * @returns {HTMLTableCellElement}
-	 */
-	buildDataCell(row, text, options) {
-		// console.log("Create data cell", text, options.readonly)
-		const dataCell = row.insertCell(-1);
-		dataCell.textContent = text;
-		if (!options?.readonly) {
-			dataCell.setAttribute('editable', 'true');
-			if (this.#editMode) {
-				dataCell.setAttribute('contenteditable', 'true');
-			}
-			dataCell.addEventListener('keyup', this.onKeyUpGoal.bind(this), false);
-		}
-
-		if (options?.color) {
-			dataCell.style.color = options.color;
-		}
-		return dataCell;
-	}
-
 	// #endregion
 
 	// #region DOM manipulation
@@ -263,15 +203,11 @@ export default class PlanningScreen {
 	 * @param {Category} forCategory
 	 */
 	buildTotalRow(forCategory) {
-		const categorytDaily = forCategory.goals.reduce((acc, curr) => acc + curr.daily, 0);
-		const categoryMonthly = forCategory.goals.reduce((acc, curr) => acc + curr.monthly, 0);
-		const categoryYearly = forCategory.goals.reduce((acc, curr) => acc + curr.yearly, 0);
-
 		return new Dom('tr').append(
 			new Dom('td').text('Total'),
-			new Dom('td').text(categorytDaily),
-			new Dom('td').text(categoryMonthly),
-			new Dom('td').text(categoryYearly),
+			new Dom('td').text(forCategory.totalDaily()),
+			new Dom('td').text(forCategory.totalMonthly()),
+			new Dom('td').text(forCategory.totalYearly()),
 			new Dom('td').hideable(this.#editMode).onClick(this.onClickAddGoal.bind(this)).append(
 				Dom.imageButton('Add row', icons.add_row),
 			),
@@ -280,47 +216,17 @@ export default class PlanningScreen {
 
 	// Recompute from DOM instead of memory/db/network to have real time updates in UI
 	/**
-	 * Computes the column wise total value of the table and inserts it into the last row.
-	 * @param {HTMLTableElement} table Table for which to compute total row
-	 * @param {boolean} forceCreate Force the creation of total row, if not present
+	 * Computes the column wise total value of the category table and replaces the last row.
+	 * @param {Category} category category for which to compute total row
 	 */
-	recomputeTotal(table, forceCreate = false) {
-		// TODO Use planning statements to recompute, instead of parsing.
-		// TODO remove force create and use the table id to identify if creation is needed.
-		let lastRow;
-		const total = {
-			id: `${table.id}Total`,
-			name: 'Total',
-			daily: 0,
-			monthly: 0,
-			yearly: 0,
-		};
-		if (forceCreate) {
-			const addGoalButton = createImageButton('Delete goal', ['nav-item'], icons.add_row, undefined, this.onClickAddGoal.bind(this));
-			const options = {
-				readonly: true,
-				hideLastCell: true,
-				lastCellContent: addGoalButton,
-			};
-			lastRow = this.buildRow(table, total, options);
-		} else {
-			lastRow = table.tBodies[0].rows[table.tBodies[0].rows.length - 1];
-		}
+	recomputeCategoryTotal(category) {
+		if (!category || !this.#categoryDoms.has(category.id)) throw Error(`Invalid category ${category}`);
 
-		let totalDaily = 0;
-		let totalMonthly = 0;
-		let totalYearly = 0;
-
-		for (let rowIndex = 0; rowIndex < table.tBodies[0].rows.length - 1; rowIndex += 1) {
-			const row = table.tBodies[0].rows[rowIndex];
-			totalDaily += parseInt(row.cells[1].textContent, 10);
-			totalMonthly += parseInt(row.cells[2].textContent, 10);
-			totalYearly += parseInt(row.cells[3].textContent, 10);
-		}
-
-		lastRow.cells[1].textContent = totalDaily;
-		lastRow.cells[2].textContent = totalMonthly;
-		lastRow.cells[3].textContent = totalYearly;
+		const categoryDom = this.#categoryDoms.get(category.id);
+		/** @type {HTMLTableSectionElement} */
+		const tBody = categoryDom.toHtml().tBodies[0];
+		tBody.children[tBody.children.length - 1].remove();
+		tBody.appendChild(this.buildTotalRow(category).toHtml());
 	}
 	// #endregion
 
@@ -440,28 +346,13 @@ export default class PlanningScreen {
 	// #region goal event handlers
 	onClickAddGoal(event) {
 		const btn = event.currentTarget;
-		const id = new Date().getTime(); // millisecond precision
-		const goal = {
-			id: id,
-			name: 'New Goal',
-			daily: 0,
-			monthly: 0,
-			yearly: 0,
-		};
+		const category = btn.parentNode.parentNode.parentNode.userData;
+		const goal = new Goal('New Goal', 0, 0, 0);
 
-		const table = btn.parentNode.parentNode.parentNode;
-		const tbody = table.tBodies[0];
-		// Subtract one for the bottom "Total" row.
-		const index = tbody.rows.length - 1;
-
-		const button = createImageButton('Delete', [], icons.delete, undefined, this.onClickDeleteGoal.bind(this));
-		const options = {
-			index: index,
-			lastCellContent: button,
-		};
-		this.buildRow(table, goal, options);
-
-		table.userData.goals.push(goal);
+		category.goals.push(goal);
+		const goalDom = this.buildGoal(goal);
+		this.#categoryDoms.get(category.id).append(goalDom);
+		// Total does not have to be recomputed because we add amounts of 0
 	}
 
 	onKeyUpGoal(event) {
@@ -478,21 +369,21 @@ export default class PlanningScreen {
 			goal.name = cell.textContent;
 			break;
 		case 1:
-			goal.daily = parseInt(cell.textContent, 10);
+			goal.daily = +cell.textContent;
 			goal.monthly = goal.daily * 30;
 			goal.yearly = goal.daily * 365;
 			cell.parentNode.cells[2].textContent = goal.monthly;
 			cell.parentNode.cells[3].textContent = goal.yearly;
 			break;
 		case 2:
-			goal.monthly = parseInt(cell.textContent, 10);
+			goal.monthly = +cell.textContent;
 			goal.daily = Math.ceil(goal.monthly / 30);
 			goal.yearly = goal.monthly * 12;
 			cell.parentNode.cells[1].textContent = goal.daily;
 			cell.parentNode.cells[3].textContent = goal.yearly;
 			break;
 		case 3:
-			goal.yearly = parseInt(cell.textContent, 10);
+			goal.yearly = +cell.textContent;
 			goal.daily = Math.ceil(goal.yearly / 365);
 			goal.monthly = Math.ceil(goal.yearly / 12);
 			cell.parentNode.cells[1].textContent = goal.daily;
@@ -502,7 +393,7 @@ export default class PlanningScreen {
 			break;
 		}
 
-		this.recomputeTotal(table);
+		this.recomputeCategoryTotal(table.userData);
 	}
 
 	onClickDeleteGoal(event) {
@@ -514,7 +405,7 @@ export default class PlanningScreen {
 		category.goals.splice(category.goals.indexOf(goal), 1);
 
 		tBody.removeChild(row);
-		this.recomputeTotal(tBody.parentNode);
+		this.recomputeCategoryTotal(category);
 	}
 	// #endregion
 	// #endregion
