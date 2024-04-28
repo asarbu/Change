@@ -1,59 +1,38 @@
 // Too much overhead to split the planning model into individual files
 // eslint-disable-next-line max-classes-per-file
-export default class Planning {
-	/** @type {Array<Statement>} */
-	statements = [];
+export class Goal {
+	// TODO Create static factory methods for goals that autocomplete other fields
+	// e.g. Goal.fromDaylyAmount(amount), Goal.fromMonthlyAmount(amount), etc.
 
 	/**
-	 * @constructs Planning
-	 * @param {number} year
-	 * @param {number} month
-	 * @param {Array<Statement>} statements
+	 * @param {Object} goal - Unit to store in object.
+	 * @param {string} goal.name - The name of the goal.
+	 * @param {number} goal.daily - Daily amount to put aside for the goal
+	 * @param {number} goal.monthly - Monthly amount to put aside for the goal
+	 * @param {number} goal.yearly - Yearly amount to put aside for the goal
 	 */
-	constructor(id, year, month, statements) {
-		this.id = id;
-		this.year = year;
-		this.month = month;
-		if (statements) {
-			this.statements = statements;
-		}
-	}
-}
-
-/**
- * @class
- */
-export class Statement {
-	static INCOME = 'Income';
-
-	static EXPENSE = 'Expense';
-
-	static SAVING = 'Saving';
-
-	/**
-	 *
-	 * @param {string} id Unique identifier of the statement
-	 * @param {string} name User friendly name of statement
-	 * @param {String} type Statically defined statement type
-	 * @param {Array<Category>} categories categories associated with this statement
-	 */
-	constructor(id, name, type, categories = []) {
+	constructor(
+		name,
+		daily,
+		monthly,
+		yearly,
+	) {
 		/**
 		 * @type {number}
 		 */
-		this.id = id;
-		/**
-		 * @type {string}
-		 */
 		this.name = name;
 		/**
-		 * @type {string}
+		 * @type {number}
 		 */
-		this.type = type;
+		this.daily = daily;
 		/**
-		 * @type {Array<Category>}
+		 * @type {number}
 		 */
-		this.categories = categories;
+		this.monthly = monthly;
+		/**
+		 * @type {number}
+		 */
+		this.yearly = yearly;
 	}
 }
 
@@ -92,38 +71,75 @@ export class Category {
 	}
 }
 
-export class Goal {
-	// TODO Create static factory methods for goals that autocomplete other fields
-	// e.g. Goal.fromDaylyAmount(amount), Goal.fromMonthlyAmount(amount), etc.
+/**
+ * @class
+ */
+export class Statement {
+	static INCOME = 'Income';
+
+	static EXPENSE = 'Expense';
+
+	static SAVING = 'Saving';
 
 	/**
-	 * @param {Object} goal - Unit to store in object.
-	 * @param {string} goal.name - The name of the goal.
-	 * @param {number} goal.daily - Daily amount to put aside for the goal
-	 * @param {number} goal.monthly - Monthly amount to put aside for the goal
-	 * @param {number} goal.yearly - Yearly amount to put aside for the goal
+	 *
+	 * @param {string} id Unique identifier of the statement
+	 * @param {string} name User friendly name of statement
+	 * @param {String} type Statically defined statement type
+	 * @param {Array<Category>} categories categories associated with this statement
 	 */
-	constructor(
-		name,
-		daily,
-		monthly,
-		yearly,
-	) {
+	constructor(id, name, type, categories = []) {
 		/**
 		 * @type {number}
+		 */
+		this.id = id;
+		/**
+		 * @type {string}
 		 */
 		this.name = name;
 		/**
-		 * @type {number}
+		 * @type {string}
 		 */
-		this.daily = daily;
+		this.type = type;
 		/**
-		 * @type {number}
+		 * @type {Array<Category>}
 		 */
-		this.monthly = monthly;
-		/**
-		 * @type {number}
-		 */
-		this.yearly = yearly;
+		this.categories = categories;
+	}
+
+	static fromJavascriptObject(object) {
+		const statement = new Statement(object.id, object.name, object.type);
+		object.categories.forEach(
+			(category) => statement.categories.push(Category.fromJavascriptObject(category)),
+		);
+		return statement;
+	}
+}
+
+export default class Planning {
+	/** @type {Array<Statement>} */
+	statements = [];
+
+	/**
+	 * @constructs Planning
+	 * @param {number} year
+	 * @param {number} month
+	 * @param {Array<Statement>} statements
+	 */
+	constructor(id, year, month, statements) {
+		this.id = id;
+		this.year = year;
+		this.month = month;
+		if (statements) {
+			this.statements = statements;
+		}
+	}
+
+	static fromJavascriptObject(object) {
+		const planning = new Planning(object.id, object.year, object.month);
+		object.statements.forEach((statement) => {
+			planning.statements.push(Statement.fromJavascriptObject(statement));
+		});
+		return planning;
 	}
 }

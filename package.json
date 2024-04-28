@@ -6,9 +6,9 @@
   "type": "module",
   "scripts": {
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
-    "build": "node ./node_scripts/build.js",
-    "dev": "node ./node_scripts/dev.js",
-    "clean": "node node_scripts/clean.js",
+    "build": "node ./node_scripts/build.cjs",
+    "dev": "node ./node_scripts/dev.cjs",
+    "clean": "node node_scripts/clean.cjs",
     "start": "http-server ./dist"
   },
   "repository": {

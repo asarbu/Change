@@ -36,7 +36,7 @@ export default class PlanningController {
 		const planningCache = await PlanningCache.get(this.#defaultYear);
 		const emptyCache = (await planningCache.count()) === 0;
 		// TODO ask user if he wants to fetch defaults from server
-		if(emptyCache) {
+		if (emptyCache) {
 			await fetch(PlanningCache.PLANNING_TEMPLATE_URI)
 				.then((response) => response.json())
 				.then((planningFile) => {
@@ -65,7 +65,7 @@ export default class PlanningController {
 	 */
 	async initPlanningScreen(cache) {
 		// TODO handle multiple months. Keep only the most recent one
-		const planning = await cache.readForMonth(this.#defaultMonth)[0];
+		const planning = (await cache.readForMonth(this.#defaultMonth))[0];
 		const planningScreen = new PlanningScreen(planning);
 		planningScreen.onClickUpdate = this.onClickUpdate.bind(this);
 		planningScreen.onStatementAdded = this.onClickAddStatement.bind(this);

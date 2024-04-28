@@ -3,7 +3,7 @@
  */
 
 import {
-	beforeAll, describe, expect, test,
+	beforeAll, describe, expect, test as it,
 } from '@jest/globals';
 import Planning, { Category, Goal, Statement } from '../static/js/planning/model/planningModel';
 import PlanningScreen from '../static/js/planning/view/planningScreen';
@@ -18,12 +18,12 @@ describe('Planning screen', () => {
 		defaultPlanningScreen = new PlanningScreen(planning);
 	});
 
-	test('builds no goal for no data', () => {
+	it('builds no goal for no data', () => {
 		const goal = defaultPlanningScreen.buildGoal();
 		expect(goal).not.toBeDefined();
 	});
 
-	test('builds one goal with correct goal data', () => {
+	it('builds one goal with correct goal data', () => {
 		const goal = new Goal('Goal One', 10, 30, 3650);
 		/** @type {HTMLTableRowElement} */
 		const row = defaultPlanningScreen.buildGoal(goal).toHtml();
@@ -35,7 +35,7 @@ describe('Planning screen', () => {
 		expect(children[3].textContent).toBe('3650');
 	});
 
-	test('builds no categories for empty array', () => {
+	it('builds no categories for empty array', () => {
 		const categories = defaultPlanningScreen.buildCategories([]);
 		expect(categories.length).toBe(0);
 	});
@@ -50,7 +50,7 @@ describe('Planning screen', () => {
 		expect(html.tHead.children[0].children[0].textContent).toBe(category.name);
 	}
 
-	test('builds one category with correct category data', () => {
+	it('builds one category with correct category data', () => {
 		const category = new Category('Category One', 'Category Name', []);
 		const builtCategories = defaultPlanningScreen.buildCategories([category]);
 		/** @type {HTMLTableElement} */
@@ -58,7 +58,7 @@ describe('Planning screen', () => {
 		expectCorrectCategoryHtml(category, buildCategory);
 	});
 
-	test('builds two categories with correct category data', () => {
+	it('builds two categories with correct category data', () => {
 		const categoryOne = new Category('Category One', 'Category Name', []);
 		const categoryTwo = new Category('Category Two', 'Category Name', []);
 		const builtCategories = defaultPlanningScreen.buildCategories([categoryOne, categoryTwo]);
@@ -67,12 +67,12 @@ describe('Planning screen', () => {
 		expectCorrectCategoryHtml(categoryTwo, builtCategories[1].toHtml());
 	});
 
-	test('build no statement for no data', () => {
+	it('builds no statement for no data', () => {
 		const statementHtml = defaultPlanningScreen.buildStatement();
 		expect(statementHtml).not.toBeDefined();
 	});
 
-	test('build one statements with correct statement data', () => {
+	it('builds one statements with correct statement data', () => {
 		const statement = new Statement('Statement One', 'Statement name', Statement.EXPENSE, []);
 		const html = defaultPlanningScreen.buildStatement(statement).toHtml();
 		expect(html).toBeDefined();
@@ -82,7 +82,7 @@ describe('Planning screen', () => {
 		expect(subtitle).toBe(`${Statement.EXPENSE} ▼`);
 	});
 
-	test('builds total row for a category', () => {
+	it('builds total row for a category', () => {
 		const goalOne = new Goal('Goal One', 10, 30, 3650);
 		const goalTwo = new Goal('Goal Two', 10, 30, 3650);
 		const category = new Category('Category ID', 'Category name', [goalOne, goalTwo]);
@@ -93,7 +93,7 @@ describe('Planning screen', () => {
 		expect(html.children[3].textContent).toBe('7300');
 	});
 
-	test('correctly computes total for a given category', () => {
+	it('correctly computes total for a given category', () => {
 		const goalOne = new Goal('Goal One', 10, 30, 3650);
 		const goalTwo = new Goal('Goal Two', 10, 30, 3650);
 		const category = new Category('Category ID', 'Category name', [goalOne, goalTwo]);
@@ -108,7 +108,7 @@ describe('Planning screen', () => {
 		expect(totalRow.children[3].textContent).toBe('7300');
 	});
 
-	test('correctly recomputes total for a changed category', () => {
+	it('correctly recomputes total for a changed category', () => {
 		const goalOne = new Goal('Goal One', 10, 30, 3650);
 		const goalTwo = new Goal('Goal Two', 10, 30, 3650);
 		const category = new Category('Category ID', 'Category name', [goalOne, goalTwo]);
@@ -130,5 +130,9 @@ describe('Planning screen', () => {
 		expect(totalRow.children[1].textContent).toBe('30');
 		expect(totalRow.children[2].textContent).toBe('90');
 		expect(totalRow.children[3].textContent).toBe('10950');
+	});
+
+	it('throws error if no planning is provided', () => {
+		expect(() => (new PlanningScreen())).toThrowError();
 	});
 });

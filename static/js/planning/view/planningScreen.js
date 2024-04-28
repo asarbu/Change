@@ -1,7 +1,7 @@
 /* eslint-disable class-methods-use-this */
 import GraphicEffects from '../../gui/effects.js';
 import Sidenav from '../../gui/sidenav.js';
-import Dom, { create, createImageButton } from '../../gui/dom.js';
+import Dom from '../../gui/dom.js';
 import Planning, { Statement, Category, Goal } from '../model/planningModel.js';
 import icons from '../../gui/icons.js';
 import PlanningNavbar from './planningNavbar.js';
@@ -14,9 +14,6 @@ export default class PlanningScreen {
 
 	/** @type {Sidenav} */
 	#sidenav = undefined;
-
-	/** @type {Array<Planning>>} */
-	#plannings = [];
 
 	/** @type {Map<string, Dom>} */
 	#categoryDoms = new Map();
@@ -34,7 +31,6 @@ export default class PlanningScreen {
 	 */
 	constructor(planning) {
 		if (!planning) throw Error('No planning provided to draw on the screen');
-		this.#plannings.push(planning);
 		this.#defaultPlanning = planning;
 	}
 
@@ -43,8 +39,8 @@ export default class PlanningScreen {
 	 */
 	init() {
 		let defaultStatementName = '';
-		if (this.#plannings[0].statements.length > 0) {
-			defaultStatementName = this.#plannings[0].statements[0].name;
+		if (this.#defaultPlanning.statements.length > 0) {
+			defaultStatementName = this.#defaultPlanning.statements[0].name;
 		}
 
 		const handlers = new PlanningNavbarEventHandlers();
@@ -91,22 +87,20 @@ export default class PlanningScreen {
 	 * @returns {DocumentFragment}
 	 */
 	buildContainer() {
-		const container = create('div', { id: this.#defaultPlanning.year, classes: ['container'] });
-		const section = create('div', { classes: ['section'] });
+		const container = new Dom('div').id(this.#defaultPlanning.year).cls('container');
+		const section =	new Dom('div').cls('section');
 		const { statements } = this.#defaultPlanning;
 
 		// TODO Merge this with navbar creation, since we are iterating through same array.
 		for (let i = 0; i < statements.length; i += 1) {
 			const statement = statements[i];
-			const htmlStatement = this.buildStatement(statement).toHtml();
-			htmlStatement.userData = statement;
+			const htmlStatement = this.buildStatement(statement).userData(statement);
 
-			section.appendChild(htmlStatement);
+			section.append(htmlStatement);
 			this.navbar.appendStatement(statement.name);
 		}
 
-		container.appendChild(section);
-
+		container.append(section);
 		return container;
 	}
 

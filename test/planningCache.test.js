@@ -1,4 +1,6 @@
-import { beforeAll, describe, expect, test } from '@jest/globals';
+import {
+	beforeAll, describe, expect, test,
+} from '@jest/globals';
 import PlanningCache from '../static/js/planning/persistence/planningCache.js';
 import Planning, { Category, Goal, Statement } from '../static/js/planning/model/planningModel.js';
 import Idb from '../static/js/persistence/idb.js';
@@ -12,12 +14,12 @@ let now;
 async function storeEmptyPlanningCache(forDate) {
 	const date = forDate || now;
 	const planning = new Planning(date.getTime(), date.getFullYear(), date.getMonth());
-	return await defaultPlanningCache.storePlanning(planning);
+	return defaultPlanningCache.storePlanning(planning);
 }
 
 async function storeEmptyPlanningCachesForAYear() {
-	for(let monthIndex = 0; monthIndex < 12; monthIndex += 1) {
-		now.setMonth(monthIndex)
+	for (let monthIndex = 0; monthIndex < 12; monthIndex += 1) {
+		now.setMonth(monthIndex);
 		const planning = new Planning(now.getTime(), now.getFullYear(), now.getMonth());
 		await defaultPlanningCache.storePlanning(planning);
 	}
@@ -36,21 +38,21 @@ describe('Planning cache', () => {
 		now = new Date();
 	});
 
-	test('is retrieved for more than one year', async() => {
-		let planningCaches = (await PlanningCache.getAll())
+	test('is retrieved for more than one year', async () => {
+		let planningCaches = (await PlanningCache.getAll());
 		const planningCachesCount = planningCaches.length;
 		let maxPlanningYear = 0;
 		planningCaches.forEach((planningCache) => {
 			maxPlanningYear = Math.max(maxPlanningYear, planningCache.year);
-		})
+		});
 		maxPlanningYear += 1;
-		//Create extra planning cache
+		// Create extra planning cache
 		await PlanningCache.get(maxPlanningYear);
 		planningCaches = await PlanningCache.getAll();
 		expect(planningCaches.length).toBeGreaterThan(planningCachesCount);
-	})
+	});
 
-	test('is defined for current year', async() => {
+	test('is defined for current year', async () => {
 		expect(defaultPlanningCache.year).toBe(now.getFullYear());
 	});
 
@@ -60,14 +62,14 @@ describe('Planning cache', () => {
 		expect(planningCache.year).toBe(availableDate.getFullYear());
 	});
 
-	test('is initialized without existing IDB', async() => {
-		const planningCache = new PlanningCache(now.getFullYear())
+	test('is initialized without existing IDB', async () => {
+		const planningCache = new PlanningCache(now.getFullYear());
 		const initializedPlanning = await planningCache.init();
 		const count = await initializedPlanning.count();
 		expect(count).toBeGreaterThan(-1);
 	});
 
-	test('is initialized with existing IDB', async() => {
+	test('is initialized with existing IDB', async () => {
 		const idb = await Idb.of('2024', PlanningCache.upgradePlanningDatabase);
 		const planningCache = new PlanningCache(now.getFullYear(), idb);
 		const initializedPlanning = await planningCache.init();
@@ -75,7 +77,7 @@ describe('Planning cache', () => {
 		expect(count).toBeGreaterThan(-1);
 	});
 
-	test('count returns 0 for 1970', async() => {
+	test('count returns 0 for 1970', async () => {
 		const planningCache = await PlanningCache.get(1970);
 		expect(await planningCache.count()).toBe(0);
 	});
@@ -87,16 +89,15 @@ describe('Planning cache', () => {
 		expect(countAfterInsert - countBeforeInsert).toBe(1);
 	});
 
-	test('reads already existing cache', async() => {
+	test('reads already existing cache', async () => {
 		const availableDate = nextAvailablePlanningDate();
 		const planningCache = await PlanningCache.get(availableDate.getFullYear());
 		const secondPlanningCache = await PlanningCache.get(availableDate.getFullYear());
 		expect(planningCache).toBe(secondPlanningCache);
-	})
+	});
 
 	test('reads one added planning object', async () => {
 		const storedPlanning = await storeEmptyPlanningCache();
-		const all = await defaultPlanningCache.readAll();
 		const readPlanning = await defaultPlanningCache.read(storedPlanning.id);
 		expect(storedPlanning).toEqual(readPlanning);
 	});
@@ -105,11 +106,11 @@ describe('Planning cache', () => {
 		expect(defaultPlanningCache.read(1)).rejects.toThrowError();
 	});
 
-	test('reads all (2) planning items from cache', async() =>{
+	test('reads all (2) planning items from cache', async () => {
 		const countBeforeInsert = (await defaultPlanningCache.count());
 		const firstPlanning = await storeEmptyPlanningCache(nextAvailablePlanningDate());
-		//Wait for 10ms to pass so we do not have an ID conflict (ID is date.now)
-		await new Promise(r => setTimeout(r, 10));
+		// Wait for 10ms to pass so we do not have an ID conflict (ID is date.now)
+		await new Promise((r) => { setTimeout(r, 10); });
 		const secondPlanning = await storeEmptyPlanningCache(nextAvailablePlanningDate());
 		const plannings = await defaultPlanningCache.readAll();
 		expect(plannings.length).toBe(countBeforeInsert + 2);
@@ -119,55 +120,78 @@ describe('Planning cache', () => {
 		expect(foundSecondPlanning).toBeDefined();
 	});
 
-	test('read all plannings for a month', async() => {
+	test('read all plannings for a month', async () => {
 		await storeEmptyPlanningCachesForAYear();
 		const currentMonth = now.getMonth();
 		const planningsForCurrentMonth = await defaultPlanningCache.readForMonth(currentMonth);
 		planningsForCurrentMonth.forEach((planning) => {
 			expect(planning.month).toBe(currentMonth);
 		});
-	})
+	});
 
-	test('reads all expense categories for a planning object', async() => {
+	test('reads all expense categories for a planning object', async () => {
 		const availableDate = nextAvailablePlanningDate();
 		const expenseGoalOne = new Goal('expenseGoalOne', 10, 300, 3650);
 		const expenseGoalTwo = new Goal('expenseGoalTwo', 10, 300, 3650);
-		const expenseCategoryOne = new Category(1,'expenseCategoryOne', 
-			[expenseGoalOne, expenseGoalTwo]);
+		const expenseCategoryOne = new Category(1, 'expenseCategoryOne', [expenseGoalOne, expenseGoalTwo]);
 		const expenseGoalThree = new Goal('expenseGoalThree', 10, 300, 3650);
 		const expenseGoalFour = new Goal('expenseGoalFour', 10, 300, 3650);
-		const expenseCategoryTwo = new Category(2, 'expenseCategoryTwo',
-			[expenseGoalThree, expenseGoalFour]);
-		const expenseStatement = new Statement(1, 'Statement1', Statement.EXPENSE,
-			[expenseCategoryOne, expenseCategoryTwo]);
-		
+		const expenseCategoryTwo = new Category(2, 'expenseCategoryTwo', [expenseGoalThree, expenseGoalFour]);
+		const expenseStatement = new Statement(
+			1,
+			'Statement1',
+			Statement.EXPENSE,
+			[expenseCategoryOne, expenseCategoryTwo],
+		);
+
 		const incomeGoalOne = new Goal('incomeGoalOne', 10, 300, 3650);
 		const incomeGoalTwo = new Goal('incomeGoalTwo', 10, 300, 3650);
-		const incomeCategoryOne = new Category(1, 'incomeCategoryOne', 
-			[incomeGoalOne, incomeGoalTwo]);
+		const incomeCategoryOne = new Category(
+			1,
+			'incomeCategoryOne',
+			[incomeGoalOne, incomeGoalTwo],
+		);
 		const incomeCategoryTwo = new Category(2, 'incomeCategoryTwo');
-		const incomeStatement = new Statement(1, 'Statement1', Statement.INCOME,
-			[incomeCategoryOne, incomeCategoryTwo]);
-		
+		const incomeStatement = new Statement(
+			1,
+			'Statement1',
+			Statement.INCOME,
+			[incomeCategoryOne, incomeCategoryTwo],
+		);
+
 		const savingGoalOne = new Goal('savingGoalOne', 10, 300, 3650);
 		const savingGoalTwo = new Goal('savingGoalTwo', 10, 300, 3650);
 		const savingGoalThree = new Goal('savingGoalThree', 10, 300, 3650);
 		const savingGoalFour = new Goal('savingGoalFour', 10, 300, 3650);
-		const savingCategoryOne = new Category(1, 'savingCategoryOne', 
-			[savingGoalOne, savingGoalTwo]);
-		const savingCategoryTwo = new Category(2, 'savingCategoryTwo', 
-			[savingGoalThree, savingGoalFour]);
-		const savingStatement = new Statement(1, 'Statement1', Statement.SAVING,
-			[savingCategoryOne, savingCategoryTwo]);
+		const savingCategoryOne = new Category(
+			1,
+			'savingCategoryOne',
+			[savingGoalOne, savingGoalTwo],
+		);
+		const savingCategoryTwo = new Category(
+			2,
+			'savingCategoryTwo',
+			[savingGoalThree, savingGoalFour],
+		);
+		const savingStatement = new Statement(
+			1,
+			'Statement1',
+			Statement.SAVING,
+			[savingCategoryOne, savingCategoryTwo],
+		);
 
-		const planning = new Planning(1, availableDate.getFullYear(), availableDate.getMonth(), 
-		[expenseStatement, incomeStatement, savingStatement]); 
+		const planning = new Planning(
+			1,
+			availableDate.getFullYear(),
+			availableDate.getMonth(),
+			[expenseStatement, incomeStatement, savingStatement],
+		);
 		const planningCache = await PlanningCache.get(availableDate.getFullYear());
 		planningCache.storePlanning(planning);
 		// Move the below method to Planning class
 		const expenseCategories = await planningCache.readExpenseCategories(availableDate.getMonth());
 		expect(expenseCategories).toEqual([expenseCategoryOne, expenseCategoryTwo]);
-	})
+	});
 
 	test('deletes one empty Planning object', async () => {
 		const countBeforeInsert = (await defaultPlanningCache.count());
@@ -211,10 +235,10 @@ describe('Planning cache', () => {
 		expect(dbStatement).toBeDefined();
 	});
 
-	test('update all (2) planning items from cache', async() =>{
+	test('update all (2) planning items from cache', async () => {
 		const firstPlanning = await storeEmptyPlanningCache();
-		//Wait for 10ms to pass so we do not have an ID conflict (ID is date.now)
-		await new Promise(r => setTimeout(r, 10));
+		// Wait for 10ms to pass so we do not have an ID conflict (ID is date.now)
+		await new Promise((r) => { setTimeout(r, 10); });
 		const secondPlanning = await storeEmptyPlanningCache();
 
 		firstPlanning.month = (firstPlanning.month + 1) % 12;
