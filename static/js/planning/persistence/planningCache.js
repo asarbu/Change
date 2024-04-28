@@ -112,7 +112,12 @@ export default class PlanningCache {
 	 * @returns { Promise<Array<Planning>> }
 	 */
 	async readAll() {
-		return this.#idb.openCursor(this.#storeName);
+		const plannings = [];
+		const objects = await this.#idb.openCursor(this.#storeName);
+		objects.forEach((object) => {
+			plannings.push(Planning.fromJavascriptObject(object));
+		});
+		return plannings;
 	}
 
 	/**
@@ -122,7 +127,9 @@ export default class PlanningCache {
 	 */
 	async readForMonth(month) {
 		// TODO do this with a key range
-		return (await this.readAll()).filter((planning) => planning.month === month);
+		const allPlannings = await this.readAll();
+		const plannings = allPlannings.filter((planning) => planning.month === month);
+		return plannings;
 	}
 
 	/**
@@ -132,7 +139,7 @@ export default class PlanningCache {
 	 */
 	async updateAll(plannings) {
 		await this.#idb.clear(this.#storeName);
-		return await this.#idb.putAll(this.#storeName, plannings);
+		return this.#idb.putAll(this.#storeName, plannings);
 	}
 
 	/**
@@ -158,8 +165,7 @@ export default class PlanningCache {
 	 * @returns {Promise<Planning>}
 	 */
 	async read(key) {
-		return await this.#idb.get(this.#storeName, key);
-		//return (await this.readAll()).find((planning) => planning.id === key);
+		return this.#idb.get(this.#storeName, key);
 	}
 
 	/**
