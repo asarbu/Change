@@ -115,7 +115,7 @@ export default class PlanningCache {
 		const plannings = [];
 		const objects = await this.#idb.openCursor(this.#storeName);
 		objects.forEach((object) => {
-			plannings.push(Object.assign(new Planning(), object));
+			plannings.push(Planning.fromJavascriptObject(object));
 		});
 		return plannings;
 	}

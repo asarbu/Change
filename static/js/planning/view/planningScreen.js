@@ -60,10 +60,10 @@ export default class PlanningScreen {
 		const mainElement = document.getElementById('main');
 		mainElement.appendChild(this.navbar.toHtml());
 		this.navbar.selectYear(this.#defaultPlanning.year);
-		this.container = this.buildContainer();
-		mainElement.appendChild(this.container);
+		this.containerHtml = this.buildContainer().toHtml();
+		mainElement.appendChild(this.containerHtml);
 		this.gfx = new GraphicEffects();
-		this.gfx.init(this.container);
+		this.gfx.init(this.containerHtml);
 		this.#sidenav = new Sidenav(this.gfx);
 		document.body.appendChild(this.#sidenav.toHtml());
 	}
@@ -84,7 +84,7 @@ export default class PlanningScreen {
 
 	/**
 	 * Creates all necessary objects needed to draw current screen
-	 * @returns {DocumentFragment}
+	 * @returns {Dom}
 	 */
 	buildContainer() {
 		const container = new Dom('div').id(this.#defaultPlanning.year).cls('container');
@@ -189,8 +189,8 @@ export default class PlanningScreen {
 		this.statements = statements;
 		const newContainer = this.buildContainer();
 		const mainElement = document.getElementById('main');
-		mainElement.replaceChild(newContainer, this.container);
-		this.container = newContainer;
+		mainElement.replaceChild(newContainer, this.containerHtml);
+		this.containerHtml = newContainer;
 	}
 
 	/**

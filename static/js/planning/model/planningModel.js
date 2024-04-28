@@ -34,6 +34,10 @@ export class Goal {
 		 */
 		this.yearly = yearly;
 	}
+
+	static fromJavascriptObject(object) {
+		return new Goal(object.name, object.daily, object.monthly, object.yearly);
+	}
 }
 
 export class Category {
@@ -68,6 +72,14 @@ export class Category {
 
 	totalYearly() {
 		return this.goals.reduce((acc, curr) => acc + curr.yearly, 0);
+	}
+
+	static fromJavascriptObject(object) {
+		const category = new Category(object.id, object.name);
+		object.goals.forEach((goal) => {
+			category.goals.push(Goal.fromJavascriptObject(goal));
+		});
+		return category;
 	}
 }
 

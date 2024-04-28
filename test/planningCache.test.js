@@ -1,5 +1,5 @@
 import {
-	beforeAll, describe, expect, test,
+	beforeAll, describe, expect, it,
 } from '@jest/globals';
 import PlanningCache from '../static/js/planning/persistence/planningCache.js';
 import Planning, { Category, Goal, Statement } from '../static/js/planning/model/planningModel.js';
@@ -38,7 +38,7 @@ describe('Planning cache', () => {
 		now = new Date();
 	});
 
-	test('is retrieved for more than one year', async () => {
+	it('is retrieved for more than one year', async () => {
 		let planningCaches = (await PlanningCache.getAll());
 		const planningCachesCount = planningCaches.length;
 		let maxPlanningYear = 0;
@@ -52,24 +52,24 @@ describe('Planning cache', () => {
 		expect(planningCaches.length).toBeGreaterThan(planningCachesCount);
 	});
 
-	test('is defined for current year', async () => {
+	it('is defined for current year', async () => {
 		expect(defaultPlanningCache.year).toBe(now.getFullYear());
 	});
 
-	test('is defined for a past year', async () => {
+	it('is defined for a past year', async () => {
 		const availableDate = nextAvailablePlanningDate();
 		const planningCache = await PlanningCache.get(availableDate.getFullYear());
 		expect(planningCache.year).toBe(availableDate.getFullYear());
 	});
 
-	test('is initialized without existing IDB', async () => {
+	it('is initialized without existing IDB', async () => {
 		const planningCache = new PlanningCache(now.getFullYear());
 		const initializedPlanning = await planningCache.init();
 		const count = await initializedPlanning.count();
 		expect(count).toBeGreaterThan(-1);
 	});
 
-	test('is initialized with existing IDB', async () => {
+	it('is initialized with existing IDB', async () => {
 		const idb = await Idb.of('2024', PlanningCache.upgradePlanningDatabase);
 		const planningCache = new PlanningCache(now.getFullYear(), idb);
 		const initializedPlanning = await planningCache.init();
@@ -77,36 +77,36 @@ describe('Planning cache', () => {
 		expect(count).toBeGreaterThan(-1);
 	});
 
-	test('count returns 0 for 1970', async () => {
+	it('count returns 0 for 1970', async () => {
 		const planningCache = await PlanningCache.get(1970);
 		expect(await planningCache.count()).toBe(0);
 	});
 
-	test('stores one empty Planning object', async () => {
+	it('stores one empty Planning object', async () => {
 		const countBeforeInsert = (await defaultPlanningCache.count());
 		await storeEmptyPlanningCache();
 		const countAfterInsert = (await defaultPlanningCache.count());
 		expect(countAfterInsert - countBeforeInsert).toBe(1);
 	});
 
-	test('reads already existing cache', async () => {
+	it('reads already existing cache', async () => {
 		const availableDate = nextAvailablePlanningDate();
 		const planningCache = await PlanningCache.get(availableDate.getFullYear());
 		const secondPlanningCache = await PlanningCache.get(availableDate.getFullYear());
 		expect(planningCache).toBe(secondPlanningCache);
 	});
 
-	test('reads one added planning object', async () => {
+	it('reads one added planning object', async () => {
 		const storedPlanning = await storeEmptyPlanningCache();
 		const readPlanning = await defaultPlanningCache.read(storedPlanning.id);
 		expect(storedPlanning).toEqual(readPlanning);
 	});
 
-	test('reads non existing planning object', async () => {
+	it('reads non existing planning object', async () => {
 		expect(defaultPlanningCache.read(1)).rejects.toThrowError();
 	});
 
-	test('reads all (2) planning items from cache', async () => {
+	it('reads all (2) planning items from cache', async () => {
 		const countBeforeInsert = (await defaultPlanningCache.count());
 		const firstPlanning = await storeEmptyPlanningCache(nextAvailablePlanningDate());
 		// Wait for 10ms to pass so we do not have an ID conflict (ID is date.now)
@@ -120,7 +120,7 @@ describe('Planning cache', () => {
 		expect(foundSecondPlanning).toBeDefined();
 	});
 
-	test('read all plannings for a month', async () => {
+	it('read all plannings for a month', async () => {
 		await storeEmptyPlanningCachesForAYear();
 		const currentMonth = now.getMonth();
 		const planningsForCurrentMonth = await defaultPlanningCache.readForMonth(currentMonth);
@@ -129,7 +129,7 @@ describe('Planning cache', () => {
 		});
 	});
 
-	test('reads all expense categories for a planning object', async () => {
+	it('reads all expense categories for a planning object', async () => {
 		const availableDate = nextAvailablePlanningDate();
 		const expenseGoalOne = new Goal('expenseGoalOne', 10, 300, 3650);
 		const expenseGoalTwo = new Goal('expenseGoalTwo', 10, 300, 3650);
@@ -193,7 +193,7 @@ describe('Planning cache', () => {
 		expect(expenseCategories).toEqual([expenseCategoryOne, expenseCategoryTwo]);
 	});
 
-	test('deletes one empty Planning object', async () => {
+	it('deletes one empty Planning object', async () => {
 		const countBeforeInsert = (await defaultPlanningCache.count());
 		const addedPlanning = await storeEmptyPlanningCache(nextAvailablePlanningDate());
 		defaultPlanningCache.delete(addedPlanning.id);
@@ -201,7 +201,7 @@ describe('Planning cache', () => {
 		expect(countAfterInsert).toBe(countBeforeInsert);
 	});
 
-	test('stores one empty Statement in a Planning', async () => {
+	it('stores one empty Statement in a Planning', async () => {
 		const addedPlanning = await storeEmptyPlanningCache();
 		const newStatement = new Statement(now.getTime(), 'Dummy', Statement.EXPENSE);
 		addedPlanning.statements = [newStatement];
@@ -211,7 +211,7 @@ describe('Planning cache', () => {
 		expect(dbStatement).toBeDefined();
 	});
 
-	test('stores statement created in last day of the year', async () => {
+	it('stores statement created in last day of the year', async () => {
 		const addedPlanning = await storeEmptyPlanningCache();
 		const lastDayofYear = Date.parse('12-31-2024');
 		const newStatement = new Statement(lastDayofYear, 'Dummy', Statement.EXPENSE);
@@ -223,7 +223,7 @@ describe('Planning cache', () => {
 		expect(dbStatement).toBeDefined();
 	});
 
-	test('stores statement created in first day of the year', async () => {
+	it('stores statement created in first day of the year', async () => {
 		const addedPlanning = await storeEmptyPlanningCache();
 		const firstDayOfYear = Date.parse('01-01-2024');
 		const newStatement = new Statement(firstDayOfYear, 'Dummy', Statement.EXPENSE);
@@ -235,7 +235,7 @@ describe('Planning cache', () => {
 		expect(dbStatement).toBeDefined();
 	});
 
-	test('update all (2) planning items from cache', async () => {
+	it('update all (2) planning items from cache', async () => {
 		const firstPlanning = await storeEmptyPlanningCache();
 		// Wait for 10ms to pass so we do not have an ID conflict (ID is date.now)
 		await new Promise((r) => { setTimeout(r, 10); });
@@ -250,5 +250,12 @@ describe('Planning cache', () => {
 		const foundSecondPlanning = plannings.find((planning) => planning.id === secondPlanning.id);
 		expect(foundFirstPlanning.month).toBe(firstPlanning.month);
 		expect(foundSecondPlanning.month).toBe(secondPlanning.month);
+	});
+
+	it('returns a Planning class instance', async () => {
+		const planings = await defaultPlanningCache.readAll();
+		planings.forEach((planning) => {
+			expect(planning instanceof Planning).toBeTruthy();
+		});
 	});
 });
