@@ -439,12 +439,12 @@ h3:hover {
 @media(min-width: 768px) {
 	main {
 		height: 100%;
-		width: 80%;
-		left: 20%;
+		width: 75%;
+		left: 25%;
 	}
 
 	.sidenav {
-		width: 20%;
+		width: 25vw;
 		display: block;
 		left: 0;
 		box-shadow: 4px 0px 8px rgba(0, 0, 0, 0.5);
@@ -459,7 +459,12 @@ h3:hover {
 	}
 
 	.container {
-		width: 50%;
+		width: 100%;
 		box-shadow: 4px 0px 8px rgba(0, 0, 0, 0.5);
+	}
+
+	.modal-content {
+		/* Need to subtract 20% due to sidenav */
+		width: 66vw;
 	}
 }
