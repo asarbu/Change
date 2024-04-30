@@ -3,18 +3,48 @@
  */
 
 import {
-	beforeAll, describe, expect, test as it,
+	beforeAll, describe, expect, it,
 } from '@jest/globals';
 import Planning, { Category, Goal, Statement } from '../static/js/planning/model/planningModel';
 import PlanningScreen from '../static/js/planning/view/planningScreen';
+import PlanningCache from '../static/js/planning/persistence/planningCache';
+import PlanningController from '../static/js/planning/controller/planningController';
+import Utils from '../static/js/utils/utils';
 
 // TODO edit mode tests
 describe('Planning screen', () => {
 	/** @type {PlanningScreen} */
 	let defaultPlanningScreen;
 
+	/** @type {Date} */
+	let availableDate;
+
+	function nextAvailableDate() {
+		if (!availableDate) {
+			availableDate = new Date(1970, 0);
+		}
+
+		availableDate = new Date(availableDate.getFullYear(), availableDate.getMonth());
+		return availableDate;
+	}
+
+	function createNewPlanning() {
+		const date = nextAvailableDate();
+		const planning = new Planning(date.getTime(), date.getFullYear(), date.getMonth(), []);
+		return planning;
+	}
+
 	beforeAll(() => {
-		const planning = new Planning(1, 1970, 0, []);
+		// Fix structured clone bug.
+		// https://stackoverflow.com/questions/73607410/referenceerror-structuredclone-is-not-defined-using-jest-with-nodejs-typesc
+		global.structuredClone = (val) => JSON.parse(JSON.stringify(val));
+
+		// Initialize main elements because we do not have an index.html
+		const main = document.createElement('main');
+		main.id = 'main';
+		document.body.appendChild(main);
+
+		const planning = createNewPlanning();
 		defaultPlanningScreen = new PlanningScreen(planning);
 	});
 
@@ -134,5 +164,22 @@ describe('Planning screen', () => {
 
 	it('throws error if no planning is provided', () => {
 		expect(() => (new PlanningScreen())).toThrowError();
+	});
+
+	it('deletes planning from cache', async () => {
+		const planning = createNewPlanning();
+		const cache = await PlanningCache.get(planning.year);
+		cache.storePlanning(planning);
+		expect(cache.read(planning.id)).resolves.toEqual(planning);
+
+		delete window.location;
+		window.location = new URL(`http://localhost/planning?year=${planning.year}&month=${Utils.nameForMonth(planning.month)}`);
+
+		const planningController = new PlanningController(planning.year, planning.month, '');
+		planningController.init();
+		const screen = await planningController.initPlanningScreen(cache);
+
+		screen.onClickedDeletePlanning(planning);
+		expect(cache.read(planning.id)).rejects.toThrowError();
 	});
 });

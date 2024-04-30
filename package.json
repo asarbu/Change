@@ -5,7 +5,7 @@
   "main": "bundle.js",
   "type": "module",
   "scripts": {
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand",
     "build": "node ./node_scripts/build.cjs",
     "dev": "node ./node_scripts/dev.cjs",
     "clean": "node node_scripts/clean.cjs",

@@ -19,33 +19,59 @@ export default class PlanningController {
 	/** @type {string} */
 	#defaultStatement = undefined;
 
-	constructor() {
+	constructor(forYear = undefined, forMonth = undefined, forStatement = undefined) {
 		const queryString = window.location.search;
 		const urlParams = new URLSearchParams(queryString);
-		const year = +(urlParams.get('year'));
-		const month = Utils.monthForName((urlParams.get('month')));
-		const statement = urlParams.get('statement');
+		const urlYear = +(urlParams.get('year'));
+		const urlMonth = Utils.monthForName((urlParams.get('month')));
+		const urlStatement = urlParams.get('statement');
 
-		this.#defaultYear = year || new Date().getFullYear();
-		this.#defaultMonth = month || new Date().getMonth();
-		this.#defaultStatement = statement;
+		if (urlYear !== undefined) {
+			this.#defaultYear = urlYear;
+		} else if (forYear !== undefined) {
+			this.#defaultYear = forYear;
+		} else {
+			this.#defaultYear = new Date().getFullYear();
+		}
+
+		if (urlMonth !== undefined) {
+			this.#defaultMonth = urlMonth;
+		} else if (forMonth !== undefined) {
+			this.#defaultMonth = forMonth;
+		} else {
+			this.#defaultMonth = new Date().getMonth();
+		}
+
+		if (urlStatement !== undefined) {
+			this.#defaultStatement = urlStatement;
+		} else if (forStatement !== undefined) {
+			this.#defaultStatement = forStatement;
+		} else {
+			this.#defaultStatement = '';
+		}
 	}
 
-	async init() {
+	/**
+	 * @param {Planning} defaultPlanning
+	 * @param {boolean} fetchDefaultPlanning
+	 */
+	async init(fetchDefaultPlanning = false) {
 		this.#caches = await PlanningCache.getAll();
 		const planningCache = await PlanningCache.get(this.#defaultYear);
-		const emptyCache = (await planningCache.count()) === 0;
 		// TODO ask user if he wants to fetch defaults from server
-		if (emptyCache) {
-			await fetch(PlanningCache.PLANNING_TEMPLATE_URI)
-				.then((response) => response.json())
-				.then((planningFile) => {
-					const now = new Date();
-					const time = now.getTime();
-					const year = now.getFullYear();
-					const month = now.getMonth();
-					planningCache.insert(new Planning(time, year, month, planningFile), time);
-				});
+		if (fetchDefaultPlanning) {
+			const emptyCache = (await planningCache.count()) === 0;
+			if (emptyCache) {
+				await fetch(PlanningCache.PLANNING_TEMPLATE_URI)
+					.then((response) => response.json())
+					.then((planningFile) => {
+						const now = new Date();
+						const time = now.getTime();
+						const year = now.getFullYear();
+						const month = now.getMonth();
+						planningCache.insert(new Planning(time, year, month, planningFile), time);
+					});
+			}
 		}
 
 		const currentYearScreen = await this.initPlanningScreen(planningCache);
@@ -64,26 +90,37 @@ export default class PlanningController {
 	 * @returns {Promise<PlanningScreen>}
 	 */
 	async initPlanningScreen(cache) {
+		// TODO remove planning cache and use a Planning object instead
 		// TODO handle multiple months. Keep only the most recent one
 		const planning = (await cache.readForMonth(this.#defaultMonth))[0];
-		const planningScreen = new PlanningScreen(planning);
-		planningScreen.onClickUpdate = this.onClickUpdate.bind(this);
-		planningScreen.onStatementAdded = this.onClickAddStatement.bind(this);
-		planningScreen.init();
-		planningScreen.onClickShowStatement(this.#defaultStatement);
-		return planningScreen;
+		this.#defaultScreen = new PlanningScreen(planning);
+		this.#defaultScreen.onClickUpdate = this.onClickUpdate.bind(this);
+		this.#defaultScreen.onStatementAdded = this.onClickAddStatement.bind(this);
+		this.#defaultScreen.onClickDeletePlanning(this.onClickedDeletePlanning.bind(this));
+		this.#defaultScreen.init();
+		this.#defaultScreen.onClickedShowStatement(this.#defaultStatement);
+		return this.#defaultScreen;
+	}
+
+	/**
+	 * @param {Promise<Planning>} planning
+	 */
+	async onClickUpdate(planning) {
+		await Promise.all(
+			this.#caches
+				.filter((cache) => cache.year === planning.year)
+				.map(async (cache) => cache.updateAll([planning])),
+		);
 	}
 
 	/**
 	 * @param {Planning} planning
 	 */
-	onClickUpdate(planning) {
-		// TODO repalce with a map
-		for (let i = 0; i < this.#caches.length; i += 1) {
-			if (this.#caches[i].year === planning.year) {
-				this.#caches[i].updateAll([planning]);
-			}
-		}
+	async onClickedDeletePlanning(planning) {
+		// TODO Alert "Are you sure you want to..."
+		await Promise.all(this.#caches
+			.filter((cache) => cache.year === planning.year)
+			.map((cache) => cache.delete(planning.id)));
 	}
 
 	/**
@@ -111,8 +148,9 @@ export default class PlanningController {
 	 * @param {string} statementName
 	 */
 	navigateTo(year, month, statementName) {
+		// Current year and month do not require reload
 		if (year === this.#defaultYear && month === this.#defaultMonth) {
-			this.#defaultScreen.onClickShowStatement(statementName);
+			this.#defaultScreen.onClickedShowStatement(statementName);
 			return;
 		}
 
