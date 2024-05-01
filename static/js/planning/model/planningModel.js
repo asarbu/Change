@@ -76,9 +76,11 @@ export class Category {
 
 	static fromJavascriptObject(object) {
 		const category = new Category(object.id, object.name);
-		object.goals.forEach((goal) => {
-			category.goals.push(Goal.fromJavascriptObject(goal));
-		});
+		if (object.goals) {
+			object.goals.forEach((goal) => {
+				category.goals.push(Goal.fromJavascriptObject(goal));
+			});
+		}
 		return category;
 	}
 }
@@ -121,9 +123,11 @@ export class Statement {
 
 	static fromJavascriptObject(object) {
 		const statement = new Statement(object.id, object.name, object.type);
-		object.categories.forEach(
-			(category) => statement.categories.push(Category.fromJavascriptObject(category)),
-		);
+		if (object.categories) {
+			object.categories.forEach(
+				(category) => statement.categories.push(Category.fromJavascriptObject(category)),
+			);
+		}
 		return statement;
 	}
 }
@@ -138,20 +142,35 @@ export default class Planning {
 	 * @param {number} month
 	 * @param {Array<Statement>} statements
 	 */
-	constructor(id, year, month, statements) {
+	constructor(id, year, month, statements = []) {
 		this.id = id;
 		this.year = year;
 		this.month = month;
-		if (statements) {
-			this.statements = statements;
-		}
+		this.statements = statements;
 	}
 
 	static fromJavascriptObject(object) {
 		const planning = new Planning(object.id, object.year, object.month);
-		object.statements.forEach((statement) => {
-			planning.statements.push(Statement.fromJavascriptObject(statement));
-		});
+		if (object.statements) {
+			object.statements.forEach((statement) => {
+				planning.statements.push(Statement.fromJavascriptObject(statement));
+			});
+		}
 		return planning;
+	}
+
+	/**
+	 * Fetch only the categories of type "Expense"
+	 * @returns {Promise<Array<Category>>}
+	 */
+	async readCategories(forStatementType) {
+		/** @type {Array<Planning>} */
+		const expenseStatements = this.statements
+			.filter((statement) => statement.type === forStatementType);
+		return expenseStatements.reduce((categories, statement) => {
+			// TODO use categories.concat(...)
+			categories.push(...statement.categories);
+			return categories;
+		}, []);
 	}
 }
