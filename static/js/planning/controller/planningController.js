@@ -129,13 +129,13 @@ export default class PlanningController {
 		const date = new Date(statement.id);
 		const planningCache = await PlanningCache.get(date.getFullYear());
 		if (planningCache) {
-			let planning = await planningCache.readForMonth(date.getMonth())[0];
+			let planning = (await planningCache.readForMonth(date.getMonth()))[0];
 			if (planning) {
 				planning.statements.push(statement);
 			} else {
 				planning = new Planning(date.getTime(), date.getFullYear(), date.getMonth(), [statement]);
 			}
-			planningCache.storePlanning(planning);
+			await planningCache.storePlanning(planning);
 			this.navigateTo(date.getFullYear(), date.getMonth(), statement.name);
 		}
 	}

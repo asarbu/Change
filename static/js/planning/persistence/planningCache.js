@@ -1,5 +1,5 @@
 import Idb from '../../persistence/idb.js';
-import Planning, { Category } from '../model/planningModel.js';
+import Planning from '../model/planningModel.js';
 
 export default class PlanningCache {
 	static DATABASE_NAME = 'Planning';

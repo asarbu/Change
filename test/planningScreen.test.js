@@ -4,6 +4,7 @@
 
 import {
 	beforeAll, describe, expect, it,
+	jest,
 } from '@jest/globals';
 import Planning, { Category, Goal, Statement } from '../static/js/planning/model/planningModel';
 import PlanningScreen from '../static/js/planning/view/planningScreen';
@@ -16,25 +17,8 @@ describe('Planning screen', () => {
 	/** @type {PlanningScreen} */
 	let defaultPlanningScreen;
 
-	/** @type {Date} */
-	let availableDate;
-
-	function nextAvailableDate() {
-		if (!availableDate) {
-			availableDate = new Date(1970, 0);
-		}
-
-		availableDate = new Date(availableDate.getFullYear(), availableDate.getMonth());
-		return availableDate;
-	}
-
-	function createNewPlanning() {
-		const date = nextAvailableDate();
-		const planning = new Planning(date.getTime(), date.getFullYear(), date.getMonth(), []);
-		return planning;
-	}
-
 	beforeAll(() => {
+		jest.useFakeTimers().setSystemTime(new Date(2000, 0));
 		// Fix structured clone bug.
 		// https://stackoverflow.com/questions/73607410/referenceerror-structuredclone-is-not-defined-using-jest-with-nodejs-typesc
 		global.structuredClone = (val) => JSON.parse(JSON.stringify(val));
@@ -44,7 +28,8 @@ describe('Planning screen', () => {
 		main.id = 'main';
 		document.body.appendChild(main);
 
-		const planning = createNewPlanning();
+		const now = new Date();
+		const planning = new Planning(now.getTime(), now.getFullYear(), now.getMonth(), []);
 		defaultPlanningScreen = new PlanningScreen(planning);
 	});
 
@@ -167,19 +152,39 @@ describe('Planning screen', () => {
 	});
 
 	it('deletes planning from cache', async () => {
-		const planning = createNewPlanning();
+		jest.useFakeTimers().setSystemTime(new Date(2001, 0));
+		const now = new Date();
+		const planning = new Planning(now.getTime(), now.getFullYear(), now.getMonth());
 		const cache = await PlanningCache.get(planning.year);
 		cache.storePlanning(planning);
 		expect(cache.read(planning.id)).resolves.toEqual(planning);
-
-		delete window.location;
-		window.location = new URL(`http://localhost/planning?year=${planning.year}&month=${Utils.nameForMonth(planning.month)}`);
 
 		const planningController = new PlanningController(planning.year, planning.month, '');
 		await planningController.init();
 		const screen = await planningController.initPlanningScreen(cache);
 
-		screen.onClickedDeletePlanning(planning);
+		await screen.onClickedDeletePlanning(planning);
 		expect(cache.read(planning.id)).rejects.toThrowError();
+	});
+
+	it('adds statement in cache', async () => {
+		jest.useFakeTimers().setSystemTime(new Date(2002, 0));
+		const now = new Date();
+		const planning = new Planning(now.getTime(), now.getFullYear(), now.getMonth());
+		const cache = await PlanningCache.get(planning.year);
+		await cache.storePlanning(planning);
+		const storedPlanning = await cache.read(planning.id);
+		expect(storedPlanning.statements.length).toBe(0);
+
+		const planningController = new PlanningController(planning.year, planning.month, '');
+		await planningController.init();
+		const screen = await planningController.initPlanningScreen(cache);
+
+		const newStatement = new Statement(now.getTime(), 'New Statement', Statement.EXPENSE);
+		planning.statements.push(newStatement);
+		await screen.onClickedSaveStatement(newStatement);
+
+		const updatePlanning = await cache.read(planning.id);
+		expect(updatePlanning.statements.length).toBeGreaterThan(0);
 	});
 });

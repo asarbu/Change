@@ -179,11 +179,12 @@ export default class PlanningScreen {
 	// #region DOM manipulation
 	/** Refresh screen */
 	refresh(statements) {
-		this.statements = statements;
+		// TODO reimplement this
+		/* this.statements = statements;
 		const newContainer = this.buildContainer();
 		const mainElement = document.getElementById('main');
 		mainElement.replaceChild(newContainer, this.containerHtml);
-		this.containerHtml = newContainer;
+		this.containerHtml = newContainer; */
 	}
 
 	/**
@@ -223,9 +224,9 @@ export default class PlanningScreen {
 		this.#onClickedDeletePlanning = handler;
 	}
 
-	onClickedDeletePlanning(planning) {
+	async onClickedDeletePlanning(planning) {
 		if (this.#onClickedDeletePlanning) {
-			this.#onClickedDeletePlanning(planning);
+			await this.#onClickedDeletePlanning(planning);
 		}
 	}
 	// #endregion
@@ -236,9 +237,9 @@ export default class PlanningScreen {
 		this.refresh(this.statements);
 	}
 
-	onClickedSaveStatement(statement) {
+	async onClickedSaveStatement(statement) {
 		if (this.onStatementAdded) {
-			this.onStatementAdded(statement);
+			await this.onStatementAdded(statement);
 		}
 		this.refresh(this.statements);
 	}

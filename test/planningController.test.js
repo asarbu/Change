@@ -55,7 +55,6 @@ describe('Planning controller', () => {
 	});
 
 	it('updates planning in cache', async () => {
-		jest.useFakeTimers().setSystemTime(new Date(1990, 0));
 		const date = new Date(now.getFullYear(), now.getMonth() + 1);
 		// Create new planning to avoid conflicts with the older ones
 		const oldPlanning = new Planning(
