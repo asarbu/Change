@@ -3,8 +3,7 @@
  */
 
 import {
-	beforeAll, describe, expect, it,
-	jest,
+	beforeAll, describe, expect, it, jest,
 } from '@jest/globals';
 import PlanningController from '../static/js/planning/controller/planningController';
 import PlanningCache from '../static/js/planning/persistence/planningCache';
@@ -17,20 +16,8 @@ describe('Planning controller', () => {
 	/** @type {Date} */
 	let now;
 
-	/** @type {Date} */
-	let availableDate;
-
 	/** @type {PlanningController} */
 	let planningController;
-
-	function nextAvailableDate() {
-		if (!availableDate) {
-			availableDate = new Date(1970, 0);
-		}
-
-		availableDate = new Date(availableDate.getFullYear() + 1, availableDate.getMonth());
-		return availableDate;
-	}
 
 	beforeAll(async () => {
 		// Fix structured clone bug.
@@ -38,7 +25,7 @@ describe('Planning controller', () => {
 		global.structuredClone = (val) => JSON.parse(JSON.stringify(val));
 
 		// Initialize default planning cache and values
-		now = new Date();
+		now = new Date(1990, 0);
 		planningCache = await PlanningCache.get(now.getFullYear());
 		const emptyPlanning = new Planning(
 			'Empty planning',
@@ -53,15 +40,11 @@ describe('Planning controller', () => {
 		document.body.appendChild(main);
 
 		planningController = new PlanningController(now.getFullYear(), now.getMonth(), '');
-		planningController.init();
-
-		const assignMock = jest.fn();
-
-		delete window.location;
-		window.location = { assign: assignMock };
+		await planningController.init();
 	});
 
 	it('persists statement to cache', async () => {
+		jest.useFakeTimers().setSystemTime(new Date(1990, 0));
 		const newStatemenet = new Statement(now.getTime(), 'Statement Name', Statement.EXPENSE);
 		await planningController.onClickAddStatement(newStatemenet);
 		const cachedPlanning = (await planningCache.readForMonth(now.getMonth()))[0];
@@ -72,6 +55,7 @@ describe('Planning controller', () => {
 	});
 
 	it('updates planning in cache', async () => {
+		jest.useFakeTimers().setSystemTime(new Date(1990, 0));
 		const date = new Date(now.getFullYear(), now.getMonth() + 1);
 		// Create new planning to avoid conflicts with the older ones
 		const oldPlanning = new Planning(

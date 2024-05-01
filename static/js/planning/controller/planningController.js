@@ -22,29 +22,29 @@ export default class PlanningController {
 	constructor(forYear = undefined, forMonth = undefined, forStatement = undefined) {
 		const queryString = window.location.search;
 		const urlParams = new URLSearchParams(queryString);
-		const urlYear = +(urlParams.get('year'));
-		const urlMonth = Utils.monthForName((urlParams.get('month')));
+		const urlYear = urlParams.get('year');
+		const urlMonth = urlParams.get('month');
 		const urlStatement = urlParams.get('statement');
 
-		if (urlYear !== undefined) {
-			this.#defaultYear = urlYear;
-		} else if (forYear !== undefined) {
+		if (urlYear != null) {
+			this.#defaultYear = +urlYear;
+		} else if (forYear != null) {
 			this.#defaultYear = forYear;
 		} else {
 			this.#defaultYear = new Date().getFullYear();
 		}
 
-		if (urlMonth !== undefined) {
-			this.#defaultMonth = urlMonth;
-		} else if (forMonth !== undefined) {
+		if (urlMonth != null) {
+			this.#defaultMonth = Utils.monthForName(urlMonth);
+		} else if (forMonth != null) {
 			this.#defaultMonth = forMonth;
 		} else {
 			this.#defaultMonth = new Date().getMonth();
 		}
 
-		if (urlStatement !== undefined) {
+		if (urlStatement != null) {
 			this.#defaultStatement = urlStatement;
-		} else if (forStatement !== undefined) {
+		} else if (forStatement != null) {
 			this.#defaultStatement = forStatement;
 		} else {
 			this.#defaultStatement = '';

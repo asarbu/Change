@@ -176,7 +176,7 @@ describe('Planning screen', () => {
 		window.location = new URL(`http://localhost/planning?year=${planning.year}&month=${Utils.nameForMonth(planning.month)}`);
 
 		const planningController = new PlanningController(planning.year, planning.month, '');
-		planningController.init();
+		await planningController.init();
 		const screen = await planningController.initPlanningScreen(cache);
 
 		screen.onClickedDeletePlanning(planning);
