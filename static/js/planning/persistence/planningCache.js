@@ -143,29 +143,14 @@ export default class PlanningCache {
 	}
 
 	/**
-	 * Fetch only the categories of type "Expense"
-	 * // TODO move this to controller
-	 * @returns {Promise<Array<Category>>}
-	 */
-	async readExpenseCategories(forMonth) {
-		/** @type {Array<Planning>} */
-		const planningsForYear = await this.#idb.getAll(this.#storeName);
-		const planningForMonth = planningsForYear.find((planning) => planning.month === forMonth);
-		const expenseStatements = planningForMonth.statements.filter((statement) => statement.type === 'Expense');
-		return expenseStatements.reduce((categories, statement) => {
-			categories.push(...statement.categories);
-			return categories;
-		}, []);
-	}
-
-	/**
 	 * Fetch only the planning statement corresponding to the key
 	 * @async
 	 * @param {string} key Key to lookup in the datastore
 	 * @returns {Promise<Planning>}
 	 */
 	async read(key) {
-		return this.#idb.get(this.#storeName, key);
+		const jsObject = await this.#idb.get(this.#storeName, key);
+		return Planning.fromJavascriptObject(jsObject);
 	}
 
 	/**

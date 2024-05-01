@@ -52,7 +52,6 @@ export default class PlanningController {
 	}
 
 	/**
-	 * @param {Planning} defaultPlanning
 	 * @param {boolean} fetchDefaultPlanning
 	 */
 	async init(fetchDefaultPlanning = false) {
@@ -69,7 +68,7 @@ export default class PlanningController {
 						const time = now.getTime();
 						const year = now.getFullYear();
 						const month = now.getMonth();
-						planningCache.insert(new Planning(time, year, month, planningFile), time);
+						planningCache.storePlanning(new Planning(time, year, month, planningFile), time);
 					});
 			}
 		}

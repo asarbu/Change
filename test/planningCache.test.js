@@ -188,8 +188,9 @@ describe('Planning cache', () => {
 		);
 		const planningCache = await PlanningCache.get(availableDate.getFullYear());
 		planningCache.storePlanning(planning);
+		const storedPlanning = await planningCache.read(planning.id);
 		// Move the below method to Planning class
-		const expenseCategories = await planningCache.readExpenseCategories(availableDate.getMonth());
+		const expenseCategories = await storedPlanning.readCategories(Statement.EXPENSE);
 		expect(expenseCategories).toEqual([expenseCategoryOne, expenseCategoryTwo]);
 	});
 
