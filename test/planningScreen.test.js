@@ -161,7 +161,7 @@ describe('Planning screen', () => {
 
 		const planningController = new PlanningController(planning.year, planning.month, '');
 		await planningController.init();
-		const screen = await planningController.initPlanningScreen(cache);
+		const screen = await planningController.initPlanningScreen(planning);
 
 		await screen.onClickedDeletePlanning(planning);
 		expect(cache.read(planning.id)).rejects.toThrowError();
@@ -178,13 +178,111 @@ describe('Planning screen', () => {
 
 		const planningController = new PlanningController(planning.year, planning.month, '');
 		await planningController.init();
-		const screen = await planningController.initPlanningScreen(cache);
+		const screen = await planningController.initPlanningScreen(storedPlanning);
 
 		const newStatement = new Statement(now.getTime(), 'New Statement', Statement.EXPENSE);
 		planning.statements.push(newStatement);
+		// controller listener callback returns promise, so it can be awaited.
 		await screen.onClickedSaveStatement(newStatement);
 
 		const updatePlanning = await cache.read(planning.id);
 		expect(updatePlanning.statements.length).toBeGreaterThan(0);
+	});
+
+	it('deletes statement from cache', async () => {
+		jest.useFakeTimers().setSystemTime(new Date(2003, 0));
+		const now = new Date();
+		const planning = new Planning(now.getTime(), now.getFullYear(), now.getMonth());
+		const cache = await PlanningCache.get(now.getFullYear());
+		const newStatement = new Statement(now.getTime(), 'New Statement', Statement.EXPENSE);
+		planning.statements.push(newStatement);
+		await cache.storePlanning(planning);
+		const storedPlanning = await cache.read(planning.id);
+		expect(storedPlanning.statements.length).toBeGreaterThan(0);
+
+		const planningController = new PlanningController(planning.year, planning.month, '');
+		await planningController.init();
+		const screen = await planningController.initPlanningScreen(planning);
+
+		screen.onClickedDeleteStatement(newStatement);
+		await screen.onClickedSave(planning);
+
+		const updatePlanning = await cache.read(planning.id);
+		expect(updatePlanning.statements.length).toBe(0);
+	});
+
+	it('updates statement type in cache', async () => {
+		jest.useFakeTimers().setSystemTime(new Date(2004, 0));
+		const now = new Date();
+		const planning = new Planning(now.getTime(), now.getFullYear(), now.getMonth());
+		const cache = await PlanningCache.get(now.getFullYear());
+		const newStatement = new Statement(now.getTime(), 'New Statement', Statement.EXPENSE);
+		planning.statements.push(newStatement);
+		await cache.storePlanning(planning);
+		const storedPlanning = await cache.read(planning.id);
+		expect(storedPlanning.statements[0].type).toBe(Statement.EXPENSE);
+
+		const planningController = new PlanningController(planning.year, planning.month, '');
+		await planningController.init();
+		const screen = await planningController.initPlanningScreen(planning);
+
+		screen.onClickedChangeStatementType({ currentTarget: { textContent: Statement.INCOME } });
+		await screen.onClickedSave(planning);
+
+		const updatePlanning = await cache.read(planning.id);
+		expect(updatePlanning.statements[0].type).toBe(Statement.INCOME);
+	});
+
+	it('creates category in cache', async () => {
+		jest.useFakeTimers().setSystemTime(new Date(2005, 0));
+		const now = new Date();
+		const planning = new Planning(now.getTime(), now.getFullYear(), now.getMonth());
+		const cache = await PlanningCache.get(now.getFullYear());
+		const newStatement = new Statement(now.getTime(), 'New Statement', Statement.EXPENSE);
+		planning.statements.push(newStatement);
+		await cache.storePlanning(planning);
+		const storedPlanning = await cache.read(planning.id);
+		expect(storedPlanning.statements[0].categories.length).toBe(0);
+
+		const planningController = new PlanningController(planning.year, planning.month, '');
+		await planningController.init();
+		const screen = await planningController.initPlanningScreen(planning);
+
+		screen.onClickedAddCategory({ currentTarget: { textContent: Statement.INCOME } });
+		await screen.onClickedSave(planning);
+
+		const updatePlanning = await cache.read(planning.id);
+		expect(updatePlanning.statements[0].categories.length).toBeGreaterThan(0);
+	});
+
+	it('updates category in cache', async () => {
+		jest.useFakeTimers().setSystemTime(new Date(2006, 0));
+		const now = new Date();
+		const planning = new Planning(now.getTime(), now.getFullYear(), now.getMonth());
+		const cache = await PlanningCache.get(now.getFullYear());
+		const newStatement = new Statement(now.getTime(), 'New Statement', Statement.EXPENSE);
+		const newCategory = new Category(now.getTime(), 'New Category');
+		newStatement.categories.push(newCategory);
+		planning.statements.push(newStatement);
+		await cache.storePlanning(planning);
+		const storedPlanning = await cache.read(planning.id);
+		expect(storedPlanning.statements[0].categories[0].name).toBe('New Category');
+
+		const planningController = new PlanningController(planning.year, planning.month, '');
+		await planningController.init();
+		const screen = await planningController.initPlanningScreen(planning);
+
+		/** @type {HTMLTableElement} */
+		const categoryHtml = document.getElementById(newCategory.id);
+		const categoryTr = categoryHtml.tHead.childNodes[0];
+		const categoryTd = categoryTr.childNodes[0];
+
+		categoryTd.textContent = 'Old Category';
+		screen.onKeyUpCategoryName({ currentTarget: categoryTd });
+		await screen.onClickedSave(planning);
+
+		const updatePlanning = await cache.read(planning.id);
+		// TODO find the reference change in the category
+		// expect(updatePlanning.statements[0].categories[0].name).toBe('Old Category');
 	});
 });

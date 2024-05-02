@@ -164,7 +164,7 @@ export default class PlanningScreen {
 		if (!goal) return undefined;
 		const onClickDeleteGoal = this.onClickedDeleteGoal.bind(this);
 		const onKeyUpGoal = this.onKeyUpGoal.bind(this);
-		return new Dom('tr').id(goal.id).userData(goal).append(
+		return new Dom('tr').id(`Goal_${goal.id}`).userData(goal).append(
 			new Dom('td').text(goal.name).editable().contentEditable(this.#editMode).onKeyUp(onKeyUpGoal),
 			new Dom('td').text(goal.daily).editable().contentEditable(this.#editMode).onKeyUp(onKeyUpGoal),
 			new Dom('td').text(goal.monthly).editable().contentEditable(this.#editMode).onKeyUp(onKeyUpGoal),
@@ -178,9 +178,10 @@ export default class PlanningScreen {
 
 	// #region DOM manipulation
 	/** Refresh screen */
-	refresh(statements) {
+	refresh(planning) {
+		return planning;
 		// TODO reimplement this
-		/* this.statements = statements;
+		/*
 		const newContainer = this.buildContainer();
 		const mainElement = document.getElementById('main');
 		mainElement.replaceChild(newContainer, this.containerHtml);
@@ -224,24 +225,25 @@ export default class PlanningScreen {
 		this.#onClickedDeletePlanning = handler;
 	}
 
-	async onClickedDeletePlanning(planning) {
+	onClickedDeletePlanning(planning) {
 		if (this.#onClickedDeletePlanning) {
-			await this.#onClickedDeletePlanning(planning);
+			return this.#onClickedDeletePlanning(planning);
 		}
+		return undefined;
 	}
 	// #endregion
 
 	// #region statement event handlers
 	onClickedDeleteStatement() {
-		this.statements.splice(this.gfx.selectedIndex(), 1);
-		this.refresh(this.statements);
+		this.#defaultPlanning.statements.splice(this.gfx.selectedIndex(), 1);
+		this.refresh(this.#defaultPlanning);
 	}
 
-	async onClickedSaveStatement(statement) {
+	onClickedSaveStatement(statement) {
 		if (this.onStatementAdded) {
-			await this.onStatementAdded(statement);
+			return this.onStatementAdded(statement);
 		}
-		this.refresh(this.statements);
+		return undefined;
 	}
 
 	onClickedShowStatement(statementName) {
@@ -252,9 +254,9 @@ export default class PlanningScreen {
 
 	onClickedChangeStatementType(e) {
 		const newStatementType = e.currentTarget.textContent;
-		const statement = this.statements[this.gfx.selectedIndex()];
+		const statement = this.#defaultPlanning.statements[this.gfx.selectedIndex()];
 		statement.type = newStatementType;
-		this.refresh(this.statements);
+		this.refresh(this.#defaultPlanning);
 	}
 
 	onClickedEdit() {
@@ -285,12 +287,13 @@ export default class PlanningScreen {
 			hideableElmts[i].style.display = 'none';
 		}
 
+		this.#editMode = false;
+
 		if (this.onClickUpdate) {
 			const planning = forPlanning || this.#defaultPlanning;
-			this.onClickUpdate(planning);
+			return this.onClickUpdate(planning);
 		}
-
-		this.#editMode = false;
+		return undefined;
 	}
 
 	onClickedStatementType() {
@@ -318,10 +321,10 @@ export default class PlanningScreen {
 		const id = new Date().getTime(); // millisecond precision
 		const category = new Category(id, 'New Category');
 		/** @type{Statement} */
-		const statement = this.statements[this.gfx.selectedIndex()];
+		const statement = this.#defaultPlanning.statements[this.gfx.selectedIndex()];
 		statement.categories.push(category);
 		// TODO update only the current statement, not all of them
-		this.refresh(this.statements);
+		this.refresh(this.#defaultPlanning);
 	}
 
 	onClickedDeleteCategory(event) {
@@ -337,9 +340,9 @@ export default class PlanningScreen {
 	onKeyUpCategoryName(event) {
 		const categoryName = event.currentTarget.textContent;
 		const table = event.currentTarget.parentNode.parentNode.parentNode;
-		const statement = table.userData;
+		const category = table.userData;
 
-		statement.name = categoryName;
+		category.name = categoryName;
 	}
 	// #endregion
 

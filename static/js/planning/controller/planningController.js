@@ -72,26 +72,24 @@ export default class PlanningController {
 					});
 			}
 		}
-
-		const currentYearScreen = await this.initPlanningScreen(planningCache);
+		const planning = (await planningCache.readForMonth(this.#defaultMonth))[0];
+		const currentYearScreen = await this.initPlanningScreen(planning);
 
 		this.#caches.forEach((cache) => {
 			currentYearScreen.appendYear(cache.year);
 		});
 		const planningsPerMonths = await planningCache.readAll();
-		planningsPerMonths.forEach((planning) => {
-			currentYearScreen.appendMonth(planning.month);
+		planningsPerMonths.forEach((plan) => {
+			currentYearScreen.appendMonth(plan.month);
 		});
 	}
 
 	/**
-	 * @param {PlanningCache} cache
+	 * @param {Planning} cache
 	 * @returns {Promise<PlanningScreen>}
 	 */
-	async initPlanningScreen(cache) {
-		// TODO remove planning cache and use a Planning object instead
+	async initPlanningScreen(planning) {
 		// TODO handle multiple months. Keep only the most recent one
-		const planning = (await cache.readForMonth(this.#defaultMonth))[0];
 		this.#defaultScreen = new PlanningScreen(planning);
 		this.#defaultScreen.onClickUpdate = this.onClickUpdate.bind(this);
 		this.#defaultScreen.onStatementAdded = this.onClickAddStatement.bind(this);
