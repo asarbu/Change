@@ -129,6 +129,7 @@ export default class PlanningScreen {
 	buildCategories(planningCategories) {
 		const categories = [];
 		const onKeyUpCategoryName = this.onKeyUpCategoryName.bind(this);
+		const onClickedDeleteCategory = this.onClickedDeleteCategory.bind(this);
 
 		for (let i = 0; i < planningCategories.length; i += 1) {
 			const category = planningCategories[i];
@@ -140,7 +141,7 @@ export default class PlanningScreen {
 						new Dom('th').text('Daily'),
 						new Dom('th').text('Monthly'),
 						new Dom('th').text('Yearly'),
-						new Dom('th').hideable(this.#editMode).append(
+						new Dom('th').hideable(this.#editMode).onClick(onClickedDeleteCategory).append(
 							Dom.imageButton('Delete row', icons.delete),
 						),
 					),
@@ -203,7 +204,6 @@ export default class PlanningScreen {
 		);
 	}
 
-	// Recompute from DOM instead of memory/db/network to have real time updates in UI
 	/**
 	 * Computes the column wise total value of the category table and replaces the last row.
 	 * @param {Category} category category for which to compute total row
@@ -328,7 +328,7 @@ export default class PlanningScreen {
 	}
 
 	onClickedDeleteCategory(event) {
-		const table = event.currentTarget.parentNode.parentNode.parentNode.parentNode;
+		const table = event.currentTarget.parentNode.parentNode.parentNode;
 		const category = table.userData;
 		const statement = table.parentNode.userData;
 
@@ -393,14 +393,14 @@ export default class PlanningScreen {
 			cell.parentNode.cells[2].textContent = goal.monthly;
 			break;
 		default:
-			break;
+			throw Error(`Did not expect cell index ${cellIndex} on key up goal`);
 		}
 
 		this.recomputeCategoryTotal(table.userData);
 	}
 
 	onClickedDeleteGoal(event) {
-		const row = event.currentTarget.parentNode.parentNode;
+		const row = event.currentTarget.parentNode;
 		const tBody = row.parentNode;
 		const goal = row.userData;
 		const category = row.parentNode.parentNode.userData;

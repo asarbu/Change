@@ -53,6 +53,7 @@ export default class PlanningController {
 
 	/**
 	 * @param {boolean} fetchDefaultPlanning
+	 * @returns {Promise<PlanningScreen>}
 	 */
 	async init(fetchDefaultPlanning = false) {
 		this.#caches = await PlanningCache.getAll();
@@ -82,6 +83,8 @@ export default class PlanningController {
 		planningsPerMonths.forEach((plan) => {
 			currentYearScreen.appendMonth(plan.month);
 		});
+
+		return currentYearScreen;
 	}
 
 	/**
