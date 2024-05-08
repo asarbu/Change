@@ -49,11 +49,12 @@ export default class PlanningScreen {
 		this.navbar.onClickSaveStatement(this.onClickedSaveStatement.bind(this));
 		this.navbar.onChangeStatement(this.onClickedShowStatement.bind(this));
 		this.navbar.onClickDeletePlanning(this.onClickedDeletePlanning.bind(this));
+		this.navbar.onClickDeleteStatement(this.onClickedDeleteStatement.bind(this));
 
 		const mainElement = document.getElementById('main');
 		mainElement.appendChild(this.navbar.toHtml());
 		this.navbar.selectYear(this.#defaultPlanning.year);
-		this.containerHtml = this.buildContainer().toHtml();
+		this.containerHtml = this.buildContainer(this.#defaultPlanning).toHtml();
 		mainElement.appendChild(this.containerHtml);
 		this.gfx = new GraphicEffects();
 		this.gfx.init(this.containerHtml);
@@ -77,12 +78,13 @@ export default class PlanningScreen {
 
 	/**
 	 * Creates all necessary objects needed to draw current screen
+	 * @param {Planning} planning
 	 * @returns {Dom}
 	 */
-	buildContainer() {
-		const container = new Dom('div').id(this.#defaultPlanning.year).cls('container');
+	buildContainer(planning) {
+		const container = new Dom('div').id(planning.year).cls('container');
 		const section =	new Dom('div').cls('section');
-		const { statements } = this.#defaultPlanning;
+		const { statements } = planning;
 
 		for (let i = 0; i < statements.length; i += 1) {
 			const statement = statements[i];
@@ -179,13 +181,10 @@ export default class PlanningScreen {
 	// #region DOM manipulation
 	/** Refresh screen */
 	refresh(planning) {
-		return planning;
-		// TODO reimplement this
-		/*
-		const newContainer = this.buildContainer();
-		const mainElement = document.getElementById('main');
-		mainElement.replaceChild(newContainer, this.containerHtml);
-		this.containerHtml = newContainer; */
+		this.#defaultPlanning = planning;
+		const container = this.buildContainer(planning).toHtml();
+		this.containerHtml.parentElement.replaceChild(container, this.containerHtml);
+		this.containerHtml = container;
 	}
 
 	/**

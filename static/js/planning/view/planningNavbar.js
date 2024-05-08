@@ -150,8 +150,14 @@ export default class PlanningNavbar {
 		}
 	}
 
-	onClickedDeleteStatement() {
+	onClickDeleteStatement(handler) {
+		this.#eventListeners.onClickedDeletedStatement = handler;
+	}
 
+	onClickedDeleteStatement() {
+		if (this.#eventListeners.onClickedDeletedStatement) {
+			this.#eventListeners.onClickedDeletedStatement();
+		}
 	}
 
 	onClickEdit(handler) {

@@ -9,5 +9,7 @@ export default class PlanningNavbarEventHandlers {
 
 	onChangedStatement = undefined;
 
+	onClickedDeletedStatement = undefined;
+
 	onClickedDeletePlanning = undefined;
 }
