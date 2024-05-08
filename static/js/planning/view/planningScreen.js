@@ -84,7 +84,6 @@ export default class PlanningScreen {
 		const section =	new Dom('div').cls('section');
 		const { statements } = this.#defaultPlanning;
 
-		// TODO Merge this with navbar creation, since we are iterating through same array.
 		for (let i = 0; i < statements.length; i += 1) {
 			const statement = statements[i];
 			const htmlStatement = this.buildStatement(statement).userData(statement);

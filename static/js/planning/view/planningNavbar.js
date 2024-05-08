@@ -427,7 +427,6 @@ export default class PlanningNavbar {
 		this.#eventListeners.onChangedStatement = handler;
 	}
 
-	// TODO make handlers private
 	onChangedStatementType(event) {
 		const type = event.currentTarget.textContent;
 		this.#statementTypeDropup.close();
