@@ -1,9 +1,6 @@
 // Too much overhead to split the planning model into individual files
 // eslint-disable-next-line max-classes-per-file
 export class Goal {
-	// TODO Create static factory methods for goals that autocomplete other fields
-	// e.g. Goal.fromDaylyAmount(amount), Goal.fromMonthlyAmount(amount), etc.
-
 	/**
 	 * @param {Object} goal - Unit to store in object.
 	 * @param {string} goal.name - The name of the goal.
@@ -11,12 +8,7 @@ export class Goal {
 	 * @param {number} goal.monthly - Monthly amount to put aside for the goal
 	 * @param {number} goal.yearly - Yearly amount to put aside for the goal
 	 */
-	constructor(
-		name,
-		daily,
-		monthly,
-		yearly,
-	) {
+	constructor(name, daily, monthly, yearly) {
 		/**
 		 * @type {number}
 		 */
@@ -37,6 +29,18 @@ export class Goal {
 
 	static fromJavascriptObject(object) {
 		return new Goal(object.name, object.daily, object.monthly, object.yearly);
+	}
+
+	static fromDailyAmount(withName, withAmount) {
+		return new Goal(withName, withAmount, withAmount * 30, withAmount * 365);
+	}
+
+	static fromMonthlyAmount(withName, withAmount) {
+		return new Goal(withName, withAmount / 30, withAmount, withAmount * 12);
+	}
+
+	static fromYearlyAmount(withName, withAmount) {
+		return new Goal(withName, withAmount / 365, withAmount / 12, withAmount);
 	}
 }
 
@@ -167,10 +171,7 @@ export default class Planning {
 		/** @type {Array<Planning>} */
 		const expenseStatements = this.statements
 			.filter((statement) => statement.type === forStatementType);
-		return expenseStatements.reduce((categories, statement) => {
-			// TODO use categories.concat(...)
-			categories.push(...statement.categories);
-			return categories;
-		}, []);
+		return expenseStatements
+			.reduce((categories, statement) => categories.concat(...statement.categories), []);
 	}
 }
