@@ -465,6 +465,6 @@ h3:hover {
 
 	.modal-content {
 		/* Need to subtract 20% due to sidenav */
-		width: 66vw;
+		width: 75vw;
 	}
 }
