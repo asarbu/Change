@@ -33,8 +33,10 @@ export default class SpendingController {
 		const month = Utils.monthForName((urlParams.get('month')));
 		this.#defaultYear = year || now.getFullYear();
 		this.#defaultMonth = month || now.getMonth();
+		this.gdriveSync = true;
 
-		/* if (gdriveSync) {
+		/*
+		if (gdriveSync) {
 			// this.spendingGDrive = new SpendingGDrive(this.#spendingCache);
 			// this.planningGDrive = new PlanningGDrive(this.#planningCache);
 		} */
@@ -45,7 +47,7 @@ export default class SpendingController {
 		this.#spendingCache = await SpendingCache.get(this.#defaultYear);
 		this.#spendingCaches = await SpendingCache.getAll();
 
-		const expenseCategories = await planningCache.readExpenseCategories(this.#defaultMonth);
+		const expenseCategories = [];
 		const spendings = await this.#spendingCache.readAll();
 
 		/** @type {Map<number, SpendingReport>} */
