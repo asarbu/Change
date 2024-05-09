@@ -75,7 +75,6 @@ export default class PlanningCache {
 		objectStores.forEach((objectStore) => {
 			const store = db.createObjectStore(objectStore, { autoIncrement: true });
 			store.createIndex('byMonth', 'month', { unique: false });
-			store.createIndex('byYear', 'year', { unique: false });
 		});
 	}
 
