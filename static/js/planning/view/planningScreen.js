@@ -224,21 +224,17 @@ export default class PlanningScreen {
 		this.#onClickedDeletePlanning = handler;
 	}
 
-	onClickedDeletePlanning(planning, forceDelete) {
+	onClickedDeletePlanning(planning) {
 		if (this.#onClickedDeletePlanning) {
-			if (forceDelete) {
-				this.#onClickedDeletePlanning(planning);
-			} else {
-				const areYouSureModal = new Modal('are-you-sure-delete-planning').header(
+			const areYouSureModal = new Modal('are-you-sure-delete-planning')
+				.header(
 					new Dom('h1').text('Are you sure you want to delete planning?'),
-				).footer(
-					new Dom('h3').text('Cancel'),
-					new Dom('h3').text('Yes')
-						.onClick(() => this.#onClickedDeletePlanning(planning)),
-				).open();
-				const main = document.getElementById('main');
-				main.appendChild(areYouSureModal.toHtml());
-			}
+				)
+				.addCancelYesFooter(this.#onClickedDeletePlanning.bind(this, planning))
+				.open();
+			const main = document.getElementById('main');
+			main.appendChild(areYouSureModal.toHtml());
+			return areYouSureModal;
 		}
 		return undefined;
 	}

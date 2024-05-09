@@ -62,6 +62,26 @@ export default class Modal {
 		return this;
 	}
 
+	addCancelYesFooter(yesHandler) {
+		this.cancelButton = new Dom('h3').id(`modal-cancel-${this.id}`)
+			.text('Cancel').onClick(this.close.bind(this));
+		this.cancelButtonHtml = this.cancelButton.toHtml();
+		this.yesButton = new Dom('h3').text('Yes').onClick(yesHandler);
+
+		this.footer(
+			this.cancelButton,
+			this.yesButton,
+		);
+
+		return this;
+	}
+
+	clickYes() {
+		if (this.yesButton) {
+			this.yesButton.toHtml().click();
+		}
+	}
+
 	toDom() {
 		return this.modal;
 	}

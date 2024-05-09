@@ -117,7 +117,6 @@ export default class PlanningController {
 	 * @param {Planning} planning
 	 */
 	async onClickedDeletePlanning(planning) {
-		// TODO Alert "Are you sure you want to..."
 		await Promise.all(this.#caches
 			.filter((cache) => cache.year === planning.year)
 			.map((cache) => cache.delete(planning.id)));
