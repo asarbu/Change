@@ -74,7 +74,7 @@ export default class PlanningCache {
 	static upgradePlanningDatabase(db, oldVersion, newVersion, objectStores) {
 		objectStores.forEach((objectStore) => {
 			const store = db.createObjectStore(objectStore, { autoIncrement: true });
-			// store.createIndex('byType', 'type', { unique: false });
+			store.createIndex('byMonth', 'month', { unique: false });
 			store.createIndex('byYear', 'year', { unique: false });
 		});
 	}
@@ -113,7 +113,7 @@ export default class PlanningCache {
 	 */
 	async readAll() {
 		const plannings = [];
-		const objects = await this.#idb.openCursor(this.#storeName);
+		const objects = await this.#idb.getAll(this.#storeName);
 		objects.forEach((object) => {
 			plannings.push(Planning.fromJavascriptObject(object));
 		});
@@ -126,9 +126,10 @@ export default class PlanningCache {
 	 * @returns {Promise<Array<Planning>>}
 	 */
 	async readForMonth(month) {
-		// TODO do this with a key range
-		const allPlannings = await this.readAll();
-		const plannings = allPlannings.filter((planning) => planning.month === month);
+		const plannings = [];
+		const keyRange = IDBKeyRange.only(month);
+		const objects = await this.#idb.getAllByIndex(`${this.year}`, 'byMonth', keyRange);
+		objects.forEach((object) => plannings.push(Planning.fromJavascriptObject(object)));
 		return plannings;
 	}
 
