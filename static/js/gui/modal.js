@@ -4,6 +4,7 @@ export default class Modal {
 	/** @type {boolean} */
 	#isOpen = false;
 
+	// TODO - try to reuse modals to avoid having duplicates across DOM
 	constructor(id) {
 		this.id = id;
 		const onClose = this.close.bind(this);

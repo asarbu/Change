@@ -174,7 +174,8 @@ describe('Planning screen', () => {
 		const planningController = new PlanningController(planning.year, planning.month, '');
 		const screen = await planningController.init();
 
-		await screen.onClickedDeletePlanning(planning);
+		// TODO maybe return the modal and manually click yes?
+		await screen.onClickedDeletePlanning(planning, true);
 		expect(cache.read(planning.id)).rejects.toThrowError();
 	});
 

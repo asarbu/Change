@@ -5,6 +5,7 @@ import Dom from '../../gui/dom.js';
 import Planning, { Statement, Category, Goal } from '../model/planningModel.js';
 import icons from '../../gui/icons.js';
 import PlanningNavbar from './planningNavbar.js';
+import Modal from '../../gui/modal.js';
 
 export default class PlanningScreen {
 	onClickUpdate = undefined;
@@ -223,9 +224,21 @@ export default class PlanningScreen {
 		this.#onClickedDeletePlanning = handler;
 	}
 
-	onClickedDeletePlanning(planning) {
+	onClickedDeletePlanning(planning, forceDelete) {
 		if (this.#onClickedDeletePlanning) {
-			return this.#onClickedDeletePlanning(planning);
+			if (forceDelete) {
+				this.#onClickedDeletePlanning(planning);
+			} else {
+				const areYouSureModal = new Modal('are-you-sure-delete-planning').header(
+					new Dom('h1').text('Are you sure you want to delete planning?'),
+				).footer(
+					new Dom('h3').text('Cancel'),
+					new Dom('h3').text('Yes')
+						.onClick(() => this.#onClickedDeletePlanning(planning)),
+				).open();
+				const main = document.getElementById('main');
+				main.appendChild(areYouSureModal.toHtml());
+			}
 		}
 		return undefined;
 	}
