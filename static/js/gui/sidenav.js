@@ -46,6 +46,7 @@ export default class Sidenav {
 		this.#sideNavRight.classList.add('sidenav-right');
 		this.#fragment.appendChild(this.#sideNavLeft);
 		this.#fragment.appendChild(this.#sideNavRight);
+		this.#main = document.getElementById('main');
 
 		// TODO Remove this and add event listener individually to each dom element
 		document.querySelectorAll('.nav-trigger').forEach((el) => el.addEventListener('click', this.open.bind(this)));
@@ -88,7 +89,6 @@ export default class Sidenav {
 
 		this.#main.addEventListener('transitionend', function transitioned() {
 			this.#main.removeEventListener('transitionend', transitioned);
-			this.refresh();
 		}.bind(this));
 	}
 

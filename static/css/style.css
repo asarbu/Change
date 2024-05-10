@@ -18,7 +18,7 @@
 }
 
 body {
-	background: var(--primary-100);
+	background: var(--primary-900);
 	display: grid;
 	place-items: center;
 	/*Needed because we have no percentage of any parent to relate to*/
@@ -26,6 +26,7 @@ body {
 	color: white;
 	overscroll-behavior: none;
 	-webkit-user-select: none;
+	overflow: hidden;
 	user-select: none;
 }
 
@@ -37,6 +38,7 @@ main {
 	height: 100%;
 	overflow: hidden;
 	background: linear-gradient(0deg, var(--primary-900) 0%, var(--primary-700) 100%);
+	transition: transform .2s;
 }
 
 h1 {
@@ -104,6 +106,7 @@ h2 {
 	background: var(--primary-900);
 	overflow-x: hidden;
 	padding-top: 5%;
+	transition: width .2s;
 }
 
 .view-link {
@@ -420,17 +423,18 @@ h3:hover {
 	}
 
 	.sidenav-open {
-		width: 25vw;
+		width: 33vw;
+		transition: width .2s;
 	}
 
 	.main-shift-left {
-		margin-right: 0px;
-		margin-left: 25%
+		transform: translateX(33vw);
+		transition: transform .2s;
 	}
 
 	.main-shift-right {
-		margin-left: 0px;
-		margin-right: 25%
+		transform: translateX(-33vw);
+		transition: transform .2s;
 	}
 }
 
