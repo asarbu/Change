@@ -430,7 +430,7 @@ export default class PlanningNavbar {
 	}
 
 	onChangeStatementType(handler) {
-		this.#eventListeners.onChangedStatement = handler;
+		this.#eventListeners.onChangedStatementType = handler;
 	}
 
 	onChangedStatementType(event) {
@@ -443,7 +443,7 @@ export default class PlanningNavbar {
 		}
 
 		if (this.#eventListeners.onChangedStatementType) {
-			this.#eventListeners.onChangedStatementType(type);
+			this.#eventListeners.onChangedStatementType(event);
 		}
 	}
 	// #endregion

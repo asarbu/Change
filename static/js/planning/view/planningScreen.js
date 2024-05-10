@@ -46,7 +46,7 @@ export default class PlanningScreen {
 
 		this.navbar.onClickSave(this.onClickedSave.bind(this));
 		this.navbar.onClickEdit(this.onClickedEdit.bind(this));
-		this.navbar.onChangeStatementType(this.onChangedStatementType.bind(this));
+		this.navbar.onChangeStatementType(this.onClickedChangeStatementType.bind(this));
 		this.navbar.onClickSaveStatement(this.onClickedSaveStatement.bind(this));
 		this.navbar.onChangeStatement(this.onClickedShowStatement.bind(this));
 		this.navbar.onClickDeletePlanning(this.onClickedDeletePlanning.bind(this));
@@ -110,7 +110,7 @@ export default class PlanningScreen {
 		const onKeyUp = this.onKeyUpStatementName.bind(this);
 		const onClickStatementType = this.onClickedStatementType.bind(this);
 		const onClickAddCategory = this.onClickedAddCategory.bind(this);
-		const slice = new Dom('div').cls('slice').append(
+		const slice = new Dom('div').id(`statement-${statement.id}`).cls('slice').append(
 			new Dom('h1').text(statement.name).editable().onKeyUp(onKeyUp).attr('contenteditable', this.#editMode),
 			new Dom('h2').id('planning-statement-type').text(`${statement.type} `).onClick(onClickStatementType).hideable(this.#editMode)
 				.append(
@@ -135,7 +135,7 @@ export default class PlanningScreen {
 
 		for (let i = 0; i < planningCategories.length; i += 1) {
 			const category = planningCategories[i];
-			const categoryDom = new Dom('table').id(category.id).cls('top-round', 'bot-round').append(
+			const categoryDom = new Dom('table').id(`category-${category.id}`).cls('top-round', 'bot-round').append(
 				new Dom('thead').append(
 					new Dom('tr').append(
 						new Dom('th').text(category.name).editable().contentEditable(this.#editMode)
@@ -186,6 +186,28 @@ export default class PlanningScreen {
 		const container = this.buildContainer(planning).toHtml();
 		this.containerHtml.parentElement.replaceChild(container, this.containerHtml);
 		this.containerHtml = container;
+	}
+
+	/**
+	 * @param {Statement} statement
+	 */
+	refreshStatement(statement) {
+		const statementHtml = document.getElementById(`statement-${statement.id}`);
+		const statementDom = this.buildStatement(statement);
+		const { scrollTop } = statementHtml;
+		statementHtml.parentElement.replaceChild(statementDom.toHtml(), statementHtml);
+		statementDom.toHtml().scrollTop = scrollTop;
+	}
+
+	/**
+	 * @param {Category} category
+	 */
+	refreshCategory(category) {
+		const categoryHtml = document.getElementById(`category-${category.id}`);
+		const categoryDom = this.buildStatement(category);
+		const { scrollTop } = categoryHtml;
+		categoryHtml.parentElement.replaceChild(categoryDom.toHtml(), categoryHtml);
+		categoryDom.toHtml().scrollTop = scrollTop;
 	}
 
 	/**
@@ -263,7 +285,7 @@ export default class PlanningScreen {
 		const newStatementType = e.currentTarget.textContent;
 		const statement = this.#defaultPlanning.statements[this.gfx.selectedIndex()];
 		statement.type = newStatementType;
-		this.refresh(this.#defaultPlanning);
+		this.refreshStatement(statement);
 	}
 
 	onClickedEdit() {
@@ -307,15 +329,6 @@ export default class PlanningScreen {
 		this.navbar.onClickedStatementType();
 	}
 
-	onChangedStatementType(newType) {
-		/** @type {HTMLElement} */
-		const planningStatementType = document.getElementById('planning-statement-type');
-		/** @type {Statement} */
-		const statement = planningStatementType.parentNode.userData;
-		planningStatementType.firstChild.nodeValue = newType;
-		statement.type = newType;
-	}
-
 	onKeyUpStatementName(event) {
 		const statementName = event.currentTarget.textContent;
 		const statement = event.currentTarget.parentNode.userData;
@@ -330,8 +343,7 @@ export default class PlanningScreen {
 		/** @type{Statement} */
 		const statement = this.#defaultPlanning.statements[this.gfx.selectedIndex()];
 		statement.categories.push(category);
-		// TODO update only the current statement, not all of them
-		this.refresh(this.#defaultPlanning);
+		this.refreshStatement(statement);
 	}
 
 	onClickedDeleteCategory(event) {
@@ -361,7 +373,9 @@ export default class PlanningScreen {
 
 		category.goals.push(goal);
 		const goalDom = this.buildGoal(goal);
-		this.#categoryDoms.get(category.id).append(goalDom);
+		const categoryTbody = this.#categoryDoms.get(category.id).toHtml().tBodies[0];
+		const lastIndex = categoryTbody.children.length - 1;
+		categoryTbody.insertBefore(goalDom.toHtml(), categoryTbody.children[lastIndex]);
 		// Total does not have to be recomputed because we add amounts of 0
 	}
 

@@ -92,7 +92,6 @@ export default class PlanningController {
 	 * @returns {Promise<PlanningScreen>}
 	 */
 	async initPlanningScreen(planning) {
-		// TODO handle multiple months. Keep only the most recent one
 		this.#defaultScreen = new PlanningScreen(planning);
 		this.#defaultScreen.onClickUpdate = this.onClickUpdate.bind(this);
 		this.#defaultScreen.onStatementAdded = this.onClickAddStatement.bind(this);
@@ -152,6 +151,8 @@ export default class PlanningController {
 			this.#defaultScreen.onClickedShowStatement(statementName);
 			return;
 		}
+
+		// TODO refresh from memory
 
 		if (!year) return;
 		let url = `${window.location.pathname}`;
