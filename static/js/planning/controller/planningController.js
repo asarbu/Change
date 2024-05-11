@@ -1,6 +1,7 @@
 import Utils from '../../utils/utils.js';
 import Planning, { Statement } from '../model/planningModel.js';
 import PlanningCache from '../persistence/planningCache.js';
+import PlanningGDrive from '../persistence/planningGdrive.js';
 import PlanningScreen from '../view/planningScreen.js';
 
 export default class PlanningController {
@@ -84,6 +85,14 @@ export default class PlanningController {
 			currentYearScreen.appendMonth(plan.month);
 		});
 
+		const gDrive = await PlanningGDrive.get(this.#defaultYear);
+		if (await gDrive.fileChanged(this.#defaultMonth)) {
+			const gDrivePlanning = await gDrive.read(this.#defaultMonth);
+			await planningCache.storePlanning(gDrivePlanning);
+		} else {
+			await gDrive.write(planning);
+		}
+
 		return currentYearScreen;
 	}
 
@@ -108,7 +117,7 @@ export default class PlanningController {
 		await Promise.all(
 			this.#caches
 				.filter((cache) => cache.year === planning.year)
-				.map(async (cache) => cache.updateAll([planning])),
+				.map(async (cache) => cache.storePlanning(planning)),
 		);
 	}
 

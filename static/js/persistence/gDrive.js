@@ -5,11 +5,15 @@ export default class GDrive {
 	/** @type {boolean} */
 	#rememberLogin = undefined;
 
-	static ROOT_DIRECTORY_NAME = 'root';
+	static APP_FOLDER = 'Change!';
 
-	static GDRIVE_MIME_TYPE_FOLDER = 'application/vnd.google-apps.folder';
+	static MODIFIED_TIME_FIELD = 'modifiedTime';
 
-	static FILES_API = 'https://www.googleapis.com/drive/v3/files';
+	static #ROOT_DIRECTORY_NAME = 'root';
+
+	static #GDRIVE_MIME_TYPE_FOLDER = 'application/vnd.google-apps.folder';
+
+	static #FILES_API = 'https://www.googleapis.com/drive/v3/files';
 
 	/**
 	 * Constructs and initializes an instance of GDrive connector
@@ -147,7 +151,8 @@ export default class GDrive {
 		const token = params[this.oauth2.accessToken];
 		if (!token) return this.login();
 
-		const tokenExpired = token.expires_at === undefined || token.expires_at < new Date().getTime();
+		const now = new Date().getTime();
+		const tokenExpired = params.expires_at === undefined || params.expires_at < now;
 		if (tokenExpired) {
 			if (this.#rememberLogin) {
 				const refreshedToken = await this.#refreshAccessToken();
@@ -158,7 +163,7 @@ export default class GDrive {
 			await this.login();
 		}
 
-		return token.access_token;
+		return token;
 	}
 
 	/**
@@ -289,11 +294,12 @@ export default class GDrive {
 	async #getHeader() {
 		const token = await this.#getAccessToken();
 		if (token) {
-			return new Headers({
+			const header = new Headers({
 				Authorization: `Bearer ${token}`,
 				Accept: 'application/json',
 				'Content-Type': 'application/json',
 			});
+			return header;
 		}
 		return undefined;
 	}
@@ -304,7 +310,7 @@ export default class GDrive {
 	 * @param {string} fileName Name of the file where to write data
 	 * @param {Blob} data Data to write to the file
 	 * @param {boolean} overwrite true if the file should be overwritten
-	 * @returns {string} id of the file where data was written
+	 * @returns {Promise<String>} id of the file where data was written
 	 */
 	async writeFile(parent, fileName, data, overwrite) {
 		let fileId = localStorage.getItem(fileName);
@@ -327,7 +333,7 @@ export default class GDrive {
 	async find(name, parentId, mimeType) {
 		const token = await this.#getAccessToken();
 		if (token) {
-			const parent = parentId || GDrive.ROOT_DIRECTORY_NAME;
+			const parent = parentId || GDrive.#ROOT_DIRECTORY_NAME;
 
 			let q = `name='${name}' and trashed=false and '${parent}' in parents`;
 			if (mimeType) {
@@ -335,7 +341,7 @@ export default class GDrive {
 			}
 
 			const header = await this.#getHeader();
-			const url = new URL(GDrive.FILES_API);
+			const url = new URL(GDrive.#FILES_API);
 			url.searchParams.append('q', q);
 
 			// TODO do proper error handling
@@ -357,17 +363,17 @@ export default class GDrive {
 	}
 
 	/**
-	 * @returns {string} folder ID
+	 * @returns { Promise<String> | undefined } folder ID
 	 */
 	async findChangeAppFolder() {
-		const APP_FOLDER = 'Change!';
-		const fileId = await this.find(APP_FOLDER);
+		const fileId = await this.find(GDrive.APP_FOLDER);
+		if (!fileId) return undefined;
 
 		const fileType = await this.readFileMetadata(fileId, 'shortcutDetails, mimeType');
-		if (fileType.mimeType === GDrive.GDRIVE_MIME_TYPE_FOLDER) {
+		if (fileType.mimeType === GDrive.#GDRIVE_MIME_TYPE_FOLDER) {
 			return fileId;
 		} if (fileType.mimeType === 'application/vnd.google-apps.shortcut') {
-			if (fileType.shortcutDetails?.targetMimeType === GDrive.GDRIVE_MIME_TYPE_FOLDER) {
+			if (fileType.shortcutDetails?.targetMimeType === GDrive.#GDRIVE_MIME_TYPE_FOLDER) {
 				return fileType.shortcutDetails.targetId;
 			}
 		}
@@ -375,22 +381,26 @@ export default class GDrive {
 	}
 
 	async findFolder(name, parent) {
-		return this.find(name, parent, GDrive.GDRIVE_MIME_TYPE_FOLDER);
+		return this.find(name, parent, GDrive.#GDRIVE_MIME_TYPE_FOLDER);
 	}
 
 	async findFile(name, parent) {
 		return this.find(name, parent);
 	}
 
+	/**
+	 * @param {string} folderId
+	 * @returns {Promise<Object>}
+	 */
 	async getChildren(folderId) {
 		const token = await this.#getAccessToken();
 		if (token) {
-			const folder = folderId || GDrive.ROOT_DIRECTORY_NAME;
+			const folder = folderId || GDrive.#ROOT_DIRECTORY_NAME;
 
 			const q = `trashed=false and '${folder}' in parents`;
 
 			const header = await this.#getHeader();
-			const url = new URL(GDrive.FILES_API);
+			const url = new URL(GDrive.#FILES_API);
 			url.searchParams.append('q', q);
 
 			const children = await fetch(url, {
@@ -409,17 +419,23 @@ export default class GDrive {
 		return undefined;
 	}
 
+	/**
+	 * Create folder under a GDrive parent folder
+	 * @param {String} name FOlder name that will be created
+	 * @param {String} parent Fodler ID of the parent
+	 * @returns {Promise<String>} ID of the created folder
+	 */
 	async createFolder(name, parent) {
 		const token = await this.#getAccessToken();
 		if (token) {
 			const metadata = {
 				name: name,
 				mimeType: 'application/vnd.google-apps.folder',
-				parents: [parent || GDrive.ROOT_DIRECTORY_NAME],
+				parents: [parent || GDrive.#ROOT_DIRECTORY_NAME],
 			};
 
 			const headers = await this.#getHeader();
-			const url = new URL(GDrive.FILES_API);
+			const url = new URL(GDrive.#FILES_API);
 
 			const id = await fetch(url, {
 				method: 'POST',
@@ -500,7 +516,7 @@ export default class GDrive {
 			}
 
 			const header = await this.#getHeader();
-			const url = new URL(`${GDrive.FILES_API}/${fileId}`);
+			const url = new URL(`${GDrive.#FILES_API}/${fileId}`);
 			url.searchParams.append('fields', fields);
 
 			const response = await fetch(url, {
@@ -526,7 +542,7 @@ export default class GDrive {
 			}
 
 			const header = await this.#getHeader();
-			const url = new URL(`${GDrive.FILES_API}/${fileId}`);
+			const url = new URL(`${GDrive.#FILES_API}/${fileId}`);
 			url.searchParams.append('alt', 'media');
 
 			const response = await fetch(url, {
