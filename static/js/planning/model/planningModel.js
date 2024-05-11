@@ -1,9 +1,6 @@
 // Too much overhead to split the planning model into individual files
 // eslint-disable-next-line max-classes-per-file
 export class Goal {
-	// TODO Create static factory methods for goals that autocomplete other fields
-	// e.g. Goal.fromDaylyAmount(amount), Goal.fromMonthlyAmount(amount), etc.
-
 	/**
 	 * @param {Object} goal - Unit to store in object.
 	 * @param {string} goal.name - The name of the goal.
@@ -11,12 +8,7 @@ export class Goal {
 	 * @param {number} goal.monthly - Monthly amount to put aside for the goal
 	 * @param {number} goal.yearly - Yearly amount to put aside for the goal
 	 */
-	constructor(
-		name,
-		daily,
-		monthly,
-		yearly,
-	) {
+	constructor(name, daily, monthly, yearly) {
 		/**
 		 * @type {number}
 		 */
@@ -37,6 +29,18 @@ export class Goal {
 
 	static fromJavascriptObject(object) {
 		return new Goal(object.name, object.daily, object.monthly, object.yearly);
+	}
+
+	static fromDailyAmount(withName, withAmount) {
+		return new Goal(withName, withAmount, withAmount * 30, withAmount * 365);
+	}
+
+	static fromMonthlyAmount(withName, withAmount) {
+		return new Goal(withName, withAmount / 30, withAmount, withAmount * 12);
+	}
+
+	static fromYearlyAmount(withName, withAmount) {
+		return new Goal(withName, withAmount / 365, withAmount / 12, withAmount);
 	}
 }
 
@@ -76,9 +80,11 @@ export class Category {
 
 	static fromJavascriptObject(object) {
 		const category = new Category(object.id, object.name);
-		object.goals.forEach((goal) => {
-			category.goals.push(Goal.fromJavascriptObject(goal));
-		});
+		if (object.goals) {
+			object.goals.forEach((goal) => {
+				category.goals.push(Goal.fromJavascriptObject(goal));
+			});
+		}
 		return category;
 	}
 }
@@ -121,9 +127,11 @@ export class Statement {
 
 	static fromJavascriptObject(object) {
 		const statement = new Statement(object.id, object.name, object.type);
-		object.categories.forEach(
-			(category) => statement.categories.push(Category.fromJavascriptObject(category)),
-		);
+		if (object.categories) {
+			object.categories.forEach(
+				(category) => statement.categories.push(Category.fromJavascriptObject(category)),
+			);
+		}
 		return statement;
 	}
 }
@@ -138,20 +146,32 @@ export default class Planning {
 	 * @param {number} month
 	 * @param {Array<Statement>} statements
 	 */
-	constructor(id, year, month, statements) {
+	constructor(id, year, month, statements = []) {
 		this.id = id;
 		this.year = year;
 		this.month = month;
-		if (statements) {
-			this.statements = statements;
-		}
+		this.statements = statements;
 	}
 
 	static fromJavascriptObject(object) {
 		const planning = new Planning(object.id, object.year, object.month);
-		object.statements.forEach((statement) => {
-			planning.statements.push(Statement.fromJavascriptObject(statement));
-		});
+		if (object.statements) {
+			object.statements.forEach((statement) => {
+				planning.statements.push(Statement.fromJavascriptObject(statement));
+			});
+		}
 		return planning;
+	}
+
+	/**
+	 * Fetch only the categories of type "Expense"
+	 * @returns {Promise<Array<Category>>}
+	 */
+	async readCategories(forStatementType) {
+		/** @type {Array<Planning>} */
+		const expenseStatements = this.statements
+			.filter((statement) => statement.type === forStatementType);
+		return expenseStatements
+			.reduce((categories, statement) => categories.concat(...statement.categories), []);
 	}
 }

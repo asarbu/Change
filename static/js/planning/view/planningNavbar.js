@@ -1,9 +1,10 @@
+/* eslint-disable prefer-destructuring */
 import Dom from '../../gui/dom.js';
 import icons from '../../gui/icons.js';
 import Modal from '../../gui/modal.js';
 import Utils from '../../utils/utils.js';
-import { Statement } from '../model/planningModel.js';
-import PlanningNavbarEventHandlers from './planningNavbarEventHandlers.js';
+import Planning, { Statement } from '../model/planningModel.js';
+import PlanningNavbarEventListeners from './planningNavbarEventListeners.js';
 
 export default class PlanningNavbar {
 	/** @type {Dom} */
@@ -33,8 +34,11 @@ export default class PlanningNavbar {
 	/** @type {Modal} */
 	#statementTypeDropup = undefined;
 
-	/** @type {PlanningNavbarEventHandlers} */
-	#eventHandlers = undefined;
+	/** @type {PlanningNavbarEventListeners} */
+	#eventListeners = undefined;
+
+	/** @type {Planning} */
+	#planning = undefined;
 
 	/** @type {number} */
 	#selectedMonth = undefined;
@@ -50,19 +54,20 @@ export default class PlanningNavbar {
 
 	/**
 	 * Constructs an instance of Planning Navbar
-	 * @param {number} year default year to select in navbar
-	 * @param {number} month default month to select in navbar
-	 * @param {PlanningNavbarEventHandlers} eventHandlers Callbacks for when events fire
+	 * @param {Planning} planning default year to select in navbar
 	 */
-	constructor(year, month, statement, eventHandlers) {
+	constructor(planning) {
 		this.#yearsInDropup = new Map();
 		this.#monthsInDropup = new Map();
 		this.#statementsInDropup = new Map();
+		this.#eventListeners = new PlanningNavbarEventListeners();
 
-		this.#selectedYear = year;
-		this.#selectedMonth = month;
-		this.#selectedStatement = statement;
-		this.#eventHandlers = eventHandlers;
+		this.#planning = planning;
+		this.#selectedYear = planning.year;
+		this.#selectedMonth = planning.month;
+		if (planning.statements.length > 0) {
+			this.#selectedStatement = planning.statements[0].name;
+		}
 
 		const main = document.getElementById('main');
 		main.appendChild(this.buildYearModal().toHtml());
@@ -71,9 +76,9 @@ export default class PlanningNavbar {
 		main.appendChild(this.buildStatementTypeModal().toHtml());
 		main.appendChild(this.buildAddStatementModal().toHtml());
 
-		const onClickYearDropup = this.onClickYearDropup.bind(this);
-		const onClickMonthDropup = this.onClickMonthDropup.bind(this);
-		const onClickStatementDropup = this.onClickStatementDropup.bind(this);
+		const onClickYearDropup = this.onClickedYearDropup.bind(this);
+		const onClickMonthDropup = this.onClickedMonthDropup.bind(this);
+		const onClickStatementDropup = this.onClickedStatementDropup.bind(this);
 
 		this.#navbar = new Dom('nav').append(
 			this.buildNavbarHeader(),
@@ -82,15 +87,15 @@ export default class PlanningNavbar {
 					new Dom('img').cls('white-fill').text('Menu').attr('alt', 'Menu').attr('src', icons.menu),
 				),
 				new Dom('button').cls('nav-item').onClick(onClickYearDropup).append(
-					new Dom('span').id('planning-year-text').text(`${year} `),
+					new Dom('span').id('planning-year-text').text(`${this.#selectedYear} `),
 					new Dom('span').id('planning-year-caret').cls('white-50').text(''),
 				),
 				new Dom('button').cls('nav-item').onClick(onClickMonthDropup).append(
-					new Dom('span').id('planning-month-text').text(`${Utils.nameForMonth(month)} `),
+					new Dom('span').id('planning-month-text').text(`${Utils.nameForMonth(this.#selectedMonth)} `),
 					new Dom('span').id('planning-month-caret').cls('white-50').text(''),
 				),
 				new Dom('button').cls('nav-item').onClick(onClickStatementDropup).append(
-					new Dom('span').id('planning-stmt-text').text(`${statement} `),
+					new Dom('span').id('planning-stmt-text').text(`${this.#selectedStatement} `),
 					new Dom('span').id('planning-stmt-caret').cls('white-50').text(''),
 				),
 				new Dom('button').cls('nav-item', 'nav-trigger').attr('data-side', 'right').append(
@@ -102,11 +107,11 @@ export default class PlanningNavbar {
 	}
 
 	buildNavbarHeader() {
-		const onClickEdit = this.onClickEdit.bind(this);
-		const onClickSave = this.onClickSave.bind(this);
-		const onClickAddStatement = this.onClickAddStatement.bind(this);
-		const onClickDeletePlanning = this.onClickDeletePlanning.bind(this);
-		const onClickDeleteStatement = this.onClickDeleteStatement.bind(this);
+		const onClickEdit = this.onClickedEdit.bind(this);
+		const onClickSave = this.onClickedSave.bind(this);
+		const onClickAddStatement = this.onClickedAddStatement.bind(this);
+		const onClickDeletePlanning = this.onClickedDeletePlanning.bind(this);
+		const onClickDeleteStatement = this.onClickedDeleteStatement.bind(this);
 
 		return new Dom('div').cls('nav-header').append(
 			new Dom('button').id('planning-del-planning').cls('nav-item').hide().onClick(onClickDeletePlanning)
@@ -135,15 +140,31 @@ export default class PlanningNavbar {
 		return this.#navbar.toHtml();
 	}
 
-	onClickDeletePlanning() {
-
+	onClickDeletePlanning(handler) {
+		this.#eventListeners.onClickedDeletePlanning = handler;
 	}
 
-	onClickDeleteStatement() {
-
+	onClickedDeletePlanning() {
+		if (this.#eventListeners.onClickedDeletePlanning) {
+			this.#eventListeners.onClickedDeletePlanning(this.#planning);
+		}
 	}
 
-	onClickEdit(event) {
+	onClickDeleteStatement(handler) {
+		this.#eventListeners.onClickedDeletedStatement = handler;
+	}
+
+	onClickedDeleteStatement() {
+		if (this.#eventListeners.onClickedDeletedStatement) {
+			this.#eventListeners.onClickedDeletedStatement();
+		}
+	}
+
+	onClickEdit(handler) {
+		this.#eventListeners.onClickedEdit = handler;
+	}
+
+	onClickedEdit(event) {
 		const editButton = event.currentTarget;
 		const saveButton = document.getElementById('planning-navbar-save');
 		const delStatement = document.getElementById('planning-del-statement');
@@ -154,12 +175,16 @@ export default class PlanningNavbar {
 		saveButton.style.display = '';
 		delPlanning.style.display = '';
 
-		if (this.#eventHandlers.onClickEdit) {
-			this.#eventHandlers.onClickEdit();
+		if (this.#eventListeners.onClickedEdit) {
+			this.#eventListeners.onClickedEdit();
 		}
 	}
 
-	onClickSave(event) {
+	onClickSave(handler) {
+		this.#eventListeners.onClickedSave = handler;
+	}
+
+	onClickedSave(event) {
 		const saveButton = event.currentTarget;
 		const editButton = document.getElementById('planning-navbar-edit');
 		const delStatement = document.getElementById('planning-del-statement');
@@ -170,8 +195,8 @@ export default class PlanningNavbar {
 		delStatement.style.display = 'none';
 		delPlanning.style.display = 'none';
 
-		if (this.#eventHandlers.onClickSave) {
-			this.#eventHandlers.onClickSave();
+		if (this.#eventListeners.onClickedSave) {
+			this.#eventListeners.onClickedSave();
 		}
 	}
 
@@ -187,7 +212,7 @@ export default class PlanningNavbar {
 	appendYear(year) {
 		if (this.#yearsInDropup.has(year)) return;
 
-		const onYearChanged = this.onYearChanged.bind(this, year);
+		const onYearChanged = this.onChangedYear.bind(this, year);
 		const yearDropupItem = new Dom('div').cls('accordion-secondary').onClick(onYearChanged).text(year);
 		this.#yearsInDropup.set(year, yearDropupItem);
 		this.#yearsDropup.body(yearDropupItem);
@@ -214,11 +239,11 @@ export default class PlanningNavbar {
 		}
 	}
 
-	onClickYearDropup() {
+	onClickedYearDropup() {
 		this.#yearsDropup.open();
 	}
 
-	onYearChanged(year) {
+	onChangedYear(year) {
 		this.#yearsDropup.close();
 		window.location.href = `${window.location.pathname}?year=${year}`;
 	}
@@ -237,7 +262,7 @@ export default class PlanningNavbar {
 		const monthName = Utils.nameForMonth(month);
 		if (this.#monthsInDropup.has(month)) return;
 
-		const onMonthChanged = this.onMonthChanged.bind(this, monthName);
+		const onMonthChanged = this.onChangedMonth.bind(this, monthName);
 		const monthDropupItem = new Dom('div').cls('accordion-secondary').onClick(onMonthChanged).text(monthName);
 		this.#monthsInDropup.set(month, monthDropupItem);
 		this.#monthsDropup.body(monthDropupItem);
@@ -265,11 +290,11 @@ export default class PlanningNavbar {
 		}
 	}
 
-	onClickMonthDropup() {
+	onClickedMonthDropup() {
 		this.#monthsDropup.open();
 	}
 
-	onMonthChanged(month) {
+	onChangedMonth(month) {
 		this.#monthsDropup.close();
 		window.location.href = `${window.location.pathname}?year=${this.#selectedYear}&month=${month}`;
 	}
@@ -284,10 +309,14 @@ export default class PlanningNavbar {
 		return this.#statementsDropup;
 	}
 
+	onChangeStatement(handler) {
+		this.#eventListeners.onChangedStatement = handler;
+	}
+
 	appendStatement(statement) {
 		if (this.#statementsInDropup.has(statement)) return;
 
-		const onStatementChanged = this.onStatementChanged.bind(this, statement);
+		const onStatementChanged = this.onChangedStatement.bind(this, statement);
 		const statementDropupItem = new Dom('div').cls('accordion-secondary').onClick(onStatementChanged).text(statement);
 		this.#statementsInDropup.set(statement, statementDropupItem);
 		this.#statementsDropup.body(statementDropupItem);
@@ -313,14 +342,14 @@ export default class PlanningNavbar {
 		}
 	}
 
-	onClickStatementDropup() {
+	onClickedStatementDropup() {
 		this.#statementsDropup.open();
 	}
 
-	onStatementChanged(statement) {
+	onChangedStatement(statement) {
 		this.#statementsDropup.close();
-		if (this.#eventHandlers.onStatementChanged) {
-			this.#eventHandlers.onStatementChanged(statement);
+		if (this.#eventListeners.onChangedStatement) {
+			this.#eventListeners.onChangedStatement(statement);
 		}
 	}
 
@@ -329,8 +358,8 @@ export default class PlanningNavbar {
 	// #region Add Statement Modal
 
 	buildAddStatementModal() {
-		const onClickSave = this.onClickStatementSave.bind(this);
-		const onClickStatementType = this.onClickStatementType.bind(this, true);
+		const onClickSave = this.onClickedSaveStatement.bind(this);
+		const onClickStatementType = this.onClickedStatementType.bind(this, true);
 		this.#addStatementDropup = new Modal('add-statement').header(
 			new Dom('h2').text('Add Statement'),
 		).body(
@@ -357,26 +386,30 @@ export default class PlanningNavbar {
 		return this.#addStatementDropup;
 	}
 
-	onClickStatementSave() {
+	onClickSaveStatement(handler) {
+		this.#eventListeners.onClickedSaveStatement = handler;
+	}
+
+	onClickedSaveStatement() {
 		const statementId = document.getElementById('statement-date-input').valueAsDate.getTime();
 		const statementName = document.getElementById('statement-name-input').value;
 		const statementType = document.getElementById('statement-type-input').value;
 		const newStatement = new Statement(statementId, statementName, statementType);
 
-		if (this.#eventHandlers.onClickAddStatement) {
-			this.#eventHandlers.onClickAddStatement(newStatement);
+		if (this.#eventListeners.onClickedSaveStatement) {
+			this.#eventListeners.onClickedSaveStatement(newStatement);
 		}
 		this.#addStatementDropup.close();
 	}
 
-	onClickAddStatement() {
+	onClickedAddStatement() {
 		this.#addStatementDropup.open();
 	}
 	// #endregion
 
 	// #region Statement Type modal
 	buildStatementTypeModal() {
-		const onStatementTypeChanged = this.onStatementTypeChanged.bind(this);
+		const onStatementTypeChanged = this.onChangedStatementType.bind(this);
 		this.#statementTypeDropup = new Modal('statement-type').header(
 			new Dom('h2').text('Select Statement Type'),
 		).body(
@@ -388,7 +421,7 @@ export default class PlanningNavbar {
 		return this.#statementTypeDropup;
 	}
 
-	onClickStatementType() {
+	onClickedStatementType() {
 		this.#statementTypeDropup.open();
 		if (this.#addStatementDropup.isOpen()) {
 			this.#addSpendingPending = true;
@@ -396,7 +429,11 @@ export default class PlanningNavbar {
 		}
 	}
 
-	onStatementTypeChanged(event) {
+	onChangeStatementType(handler) {
+		this.#eventListeners.onChangedStatementType = handler;
+	}
+
+	onChangedStatementType(event) {
 		const type = event.currentTarget.textContent;
 		this.#statementTypeDropup.close();
 		if (this.#addSpendingPending) {
@@ -405,8 +442,8 @@ export default class PlanningNavbar {
 			document.getElementById('statement-type-input').value = type;
 		}
 
-		if (this.#eventHandlers.onStatementTypeChanged) {
-			this.#eventHandlers.onStatementTypeChanged(type);
+		if (this.#eventListeners.onChangedStatementType) {
+			this.#eventListeners.onChangedStatementType(event);
 		}
 	}
 	// #endregion

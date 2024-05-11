@@ -157,7 +157,6 @@ export default class Idb {
 	}
 
 	/**
-	 *
 	 * @param {string} storeName Object store to look up
 	 * @param {string} indexName Index Name from IndexedDb
 	 * @param {IDBKeyRange} iDbKey Criteria to filter results
@@ -169,7 +168,6 @@ export default class Idb {
 			const store = st[0];
 			const txn = st[1];
 
-			// console.log("Getting all by index", storeName, index, key)
 			const values = [];
 			store.index(indexName).openCursor(iDbKey).onsuccess = (event) => {
 				const cursor = event.target.result;
@@ -178,6 +176,29 @@ export default class Idb {
 					values.push(cursor.value);
 					cursor.continue();
 				}
+			};
+
+			txn.oncomplete = () => {
+				resolve(values);
+			};
+		});
+	}
+
+	/**
+	 * @param {string} storeName Object store to look up
+	 * @param {IDBKeyRange} iDbKey Criteria to filter results
+	 * @returns {Promise<Array<Object>>}
+	 */
+	readAll(storeName, iDbKey = undefined) {
+		return new Promise((resolve) => {
+			const st = this.getStoreTransaction(storeName, Idb.#READ_ONLY);
+			const store = st[0];
+			const txn = st[1];
+
+			let values = [];
+			const request = store.getAll(iDbKey);
+			request.onsuccess = () => {
+				values = request.result;
 			};
 
 			txn.oncomplete = () => {
@@ -197,7 +218,6 @@ export default class Idb {
 			const store = st[0];
 			const txn = st[1];
 
-			// console.log("Getting all by index", storeName, index, key)
 			let values = [];
 			const request = store.getAll();
 			request.onsuccess = () => {
@@ -382,13 +402,13 @@ export default class Idb {
 	 *
 	 * @param {string} storeName Object store to look up
 	 * @param {string} mode #READ_ONLY or #READ_WRITE
-	 * @returns {Array<Object>}
+	 * @returns {[IDBObjectStore, IDBTransaction]}
 	 */
 	getStoreTransaction(storeName, mode) {
 		if (!this.#db.objectStoreNames.contains(storeName)) {
 			return undefined;
 		}
-		
+
 		const txn = this.#db.transaction(storeName, mode);
 		const store = txn.objectStore(storeName);
 

@@ -4,6 +4,7 @@ export default class Modal {
 	/** @type {boolean} */
 	#isOpen = false;
 
+	// TODO - try to reuse modals to avoid having duplicates across DOM
 	constructor(id) {
 		this.id = id;
 		const onClose = this.close.bind(this);
@@ -59,6 +60,26 @@ export default class Modal {
 		);
 
 		return this;
+	}
+
+	addCancelYesFooter(yesHandler) {
+		this.cancelButton = new Dom('h3').id(`modal-cancel-${this.id}`)
+			.text('Cancel').onClick(this.close.bind(this));
+		this.cancelButtonHtml = this.cancelButton.toHtml();
+		this.yesButton = new Dom('h3').text('Yes').onClick(yesHandler);
+
+		this.footer(
+			this.cancelButton,
+			this.yesButton,
+		);
+
+		return this;
+	}
+
+	clickYes() {
+		if (this.yesButton) {
+			this.yesButton.toHtml().click();
+		}
 	}
 
 	toDom() {

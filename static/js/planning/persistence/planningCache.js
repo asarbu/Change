@@ -1,5 +1,5 @@
 import Idb from '../../persistence/idb.js';
-import Planning, { Category } from '../model/planningModel.js';
+import Planning from '../model/planningModel.js';
 
 export default class PlanningCache {
 	static DATABASE_NAME = 'Planning';
@@ -74,8 +74,7 @@ export default class PlanningCache {
 	static upgradePlanningDatabase(db, oldVersion, newVersion, objectStores) {
 		objectStores.forEach((objectStore) => {
 			const store = db.createObjectStore(objectStore, { autoIncrement: true });
-			// store.createIndex('byType', 'type', { unique: false });
-			store.createIndex('byYear', 'year', { unique: false });
+			store.createIndex('byMonth', 'month', { unique: false });
 		});
 	}
 
@@ -113,7 +112,7 @@ export default class PlanningCache {
 	 */
 	async readAll() {
 		const plannings = [];
-		const objects = await this.#idb.openCursor(this.#storeName);
+		const objects = await this.#idb.getAll(this.#storeName);
 		objects.forEach((object) => {
 			plannings.push(Planning.fromJavascriptObject(object));
 		});
@@ -126,9 +125,10 @@ export default class PlanningCache {
 	 * @returns {Promise<Array<Planning>>}
 	 */
 	async readForMonth(month) {
-		// TODO do this with a key range
-		const allPlannings = await this.readAll();
-		const plannings = allPlannings.filter((planning) => planning.month === month);
+		const plannings = [];
+		const keyRange = IDBKeyRange.only(month);
+		const objects = await this.#idb.getAllByIndex(`${this.year}`, 'byMonth', keyRange);
+		objects.forEach((object) => plannings.push(Planning.fromJavascriptObject(object)));
 		return plannings;
 	}
 
@@ -143,29 +143,14 @@ export default class PlanningCache {
 	}
 
 	/**
-	 * Fetch only the categories of type "Expense"
-	 * // TODO move this to controller
-	 * @returns {Promise<Array<Category>>}
-	 */
-	async readExpenseCategories(forMonth) {
-		/** @type {Array<Planning>} */
-		const planningsForYear = await this.#idb.getAll(this.#storeName);
-		const planningForMonth = planningsForYear.find((planning) => planning.month === forMonth);
-		const expenseStatements = planningForMonth.statements.filter((statement) => statement.type === 'Expense');
-		return expenseStatements.reduce((categories, statement) => {
-			categories.push(...statement.categories);
-			return categories;
-		}, []);
-	}
-
-	/**
 	 * Fetch only the planning statement corresponding to the key
 	 * @async
 	 * @param {string} key Key to lookup in the datastore
 	 * @returns {Promise<Planning>}
 	 */
 	async read(key) {
-		return this.#idb.get(this.#storeName, key);
+		const jsObject = await this.#idb.get(this.#storeName, key);
+		return Planning.fromJavascriptObject(jsObject);
 	}
 
 	/**

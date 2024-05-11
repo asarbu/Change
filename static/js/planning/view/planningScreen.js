@@ -5,12 +5,14 @@ import Dom from '../../gui/dom.js';
 import Planning, { Statement, Category, Goal } from '../model/planningModel.js';
 import icons from '../../gui/icons.js';
 import PlanningNavbar from './planningNavbar.js';
-import PlanningNavbarEventHandlers from './planningNavbarEventHandlers.js';
+import Modal from '../../gui/modal.js';
 
 export default class PlanningScreen {
 	onClickUpdate = undefined;
 
 	onStatementAdded = undefined;
+
+	#onClickedDeletePlanning = undefined;
 
 	/** @type {Sidenav} */
 	#sidenav = undefined;
@@ -30,7 +32,9 @@ export default class PlanningScreen {
 	 * @param {Planning} planning Planning object to draw on the screen
 	 */
 	constructor(planning) {
-		if (!planning) throw Error('No planning provided to draw on the screen');
+		if (!planning) {
+			throw Error('No planning provided to draw on the screen');
+		}
 		this.#defaultPlanning = planning;
 	}
 
@@ -38,29 +42,20 @@ export default class PlanningScreen {
 	 * Initialize the current screen
 	 */
 	init() {
-		let defaultStatementName = '';
-		if (this.#defaultPlanning.statements.length > 0) {
-			defaultStatementName = this.#defaultPlanning.statements[0].name;
-		}
+		this.navbar = new PlanningNavbar(this.#defaultPlanning);
 
-		const handlers = new PlanningNavbarEventHandlers();
-		handlers.onClickSave = this.onClickSave.bind(this);
-		handlers.onClickEdit = this.onClickEdit.bind(this);
-		handlers.onStatementTypeChanged = this.onStatementTypeChanged.bind(this);
-		handlers.onClickAddStatement = this.onClickAddStatement.bind(this);
-		handlers.onStatementChanged = this.onClickShowStatement.bind(this);
-
-		this.navbar = new PlanningNavbar(
-			this.#defaultPlanning.year,
-			this.#defaultPlanning.month,
-			defaultStatementName,
-			handlers,
-		);
+		this.navbar.onClickSave(this.onClickedSave.bind(this));
+		this.navbar.onClickEdit(this.onClickedEdit.bind(this));
+		this.navbar.onChangeStatementType(this.onClickedChangeStatementType.bind(this));
+		this.navbar.onClickSaveStatement(this.onClickedSaveStatement.bind(this));
+		this.navbar.onChangeStatement(this.onClickedShowStatement.bind(this));
+		this.navbar.onClickDeletePlanning(this.onClickedDeletePlanning.bind(this));
+		this.navbar.onClickDeleteStatement(this.onClickedDeleteStatement.bind(this));
 
 		const mainElement = document.getElementById('main');
 		mainElement.appendChild(this.navbar.toHtml());
 		this.navbar.selectYear(this.#defaultPlanning.year);
-		this.containerHtml = this.buildContainer().toHtml();
+		this.containerHtml = this.buildContainer(this.#defaultPlanning).toHtml();
 		mainElement.appendChild(this.containerHtml);
 		this.gfx = new GraphicEffects();
 		this.gfx.init(this.containerHtml);
@@ -84,14 +79,14 @@ export default class PlanningScreen {
 
 	/**
 	 * Creates all necessary objects needed to draw current screen
+	 * @param {Planning} planning
 	 * @returns {Dom}
 	 */
-	buildContainer() {
-		const container = new Dom('div').id(this.#defaultPlanning.year).cls('container');
+	buildContainer(planning) {
+		const container = new Dom('div').id(planning.year).cls('container');
 		const section =	new Dom('div').cls('section');
-		const { statements } = this.#defaultPlanning;
+		const { statements } = planning;
 
-		// TODO Merge this with navbar creation, since we are iterating through same array.
 		for (let i = 0; i < statements.length; i += 1) {
 			const statement = statements[i];
 			const htmlStatement = this.buildStatement(statement).userData(statement);
@@ -113,9 +108,9 @@ export default class PlanningScreen {
 		if (!statement) return undefined;
 
 		const onKeyUp = this.onKeyUpStatementName.bind(this);
-		const onClickStatementType = this.onClickStatementType.bind(this);
-		const onClickAddCategory = this.onClickAddCategory.bind(this);
-		const slice = new Dom('div').cls('slice').append(
+		const onClickStatementType = this.onClickedStatementType.bind(this);
+		const onClickAddCategory = this.onClickedAddCategory.bind(this);
+		const slice = new Dom('div').id(`statement-${statement.id}`).cls('slice').append(
 			new Dom('h1').text(statement.name).editable().onKeyUp(onKeyUp).attr('contenteditable', this.#editMode),
 			new Dom('h2').id('planning-statement-type').text(`${statement.type} `).onClick(onClickStatementType).hideable(this.#editMode)
 				.append(
@@ -136,10 +131,11 @@ export default class PlanningScreen {
 	buildCategories(planningCategories) {
 		const categories = [];
 		const onKeyUpCategoryName = this.onKeyUpCategoryName.bind(this);
+		const onClickedDeleteCategory = this.onClickedDeleteCategory.bind(this);
 
 		for (let i = 0; i < planningCategories.length; i += 1) {
 			const category = planningCategories[i];
-			const categoryDom = new Dom('table').id(category.id).cls('top-round', 'bot-round').append(
+			const categoryDom = new Dom('table').id(`category-${category.id}`).cls('top-round', 'bot-round').append(
 				new Dom('thead').append(
 					new Dom('tr').append(
 						new Dom('th').text(category.name).editable().contentEditable(this.#editMode)
@@ -147,7 +143,7 @@ export default class PlanningScreen {
 						new Dom('th').text('Daily'),
 						new Dom('th').text('Monthly'),
 						new Dom('th').text('Yearly'),
-						new Dom('th').hideable(this.#editMode).append(
+						new Dom('th').hideable(this.#editMode).onClick(onClickedDeleteCategory).append(
 							Dom.imageButton('Delete row', icons.delete),
 						),
 					),
@@ -169,9 +165,9 @@ export default class PlanningScreen {
 	 */
 	buildGoal(goal) {
 		if (!goal) return undefined;
-		const onClickDeleteGoal = this.onClickDeleteGoal.bind(this);
+		const onClickDeleteGoal = this.onClickedDeleteGoal.bind(this);
 		const onKeyUpGoal = this.onKeyUpGoal.bind(this);
-		return new Dom('tr').id(goal.id).userData(goal).append(
+		return new Dom('tr').id(`Goal_${goal.id}`).userData(goal).append(
 			new Dom('td').text(goal.name).editable().contentEditable(this.#editMode).onKeyUp(onKeyUpGoal),
 			new Dom('td').text(goal.daily).editable().contentEditable(this.#editMode).onKeyUp(onKeyUpGoal),
 			new Dom('td').text(goal.monthly).editable().contentEditable(this.#editMode).onKeyUp(onKeyUpGoal),
@@ -185,12 +181,33 @@ export default class PlanningScreen {
 
 	// #region DOM manipulation
 	/** Refresh screen */
-	refresh(statements) {
-		this.statements = statements;
-		const newContainer = this.buildContainer();
-		const mainElement = document.getElementById('main');
-		mainElement.replaceChild(newContainer, this.containerHtml);
-		this.containerHtml = newContainer;
+	refresh(planning) {
+		this.#defaultPlanning = planning;
+		const container = this.buildContainer(planning).toHtml();
+		this.containerHtml.parentElement.replaceChild(container, this.containerHtml);
+		this.containerHtml = container;
+	}
+
+	/**
+	 * @param {Statement} statement
+	 */
+	refreshStatement(statement) {
+		const statementHtml = document.getElementById(`statement-${statement.id}`);
+		const statementDom = this.buildStatement(statement);
+		const { scrollTop } = statementHtml;
+		statementHtml.parentElement.replaceChild(statementDom.toHtml(), statementHtml);
+		statementDom.toHtml().scrollTop = scrollTop;
+	}
+
+	/**
+	 * @param {Category} category
+	 */
+	refreshCategory(category) {
+		const categoryHtml = document.getElementById(`category-${category.id}`);
+		const categoryDom = this.buildStatement(category);
+		const { scrollTop } = categoryHtml;
+		categoryHtml.parentElement.replaceChild(categoryDom.toHtml(), categoryHtml);
+		categoryDom.toHtml().scrollTop = scrollTop;
 	}
 
 	/**
@@ -202,13 +219,12 @@ export default class PlanningScreen {
 			new Dom('td').text(forCategory.totalDaily()),
 			new Dom('td').text(forCategory.totalMonthly()),
 			new Dom('td').text(forCategory.totalYearly()),
-			new Dom('td').hideable(this.#editMode).onClick(this.onClickAddGoal.bind(this)).append(
+			new Dom('td').hideable(this.#editMode).onClick(this.onClickedAddGoal.bind(this)).append(
 				Dom.imageButton('Add row', icons.add_row),
 			),
 		);
 	}
 
-	// Recompute from DOM instead of memory/db/network to have real time updates in UI
 	/**
 	 * Computes the column wise total value of the category table and replaces the last row.
 	 * @param {Category} category category for which to compute total row
@@ -225,33 +241,54 @@ export default class PlanningScreen {
 	// #endregion
 
 	// #region event handlers
-	// #region statement event handlers
-	onClickDeleteStatement() {
-		this.statements.splice(this.gfx.selectedIndex(), 1);
-		this.refresh(this.statements);
+	// #region planning event handlers
+	onClickDeletePlanning(handler) {
+		this.#onClickedDeletePlanning = handler;
 	}
 
-	onClickAddStatement(statement) {
-		if (this.onStatementAdded) {
-			this.onStatementAdded(statement);
+	onClickedDeletePlanning(planning) {
+		if (this.#onClickedDeletePlanning) {
+			const areYouSureModal = new Modal('are-you-sure-delete-planning')
+				.header(
+					new Dom('h1').text('Are you sure you want to delete planning?'),
+				)
+				.addCancelYesFooter(this.#onClickedDeletePlanning.bind(this, planning))
+				.open();
+			const main = document.getElementById('main');
+			main.appendChild(areYouSureModal.toHtml());
+			return areYouSureModal;
 		}
-		this.refresh(this.statements);
+		return undefined;
+	}
+	// #endregion
+
+	// #region statement event handlers
+	onClickedDeleteStatement() {
+		this.#defaultPlanning.statements.splice(this.gfx.selectedIndex(), 1);
+		this.refresh(this.#defaultPlanning);
 	}
 
-	onClickShowStatement(statementName) {
+	onClickedSaveStatement(statement) {
+		if (this.onStatementAdded) {
+			return this.onStatementAdded(statement);
+		}
+		return undefined;
+	}
+
+	onClickedShowStatement(statementName) {
 		const { statements } = this.#defaultPlanning;
 		const index = statements.findIndex((statement) => statement.name === statementName);
 		if (index >= 0) this.gfx.slideTo(index);
 	}
 
-	onClickChangeStatementType(e) {
+	onClickedChangeStatementType(e) {
 		const newStatementType = e.currentTarget.textContent;
-		const statement = this.statements[this.gfx.selectedIndex()];
+		const statement = this.#defaultPlanning.statements[this.gfx.selectedIndex()];
 		statement.type = newStatementType;
-		this.refresh(this.statements);
+		this.refreshStatement(statement);
 	}
 
-	onClickEdit() {
+	onClickedEdit() {
 		const tableDefs = document.querySelectorAll('[editable="true"]');
 		for (let i = 0; i < tableDefs.length; i += 1) {
 			tableDefs[i].contentEditable = 'true';
@@ -268,7 +305,7 @@ export default class PlanningScreen {
 	/**
 	 * @param {Planning} forPlanning
 	 */
-	onClickSave(forPlanning) {
+	onClickedSave(forPlanning) {
 		const editableElmts = document.querySelectorAll('[editable="true"]');
 		for (let i = 0; i < editableElmts.length; i += 1) {
 			editableElmts[i].contentEditable = 'false';
@@ -279,25 +316,17 @@ export default class PlanningScreen {
 			hideableElmts[i].style.display = 'none';
 		}
 
+		this.#editMode = false;
+
 		if (this.onClickUpdate) {
 			const planning = forPlanning || this.#defaultPlanning;
-			this.onClickUpdate(planning);
+			return this.onClickUpdate(planning);
 		}
-
-		this.#editMode = false;
+		return undefined;
 	}
 
-	onClickStatementType() {
-		this.navbar.onClickStatementType();
-	}
-
-	onStatementTypeChanged(newType) {
-		/** @type {HTMLElement} */
-		const planningStatementType = document.getElementById('planning-statement-type');
-		/** @type {Statement} */
-		const statement = planningStatementType.parentNode.userData;
-		planningStatementType.firstChild.nodeValue = newType;
-		statement.type = newType;
+	onClickedStatementType() {
+		this.navbar.onClickedStatementType();
 	}
 
 	onKeyUpStatementName(event) {
@@ -308,18 +337,17 @@ export default class PlanningScreen {
 	// #endregion
 
 	// #region category event handlers
-	onClickAddCategory() {
+	onClickedAddCategory() {
 		const id = new Date().getTime(); // millisecond precision
 		const category = new Category(id, 'New Category');
 		/** @type{Statement} */
-		const statement = this.statements[this.gfx.selectedIndex()];
+		const statement = this.#defaultPlanning.statements[this.gfx.selectedIndex()];
 		statement.categories.push(category);
-		// TODO update only the current statement, not all of them
-		this.refresh(this.statements);
+		this.refreshStatement(statement);
 	}
 
-	onClickDeleteCategory(event) {
-		const table = event.currentTarget.parentNode.parentNode.parentNode.parentNode;
+	onClickedDeleteCategory(event) {
+		const table = event.currentTarget.parentNode.parentNode.parentNode;
 		const category = table.userData;
 		const statement = table.parentNode.userData;
 
@@ -331,21 +359,23 @@ export default class PlanningScreen {
 	onKeyUpCategoryName(event) {
 		const categoryName = event.currentTarget.textContent;
 		const table = event.currentTarget.parentNode.parentNode.parentNode;
-		const statement = table.userData;
+		const category = table.userData;
 
-		statement.name = categoryName;
+		category.name = categoryName;
 	}
 	// #endregion
 
 	// #region goal event handlers
-	onClickAddGoal(event) {
+	onClickedAddGoal(event) {
 		const btn = event.currentTarget;
 		const category = btn.parentNode.parentNode.parentNode.userData;
 		const goal = new Goal('New Goal', 0, 0, 0);
 
 		category.goals.push(goal);
 		const goalDom = this.buildGoal(goal);
-		this.#categoryDoms.get(category.id).append(goalDom);
+		const categoryTbody = this.#categoryDoms.get(category.id).toHtml().tBodies[0];
+		const lastIndex = categoryTbody.children.length - 1;
+		categoryTbody.insertBefore(goalDom.toHtml(), categoryTbody.children[lastIndex]);
 		// Total does not have to be recomputed because we add amounts of 0
 	}
 
@@ -384,14 +414,14 @@ export default class PlanningScreen {
 			cell.parentNode.cells[2].textContent = goal.monthly;
 			break;
 		default:
-			break;
+			throw Error(`Did not expect cell index ${cellIndex} on key up goal`);
 		}
 
 		this.recomputeCategoryTotal(table.userData);
 	}
 
-	onClickDeleteGoal(event) {
-		const row = event.currentTarget.parentNode.parentNode;
+	onClickedDeleteGoal(event) {
+		const row = event.currentTarget.parentNode;
 		const tBody = row.parentNode;
 		const goal = row.userData;
 		const category = row.parentNode.parentNode.userData;

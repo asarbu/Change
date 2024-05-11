@@ -27,9 +27,10 @@ async function storeEmptyPlanningCachesForAYear() {
 }
 
 let planningYear = 1970;
-function nextAvailablePlanningDate() {
+function nextAvailablePlanningDate(withMonth = 0) {
+	// TODO use fake timers instead
 	planningYear += 1;
-	return new Date(planningYear, 0);
+	return new Date(planningYear, withMonth);
 }
 
 describe('Planning cache', () => {
@@ -108,10 +109,9 @@ describe('Planning cache', () => {
 
 	it('reads all (2) planning items from cache', async () => {
 		const countBeforeInsert = (await defaultPlanningCache.count());
-		const firstPlanning = await storeEmptyPlanningCache(nextAvailablePlanningDate());
+		const firstPlanning = await storeEmptyPlanningCache(nextAvailablePlanningDate(0));
 		// Wait for 10ms to pass so we do not have an ID conflict (ID is date.now)
-		await new Promise((r) => { setTimeout(r, 10); });
-		const secondPlanning = await storeEmptyPlanningCache(nextAvailablePlanningDate());
+		const secondPlanning = await storeEmptyPlanningCache(nextAvailablePlanningDate(1));
 		const plannings = await defaultPlanningCache.readAll();
 		expect(plannings.length).toBe(countBeforeInsert + 2);
 		const foundFirstPlanning = plannings.find((planning) => planning.id === firstPlanning.id);
@@ -188,8 +188,9 @@ describe('Planning cache', () => {
 		);
 		const planningCache = await PlanningCache.get(availableDate.getFullYear());
 		planningCache.storePlanning(planning);
+		const storedPlanning = await planningCache.read(planning.id);
 		// Move the below method to Planning class
-		const expenseCategories = await planningCache.readExpenseCategories(availableDate.getMonth());
+		const expenseCategories = await storedPlanning.readCategories(Statement.EXPENSE);
 		expect(expenseCategories).toEqual([expenseCategoryOne, expenseCategoryTwo]);
 	});
 

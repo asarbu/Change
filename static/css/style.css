@@ -3,7 +3,6 @@
 	margin: 0px;
 	padding: 0px;
 	box-sizing: border-box;
-	scroll-behavior: smooth;
 	font-family: Helvetica, sans-serif;
 }
 
@@ -19,7 +18,7 @@
 }
 
 body {
-	background: var(--primary-100);
+	background: var(--primary-900);
 	display: grid;
 	place-items: center;
 	/*Needed because we have no percentage of any parent to relate to*/
@@ -27,6 +26,7 @@ body {
 	color: white;
 	overscroll-behavior: none;
 	-webkit-user-select: none;
+	overflow: hidden;
 	user-select: none;
 }
 
@@ -38,6 +38,7 @@ main {
 	height: 100%;
 	overflow: hidden;
 	background: linear-gradient(0deg, var(--primary-900) 0%, var(--primary-700) 100%);
+	transition: transform .2s;
 }
 
 h1 {
@@ -105,6 +106,7 @@ h2 {
 	background: var(--primary-900);
 	overflow-x: hidden;
 	padding-top: 5%;
+	transition: width .2s;
 }
 
 .view-link {
@@ -421,17 +423,18 @@ h3:hover {
 	}
 
 	.sidenav-open {
-		width: 25vw;
+		width: 33vw;
+		transition: width .2s;
 	}
 
 	.main-shift-left {
-		margin-right: 0px;
-		margin-left: 25%
+		transform: translateX(33vw);
+		transition: transform .2s;
 	}
 
 	.main-shift-right {
-		margin-left: 0px;
-		margin-right: 25%
+		transform: translateX(-33vw);
+		transition: transform .2s;
 	}
 }
 
@@ -439,12 +442,12 @@ h3:hover {
 @media(min-width: 768px) {
 	main {
 		height: 100%;
-		width: 80%;
-		left: 20%;
+		width: 75%;
+		left: 25%;
 	}
 
 	.sidenav {
-		width: 20%;
+		width: 25vw;
 		display: block;
 		left: 0;
 		box-shadow: 4px 0px 8px rgba(0, 0, 0, 0.5);
@@ -459,7 +462,12 @@ h3:hover {
 	}
 
 	.container {
-		width: 50%;
+		width: 100%;
 		box-shadow: 4px 0px 8px rgba(0, 0, 0, 0.5);
+	}
+
+	.modal-content {
+		/* Need to subtract 20% due to sidenav */
+		width: 75vw;
 	}
 }
