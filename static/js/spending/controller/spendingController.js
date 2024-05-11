@@ -1,5 +1,6 @@
 import SpendingScreen from '../view/spendingScreen.js';
 import SpendingCache from '../persistence/spendingCache.js';
+import SpendingGDrive from '../persistence/spendingGdrive.js';
 import PlanningCache from '../../planning/persistence/planningCache.js';
 import Spending from '../model/spending.js';
 import SpendingReport from '../model/spendingReport.js';
@@ -32,7 +33,10 @@ export default class SpendingController {
 		const month = Utils.monthForName((urlParams.get('month')));
 		this.#defaultYear = year || now.getFullYear();
 		this.#defaultMonth = month || now.getMonth();
-		/* if (gdriveSync) {
+		this.gdriveSync = true;
+
+		/*
+		if (gdriveSync) {
 			// this.spendingGDrive = new SpendingGDrive(this.#spendingCache);
 			// this.planningGDrive = new PlanningGDrive(this.#planningCache);
 		} */
@@ -43,7 +47,7 @@ export default class SpendingController {
 		this.#spendingCache = await SpendingCache.get(this.#defaultYear);
 		this.#spendingCaches = await SpendingCache.getAll();
 
-		const expenseCategories = await planningCache.readExpenseCategories(this.#defaultMonth);
+		const expenseCategories = [];
 		const spendings = await this.#spendingCache.readAll();
 
 		/** @type {Map<number, SpendingReport>} */
@@ -90,6 +94,15 @@ export default class SpendingController {
 		}
 
 		this.spendingScreen = spendingScreen;
+
+		/**
+		const spendingGdrive = SpendingGDrive.get(this.#defaultYear, true);
+		(await spendingGdrive).init();
+		(await spendingGdrive).getAll();
+		*/
+
+		const children = await SpendingGDrive.getAll();
+		console.log(children);
 
 		/* if(gdriveSync) {
 			this.initGDrive(monthName);
