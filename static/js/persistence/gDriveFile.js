@@ -1,4 +1,4 @@
-export default class LocalStorageFile {
+export default class GDriveFile {
 	/** @type{string} */
 	id = undefined;
 

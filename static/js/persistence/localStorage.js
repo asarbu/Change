@@ -1,7 +1,15 @@
-import LocalStorageFile from './localStorageFile.js';
+import GDriveFile from './gDriveFile.js';
 
 export default class LocalStorage {
-	static #GDRIVE_FILES_KEY = 'gDrive_files';
+	static GDRIVE_FILES_KEY = 'gDrive_files';
+
+	static CACHE_FILES_KEY = 'cache_files';
+
+	#key = undefined;
+
+	constructor(key) {
+		this.#key = key;
+	}
 
 	/**
 	 * @param {string} id
@@ -11,10 +19,10 @@ export default class LocalStorage {
 	 * @param {number} modified
 	 * @param {boolean} dirty
 	 */
-	static storeFileMetadata(id, year, month, gDriveId, modified, dirty) {
-		const files = localStorage.getItem(`${LocalStorage.#GDRIVE_FILES_KEY}`);
-		/** @type {LocalStorageFile} */
-		const localStorageFile = files[id] || new LocalStorageFile(id, year, month, gDriveId);
+	storeFileMetadata(id, year, month, gDriveId, modified, dirty) {
+		const files = JSON.parse(localStorage.getItem(this.#key)) || {};
+		/** @type {GDriveFile} */
+		const localStorageFile = files[id] || new GDriveFile(id, year, month, gDriveId);
 
 		localStorageFile.year = year;
 		localStorageFile.month = month;
@@ -22,37 +30,37 @@ export default class LocalStorage {
 		localStorageFile.modified = modified;
 		localStorageFile.dirty = dirty;
 		files[id] = localStorageFile;
-		localStorage.setItem(`${LocalStorage.#GDRIVE_FILES_KEY}`, files);
+		localStorage.setItem(this.#key, JSON.stringify(files));
 	}
 
 	/**
-	 * @param {LocalStorageFile} localStorageFile
+	 * @param {GDriveFile} localStorageFile
 	 */
-	static storeFile(localStorageFile) {
-		const files = localStorage.getItem(`${LocalStorage.#GDRIVE_FILES_KEY}`);
+	storeFile(localStorageFile) {
+		const files = JSON.parse(localStorage.getItem(this.#key)) || {};
 		files[localStorageFile.id] = localStorageFile;
-		localStorage.setItem(`${LocalStorage.#GDRIVE_FILES_KEY}`, files);
+		localStorage.setItem(this.#key, JSON.stringify(files));
 	}
 
 	/**
 	 * @param {string} fileId
-	 * @returns {LocalStorageFile}
+	 * @returns {GDriveFile}
 	 */
-	static readGDriveFileById(fileId) {
-		const files = localStorage.getItem(`${LocalStorage.#GDRIVE_FILES_KEY}`) || [];
-		const gDriveFile = files.find((file) => file.id === fileId);
-		return gDriveFile;
+	readGDriveFileById(fileId) {
+		const files = JSON.parse(localStorage.getItem(this.#key)) || {};
+		const file = files[fileId];
+		return file;
 	}
 
 	/**
 	 * @param {number} forYear
 	 * @param {number} forMonth
-	 * @returns {LocalStorageFile}
+	 * @returns {GDriveFile}
 	 */
-	static readStorageFile(forYear, forMonth) {
-		/** @type {Array<LocalStorageFile>} */
-		const files = localStorage.getItem(`${LocalStorage.#GDRIVE_FILES_KEY}`) || [];
-		const gDriveFile = files.find((file) => file.year === forYear && file.month === forMonth);
+	readStorageFile(forYear, forMonth) {
+		/** @type {Array<GDriveFile>} */
+		const files = JSON.parse(localStorage.getItem(this.#key)) || {};
+		const gDriveFile = Object.values(files).find((f) => f.year === forYear && f.month === forMonth);
 		return gDriveFile;
 	}
 }

@@ -20,6 +20,15 @@ export default class PlanningController {
 	/** @type {string} */
 	#defaultStatement = undefined;
 
+	/** @type {PlanningCache} */
+	#cache = undefined;
+
+	/** @type {boolean} */
+	#gDriveEnabled = false;
+
+	/** @type {PlanningGDrive} */
+	#planningGDrive = undefined;
+
 	constructor(forYear = undefined, forMonth = undefined, forStatement = undefined) {
 		const queryString = window.location.search;
 		const urlParams = new URLSearchParams(queryString);
@@ -50,6 +59,8 @@ export default class PlanningController {
 		} else {
 			this.#defaultStatement = '';
 		}
+
+		this.#gDriveEnabled = true;
 	}
 
 	/**
@@ -58,10 +69,10 @@ export default class PlanningController {
 	 */
 	async init(fetchDefaultPlanning = false) {
 		this.#caches = await PlanningCache.getAll();
-		const planningCache = await PlanningCache.get(this.#defaultYear);
+		this.#cache = await PlanningCache.get(this.#defaultYear);
 		// TODO ask user if he wants to fetch defaults from server
 		if (fetchDefaultPlanning) {
-			const emptyCache = (await planningCache.count()) === 0;
+			const emptyCache = (await this.#cache.count()) === 0;
 			if (emptyCache) {
 				await fetch(PlanningCache.PLANNING_TEMPLATE_URI)
 					.then((response) => response.json())
@@ -70,30 +81,40 @@ export default class PlanningController {
 						const time = now.getTime();
 						const year = now.getFullYear();
 						const month = now.getMonth();
-						planningCache.storePlanning(new Planning(time, year, month, planningFile), time);
+						this.#cache.storePlanning(new Planning(time, year, month, planningFile), time);
 					});
 			}
 		}
-		const planning = (await planningCache.readForMonth(this.#defaultMonth))[0];
-		const currentYearScreen = await this.initPlanningScreen(planning);
+		const planning = (await this.#cache.readForMonth(this.#defaultMonth));
+		const screen = await this.initPlanningScreen(planning);
 
 		this.#caches.forEach((cache) => {
-			currentYearScreen.appendYear(cache.year);
+			screen.appendYear(cache.year);
 		});
-		const planningsPerMonths = await planningCache.readAll();
+		const planningsPerMonths = await this.#cache.readAll();
 		planningsPerMonths.forEach((plan) => {
-			currentYearScreen.appendMonth(plan.month);
+			screen.appendMonth(plan.month);
 		});
 
-		const gDrive = await PlanningGDrive.get(this.#defaultYear);
-		if (await gDrive.fileChanged(this.#defaultMonth)) {
-			const gDrivePlanning = await gDrive.read(this.#defaultMonth);
-			await planningCache.storePlanning(gDrivePlanning);
-		} else {
-			await gDrive.write(planning);
+		if (this.#gDriveEnabled) {
+			this.#planningGDrive = await PlanningGDrive.get(this.#defaultYear);
+			this.fetchFromGDrive();
 		}
 
-		return currentYearScreen;
+		return screen;
+	}
+
+	async fetchFromGDrive() {
+		if (await this.#planningGDrive.fileChanged(this.#defaultMonth)) {
+			const planning = (await this.#cache.readForMonth(this.#defaultMonth));
+			if (planning) {
+				this.#cache.delete(planning.id);
+			}
+
+			const gDrivePlanning = await this.#planningGDrive.read(this.#defaultMonth);
+			await this.#cache.storePlanning(gDrivePlanning);
+			this.#defaultScreen.refresh(gDrivePlanning);
+		}
 	}
 
 	/**
@@ -102,11 +123,12 @@ export default class PlanningController {
 	 */
 	async initPlanningScreen(planning) {
 		this.#defaultScreen = new PlanningScreen(planning);
+		// TODO replace this with methods
 		this.#defaultScreen.onClickUpdate = this.onClickUpdate.bind(this);
 		this.#defaultScreen.onStatementAdded = this.onClickAddStatement.bind(this);
 		this.#defaultScreen.onClickDeletePlanning(this.onClickedDeletePlanning.bind(this));
-		this.#defaultScreen.init();
 		this.#defaultScreen.onClickedShowStatement(this.#defaultStatement);
+		this.#defaultScreen.init();
 		return this.#defaultScreen;
 	}
 
@@ -114,20 +136,21 @@ export default class PlanningController {
 	 * @param {Promise<Planning>} planning
 	 */
 	async onClickUpdate(planning) {
-		await Promise.all(
-			this.#caches
-				.filter((cache) => cache.year === planning.year)
-				.map(async (cache) => cache.storePlanning(planning)),
-		);
+		await this.#cache.storePlanning(planning);
+		if (this.#gDriveEnabled) {
+			const success = this.#planningGDrive.store(planning);
+			if (!success) this.#planningGDrive.markDirty(planning);
+		}
 	}
 
 	/**
 	 * @param {Planning} planning
 	 */
 	async onClickedDeletePlanning(planning) {
-		await Promise.all(this.#caches
-			.filter((cache) => cache.year === planning.year)
-			.map((cache) => cache.delete(planning.id)));
+		await this.#cache.delete(planning.id);
+		if (this.#gDriveEnabled) {
+			this.#planningGDrive.delete(planning);
+		}
 	}
 
 	/**
@@ -137,7 +160,7 @@ export default class PlanningController {
 		const date = new Date(statement.id);
 		const planningCache = await PlanningCache.get(date.getFullYear());
 		if (planningCache) {
-			let planning = (await planningCache.readForMonth(date.getMonth()))[0];
+			let planning = (await planningCache.readForMonth(date.getMonth()));
 			if (planning) {
 				planning.statements.push(statement);
 			} else {

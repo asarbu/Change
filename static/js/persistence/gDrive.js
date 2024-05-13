@@ -323,6 +323,10 @@ export default class GDrive {
 		return fileId;
 	}
 
+	async deleteFile(fileId) {
+		// TODO implement
+	}
+
 	/**
 	 * Find a file with a name under a folder
 	 * @param {string} name Name of file to search
