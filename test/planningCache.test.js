@@ -123,10 +123,8 @@ describe('Planning cache', () => {
 	it('read all plannings for a month', async () => {
 		await storeEmptyPlanningCachesForAYear();
 		const currentMonth = now.getMonth();
-		const planningsForCurrentMonth = await defaultPlanningCache.readForMonth(currentMonth);
-		planningsForCurrentMonth.forEach((planning) => {
-			expect(planning.month).toBe(currentMonth);
-		});
+		const planningForCurrentMonth = await defaultPlanningCache.readForMonth(currentMonth);
+		expect(planningForCurrentMonth.month).toBe(currentMonth);
 	});
 
 	it('reads all expense categories for a planning object', async () => {

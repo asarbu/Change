@@ -120,16 +120,16 @@ export default class PlanningCache {
 	}
 
 	/**
-	 * Returns the first planning for a single month
+	 * Returns the planning for a single month
 	 * @param {number} month for which to search the cache
-	 * @returns {Promise<Array<Planning>>}
+	 * @returns {Promise<Planning>}
 	 */
 	async readForMonth(month) {
-		const plannings = [];
 		const keyRange = IDBKeyRange.only(month);
 		const objects = await this.#idb.getAllByIndex(`${this.year}`, 'byMonth', keyRange);
-		objects.forEach((object) => plannings.push(Planning.fromJavascriptObject(object)));
-		return plannings;
+		if (objects.length > 1) throw Error('More than one monthly planning encountered in cache');
+		if (objects.length === 0) return undefined;
+		return Planning.fromJavascriptObject(objects[0]);
 	}
 
 	/**

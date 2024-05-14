@@ -47,7 +47,7 @@ describe('Planning controller', () => {
 		jest.useFakeTimers().setSystemTime(new Date(1990, 0));
 		const newStatemenet = new Statement(now.getTime(), 'Statement Name', Statement.EXPENSE);
 		await planningController.onClickAddStatement(newStatemenet);
-		const cachedPlanning = (await planningCache.readForMonth(now.getMonth()))[0];
+		const cachedPlanning = (await planningCache.readForMonth(now.getMonth()));
 		const cachedStatement =	cachedPlanning
 			.statements.find((statement) => statement.id === now.getTime());
 		expect(cachedStatement.name).toBe(newStatemenet.name);
