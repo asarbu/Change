@@ -108,7 +108,7 @@ export default class PlanningController {
 		if (await this.#planningGDrive.fileChanged(this.#defaultMonth)) {
 			const planning = (await this.#cache.readForMonth(this.#defaultMonth));
 			if (planning) {
-				this.#cache.delete(planning.id);
+				await this.#cache.delete(planning.id);
 			}
 
 			const gDrivePlanning = await this.#planningGDrive.read(this.#defaultMonth);
