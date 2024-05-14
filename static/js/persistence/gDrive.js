@@ -313,14 +313,14 @@ export default class GDrive {
 	 * @returns {Promise<String>} id of the file where data was written
 	 */
 	async writeFile(parent, fileName, data, overwrite) {
-		let fileId = localStorage.getItem(fileName);
-		if (!fileId) fileId = await this.findFile(fileName, parent);
+		const fileId = await this.findFile(fileName, parent);
 		if (!fileId) {
-			fileId = await this.write(fileName, parent, data);
-		} else if (overwrite) {
-			fileId = await this.update(fileId, data);
+			return this.write(fileName, parent, data);
 		}
-		return fileId;
+		if (overwrite) {
+			return this.update(fileId, data);
+		}
+		return undefined;
 	}
 
 	async deleteFile(fileId) {
