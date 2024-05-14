@@ -1,6 +1,6 @@
 import GDrive from '../../persistence/gDrive.js';
-import LocalStorage from '../../persistence/localStorage.js';
 import GDriveFileInfo from '../../persistence/gDriveFileInfo.js';
+import LocalStorage from '../../persistence/localStorage.js';
 import Utils from '../../utils/utils.js';
 import Planning from '../model/planningModel.js';
 
@@ -9,7 +9,7 @@ export default class PlanningGDrive {
 	#year = undefined;
 
 	/** @type {string} */
-	#yearFolderId = undefined;
+	#gdriveFolderId = undefined;
 
 	/** @type {LocalStorage} */
 	#localStorage = undefined;
@@ -38,7 +38,6 @@ export default class PlanningGDrive {
 		this.#gDrive = await GDrive.get(true);
 		this.#localStorage = new LocalStorage(LocalStorage.GDRIVE_FILES_KEY);
 
-		// TODO look in localStorage first
 		let changeAppFolderId = await this.#gDrive.findChangeAppFolder();
 		if (!changeAppFolderId) {
 			changeAppFolderId = await this.#gDrive.createFolder(GDrive.APP_FOLDER);
@@ -51,13 +50,13 @@ export default class PlanningGDrive {
 		}
 		if (!planningFolderId) throw Error('Could not create "Planning" folder in GDrive');
 
-		const yearFolderId = await this.#gDrive.findFolder(`${this.#year}`, planningFolderId);
+		let yearFolderId = await this.#gDrive.findFolder(`${this.#year}`, planningFolderId);
 		if (!yearFolderId) {
-			await this.#gDrive.createFolder(`${this.#year}`, planningFolderId);
+			yearFolderId = await this.#gDrive.createFolder(`${this.#year}`, planningFolderId);
 		}
 		if (!yearFolderId) throw Error(`Could not create Planning folder ${this.#year} in GDrive`);
 
-		this.#yearFolderId = yearFolderId;
+		this.#gdriveFolderId = yearFolderId;
 	}
 
 	// #region CRUD operations
@@ -65,23 +64,20 @@ export default class PlanningGDrive {
 	 * @param {Planning} planning
 	 */
 	async store(planning) {
+		const gdriveFile = await this.#initializeLocalStorageFile(planning.month);
+		this.#markDirty(gdriveFile);
 		const fileName = this.#buildFileName(planning.month);
-		// File should be marked dirty in case write does not succeed
-		const fileInfo = await this.#initializeFileInfo(planning.month);
-		this.#markDirty(fileInfo);
-		const gDriveId = await this.#gDrive.writeFile(this.#yearFolderId, fileName, planning, true);
-
-		if (gDriveId) {
-			fileInfo.gDriveId = gDriveId;
-			this.#updateModifiedTime(fileInfo);
-		}
-
-		return gDriveId;
+		const fileId = await this.#gDrive.writeFile(this.#gdriveFolderId, fileName, planning, true);
+		const gDriveMetadata = await this.#gDrive.readFileMetadata(fileId, GDrive.MODIFIED_TIME_FIELD);
+		const modifiedTime = new Date(gDriveMetadata[GDrive.MODIFIED_TIME_FIELD]).getTime();
+		gdriveFile.modified = modifiedTime;
+		gdriveFile.gDriveId = fileId;
+		this.#markClean(gdriveFile);
 	}
 
 	async delete(planning) {
-		const fileInfo = await this.#initializeFileInfo(planning.month);
-		return this.#gDrive.delete(fileInfo.gDriveId);
+		const localStorageFile = await this.#initializeLocalStorageFile(planning.month);
+		return this.gdrive.delete(localStorageFile.gDriveId);
 	}
 
 	/**
@@ -91,22 +87,18 @@ export default class PlanningGDrive {
 	 * @returns {Promise<Planning>}
 	 */
 	async read(forMonth) {
-		const fileInfo = await this.#initializeFileInfo(forMonth);
-		if (!fileInfo.gDriveId) {
+		const localStorageFile = await this.#initializeLocalStorageFile(forMonth);
+		if (!localStorageFile.gDriveId) {
 			return undefined;
 		}
-		const gDriveFile = await this.#gDrive.readFile(fileInfo.gDriveId);
-		if (gDriveFile) {
-			// Run this asynchronously to avoid performance issues
-			this.#updateModifiedTime(fileInfo);
-			return Planning.fromJavascriptObject(gDriveFile);
-		}
-		return undefined;
+		this.#updateLocalStorageModifiedField(localStorageFile.id);
+		const gDriveFile = await this.#gDrive.readFile(localStorageFile.gDriveId);
+		return Planning.fromJavascriptObject(gDriveFile);
 	}
 
 	async readAll() {
-		if (!this.#yearFolderId) throw new Error('Planning Gdrivenot properly initialized');
-		const children = await this.#gDrive.getChildren(this.#yearFolderId);
+		if (!this.#gdriveFolderId) throw new Error('Planning Gdrivenot properly initialized');
+		const children = await this.#gDrive.getChildren(this.#gdriveFolderId);
 		return children;
 	}
 
@@ -123,13 +115,13 @@ export default class PlanningGDrive {
 	 * @returns {Promise<boolean>}
 	 */
 	async fileChanged(forMonth) {
-		const fileInfo = await this.#initializeFileInfo(forMonth);
-		const { gDriveId } = fileInfo;
-		if (gDriveId) {
+		const localStorageFile = await this.#initializeLocalStorageFile(forMonth);
+		const gDriveFileId = localStorageFile.gDriveId;
+		if (gDriveFileId) {
 			const metadata = await this.#gDrive
-				.readFileMetadata(gDriveId, GDrive.MODIFIED_TIME_FIELD);
+				.readFileMetadata(gDriveFileId, GDrive.MODIFIED_TIME_FIELD);
 			const modifiedTime = new Date(metadata[GDrive.MODIFIED_TIME_FIELD]).getTime();
-			if (fileInfo.modified < modifiedTime) {
+			if (localStorageFile.modified < modifiedTime) {
 				return true;
 			}
 		}
@@ -137,55 +129,54 @@ export default class PlanningGDrive {
 	}
 
 	// #region GDrive LocalStorage operations
+	async #updateLocalStorageModifiedField(fileId) {
+		const localStorageFile = this.#localStorage.readById(fileId);
+		const metadata = await this.#gDrive.readFileMetadata(
+			localStorageFile.gDriveId,
+			GDrive.MODIFIED_TIME_FIELD,
+		);
+		const modifiedTime = new Date(metadata[GDrive.MODIFIED_TIME_FIELD]).getTime();
+		localStorageFile.modified = modifiedTime;
+		this.#localStorage.store(localStorageFile);
+	}
+
 	/**
 	 * Reads file metadata from localStorage and GDrive.
 	 * Initializes an empty one in case none is found
 	 * @param {number} forMonth
 	 * @returns {Promise<GDriveFileInfo>}
 	 */
-	async #initializeFileInfo(forMonth) {
-		if (!this.#yearFolderId) throw new Error('Planning GDrive not properly initialized');
-
+	async #initializeLocalStorageFile(forMonth) {
+		if (!this.#gdriveFolderId) throw new Error('Planning Gdrivenot properly initialized');
 		const fileName = this.#buildFileName(forMonth);
-		let fileInfo = this.#localStorage.readById(fileName);
-		if (!fileInfo || !fileInfo.gDriveId) {
-			// File might be present remotely
-			const gDriveId = await this.#gDrive.findFile(fileName, this.#yearFolderId);
+		let localStorageFile = this.#localStorage.readById(fileName);
+		if (!localStorageFile || !localStorageFile.gDriveId) {
+			const gDriveId = await this.#gDrive.findFile(fileName, this.#gdriveFolderId);
 			if (gDriveId) {
-				const metadata = await this.#gDrive.readFileMetadata(gDriveId, GDrive.MODIFIED_TIME_FIELD);
-				const modifiedTime = new Date(metadata[GDrive.MODIFIED_TIME_FIELD]).getTime();
-				fileInfo = new GDriveFileInfo(fileName, this.#year, forMonth, gDriveId, modifiedTime);
-				this.#localStorage.store(fileInfo);
+				// Store 0 in modified time to force load
+				localStorageFile = new GDriveFileInfo(fileName, gDriveId, 0);
+				this.#localStorage.store(localStorageFile);
 			} else {
-				fileInfo = new GDriveFileInfo(fileName, this.#year, forMonth, undefined, 0, true);
+				localStorageFile = new GDriveFileInfo(fileName, undefined, 0, true);
 			}
 		}
-		return fileInfo;
+		return localStorageFile;
+	}
+
+	#markDirty(gDriveFile) {
+		const dirtyFile = gDriveFile;
+		dirtyFile.dirty = true;
+		this.#localStorage.storeFile(dirtyFile);
+	}
+
+	#markClean(gDriveFile) {
+		const cleanFile = gDriveFile;
+		cleanFile.dirty = false;
+		this.#localStorage.storeFile(cleanFile);
 	}
 
 	#buildFileName(forMonth) {
 		return `Planning_${this.#year}_${Utils.nameForMonth(forMonth)}.json`;
-	}
-
-	#markDirty(fileInfo) {
-		const gDriveFileInfo = fileInfo;
-		gDriveFileInfo.dirty = true;
-		this.#localStorage.store(gDriveFileInfo);
-	}
-
-	/**
-	 * Read modified time for the file and updates it in local storage.
-	 * Clears dirty bit.
-	 * @param {GDriveFileInfo} fileInfo
-	 */
-	async #updateModifiedTime(fileInfo) {
-		const gDriveFileInfo = fileInfo;
-		const gDriveMetadata = await this.#gDrive
-			.readFileMetadata(gDriveFileInfo.gDriveId, GDrive.MODIFIED_TIME_FIELD);
-		const modifiedTime = new Date(gDriveMetadata[GDrive.MODIFIED_TIME_FIELD]).getTime();
-		gDriveFileInfo.modified = modifiedTime;
-		gDriveFileInfo.dirty = false;
-		this.#localStorage.store(gDriveFileInfo);
 	}
 	// #endregion
 }
