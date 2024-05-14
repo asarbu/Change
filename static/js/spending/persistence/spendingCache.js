@@ -10,20 +10,13 @@ export default class SpendingCache {
 	 */
 	static #initializedCaches = [];
 
-	static async getAll() {
+	static async getAllCacheNames() {
 		const idb = await Idb.of(
 			SpendingCache.DATABASE_NAME,
 			SpendingCache.upgradeSpendingsDb,
 		);
 		const objectStores = idb.getObjectStores();
-		const spendingsArray = new Array(objectStores.length);
-		for (let i = 0; i < objectStores.length; i += 1) {
-			const storeName = objectStores[i];
-			const spendingCache = new SpendingCache(storeName, idb);
-			spendingsArray[i] = (spendingCache);
-		}
-		SpendingCache.#initializedCaches = spendingsArray;
-		return spendingsArray;
+		return objectStores;
 	}
 
 	/**
@@ -96,9 +89,20 @@ export default class SpendingCache {
 	 * Persist a spending in cache at a certain key
 	 * @param {Spending} spending Spending to persist
 	 */
-	async insert(spending) {
-		await this.idb.insert(this.year, spending, spending.id);
-		this.onChange(spending);
+	async store(spending) {
+		const spendingToStore = spending;
+		// Used for IndexedDb indeces
+		spendingToStore.month = spending.spentOn.getMonth();
+		spendingToStore.day = spending.spentOn.getDay();
+		await this.idb.insert(this.year, spendingToStore, spending.id);
+	}
+
+	/**
+	 * @param {Array<Spending>} spendings
+	 * @returns {Promise<void>}
+	 */
+	async storeAll(spendings) {
+		return this.idb.putAll(this.storeName, spendings);
 	}
 
 	/**
@@ -107,7 +111,10 @@ export default class SpendingCache {
 	 */
 	async delete(spending) {
 		await this.idb.delete(this.year, spending.id);
-		this.onChange(spending);
+	}
+
+	async clear() {
+		await this.idb.clear(this.storeName);
 	}
 
 	/**
@@ -121,23 +128,6 @@ export default class SpendingCache {
 			return localStorage.getItem(storageKey);
 		}
 		return new Date(0).getTime();
-	}
-
-	/**
-	 * Persists the time of edit for cache in permanent storage
-	 * @param {Spending} spending Spending for which to record the edit
-	 * @param {number} time Timestamp to store in storage
-	 */
-	onChange(spending, time) {
-		if (!spending) {
-			throw new Error(`Illegal arguments!${this.year}${spending}${time}`);
-		}
-
-		const storageKey = `Cache_modified_${this.year}_${spending.boughtOn.getMonth()}`;
-		if (time) {
-			localStorage.setItem(storageKey, time);
-		}
-		localStorage.setItem(storageKey, new Date().getTime());
 	}
 
 	/**

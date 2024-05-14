@@ -71,7 +71,7 @@ export default class SpendingScreen {
 	 * Builds or rebuilds the slice with the given report
 	 * @param {SpendingReport} spendingReport
 	 */
-	updateMonth(spendingReport) {
+	refreshMonth(spendingReport) {
 		let reportSlice = this.#drawnSlices.get(spendingReport.month());
 		const sliceId = `slice_${spendingReport.month()}`;
 		if (!reportSlice) {
@@ -285,7 +285,7 @@ export default class SpendingScreen {
 	appendEditableRowToSlice(spending) {
 		const onClickDelete = this.onClickDeleteSpending.bind(this);
 		const onSpendingChanged = this.onSpendingChanged.bind(this);
-		const boughtOn = spending.boughtOn.toLocaleString('en-GB', { day: 'numeric', month: 'short' });
+		const boughtOn = spending.spentOn.toLocaleString('en-GB', { day: 'numeric', month: 'short' });
 		const newRow = new Dom('tr').id(spending.id).userData(spending).append(
 			new Dom('td').text(spending.description).editable().onKeyUp(onSpendingChanged),
 			new Dom('td').text(boughtOn).editable().onKeyUp(onSpendingChanged),
@@ -307,7 +307,7 @@ export default class SpendingScreen {
 	 * @param {Spending} spending
 	 */
 	appendReadOnlyRowToSlice(spending) {
-		const boughtOn = spending.boughtOn.toLocaleString('en-GB', { day: 'numeric', month: 'short' });
+		const boughtOn = spending.spentOn.toLocaleString('en-GB', { day: 'numeric', month: 'short' });
 		const newRow = new Dom('tr').id(spending.id).userData(spending).append(
 			new Dom('td').text(spending.description),
 			new Dom('td').text(boughtOn),
@@ -381,7 +381,7 @@ export default class SpendingScreen {
 			spending.description = cell.textContent;
 			break;
 		case 1:
-			spending.boughtOn = cell.valueAsDate;
+			spending.spentOn = cell.valueAsDate;
 			break;
 		case 2:
 			spending.category = cell.textContent;

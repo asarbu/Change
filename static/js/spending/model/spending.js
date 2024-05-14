@@ -2,16 +2,16 @@ export default class Spending {
 	/**
 	 * @param {id} id Unique identifier of this spending
 	 * @param {string} type Spending type (Expense, Saving)
-	 * @param {string} category Spending category (Taken from planning)
 	 * @param {Date} spentOn Date when this spending was created.
+	 * @param {string} category Spending category (Taken from planning)
 	 * @param {string} description Spending description
 	 * @param {number} price Amount spent on this spending
 	 */
-	constructor(id, type, category, spentOn, description, price) {
+	constructor(id, type, spentOn, category, description, price) {
 		this.id = id;
 		this.type = type;
+		this.spentOn = spentOn;
 		this.category = category;
-		this.boughtOn = spentOn;
 		this.description = description;
 		this.price = price;
 	}
