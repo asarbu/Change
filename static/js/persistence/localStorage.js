@@ -21,6 +21,7 @@ export default class LocalStorage {
 	 */
 	store(object) {
 		const objectId = object.id;
+		if (!objectId) throw Error('No object id provided');
 		const objectClone = object;
 		const files = JSON.parse(localStorage.getItem(this.#key)) || {};
 		// Do not waste space by storing ID twice (in main object and in stored object)
