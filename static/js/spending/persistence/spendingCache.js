@@ -74,14 +74,25 @@ export default class SpendingCache {
 		const fromDate = new Date(this.year, month, 1);
 		const toDate = new Date(this.year, month + 1, 1);
 		const keyRange = IDBKeyRange.bound(fromDate, toDate);
-		return this.idb.getAllByIndex(this.year, 'byBoughtDate', keyRange);
+		return this.idb.getAllByIndex(this.year, 'bySpentOn', keyRange);
 	}
 
 	/**
 	 * @returns {Promise<Array<Spending>>}
 	 */
 	async readAll() {
-		const spendings = this.idb.getAll(this.year);
+		const objects = await this.idb.getAll(this.year);
+		const spendings = [];
+		objects.forEach((object) => {
+			spendings.push(new Spending(
+				object.id,
+				object.type,
+				object.spentOn,
+				object.category,
+				object.description,
+				+object.price,
+			));
+		});
 		return spendings;
 	}
 
@@ -146,7 +157,7 @@ export default class SpendingCache {
 		if (oldVersion < newVersion) {
 			objectStores.forEach((objectStore) => {
 				const store = db.createObjectStore(objectStore, { autoIncrement: true });
-				store.createIndex('byBoughtDate', 'boughtOn', { unique: false });
+				store.createIndex('bySpentOn', 'spentOn', { unique: false });
 				store.createIndex('byCategory', 'category', { unique: false });
 			});
 		}

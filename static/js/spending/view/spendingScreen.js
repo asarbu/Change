@@ -200,8 +200,11 @@ export default class SpendingScreen {
 		const budgetTotal = goals.reduce((accumulator, current) => accumulator + current.monthly, 0);
 		const spendingTotal = spendingReport.total();
 		return spentGoals.map((goal) => {
-			const spentForGoal = spendingReport.totalForGoal(goal);
-			const budgetForGoal = goals.find((plannedGoal) => plannedGoal.name === goal).monthly;
+			const spentForGoal = spendingReport.totalForGoal(goal).toFixed(2);
+			const foundGoal = goals.find((plannedGoal) => plannedGoal.name === goal);
+			if (!foundGoal)
+				alert(`Goal not found in planning ${goal}`);
+			const budgetForGoal = foundGoal.monthly;
 			return new Dom('tr').append(
 				new Dom('td').text(goal),
 				new Dom('td').text(spentForGoal),
@@ -285,10 +288,10 @@ export default class SpendingScreen {
 	appendEditableRowToSlice(spending) {
 		const onClickDelete = this.onClickDeleteSpending.bind(this);
 		const onSpendingChanged = this.onSpendingChanged.bind(this);
-		const boughtOn = spending.spentOn.toLocaleString('en-GB', { day: 'numeric', month: 'short' });
+		const spentOn = spending.spentOn.toLocaleString('en-GB', { day: 'numeric', month: 'short' });
 		const newRow = new Dom('tr').id(spending.id).userData(spending).append(
 			new Dom('td').text(spending.description).editable().onKeyUp(onSpendingChanged),
-			new Dom('td').text(boughtOn).editable().onKeyUp(onSpendingChanged),
+			new Dom('td').text(spentOn).editable().onKeyUp(onSpendingChanged),
 			new Dom('td').text(spending.category).editable().onKeyUp(onSpendingChanged),
 			new Dom('td').text(spending.price).editable().onKeyUp(onSpendingChanged),
 			new Dom('td').hideable(this.editMode).append(
@@ -307,10 +310,10 @@ export default class SpendingScreen {
 	 * @param {Spending} spending
 	 */
 	appendReadOnlyRowToSlice(spending) {
-		const boughtOn = spending.spentOn.toLocaleString('en-GB', { day: 'numeric', month: 'short' });
+		const spentOn = spending.spentOn.toLocaleString('en-GB', { day: 'numeric', month: 'short' });
 		const newRow = new Dom('tr').id(spending.id).userData(spending).append(
 			new Dom('td').text(spending.description),
-			new Dom('td').text(boughtOn),
+			new Dom('td').text(spentOn),
 			new Dom('td').text(spending.category),
 			new Dom('td').text(spending.price),
 			new Dom('td').hideable(this.editMode),
@@ -324,7 +327,7 @@ export default class SpendingScreen {
 		event.preventDefault();
 		const newSpending = {
 			id: new Date().getTime(),
-			boughtOn: document.getElementById('date-input-field').valueAsDate,
+			spentOn: document.getElementById('date-input-field').valueAsDate,
 			description: document.getElementById('description-input-field').value,
 			price: +document.getElementById('price-input-field').value,
 			category: document.getElementById('category-input-field').value,

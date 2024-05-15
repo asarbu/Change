@@ -26,6 +26,9 @@ export default class Spending {
 		if (key === 'spentOn') {
 			return new Date(value);
 		}
+		if (key === 'price') {
+			return +value;
+		}
 		return value;
 	}
 }

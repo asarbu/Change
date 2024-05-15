@@ -5,6 +5,7 @@ import PlanningCache from '../../planning/persistence/planningCache.js';
 import Spending from '../model/spending.js';
 import SpendingReport from '../model/spendingReport.js';
 import Utils from '../../utils/utils.js';
+import { Statement } from '../../planning/model/planningModel.js';
 
 export default class SpendingController {
 	/** @type {SpendingCache} */
@@ -25,7 +26,7 @@ export default class SpendingController {
 	/** @type { SpendingGDrive } */
 	#spendingGdrive = undefined;
 
-	constructor() {
+	constructor(gDriveEnabled = false) {
 		const now = new Date();
 		const queryString = window.location.search;
 		const urlParams = new URLSearchParams(queryString);
@@ -33,20 +34,15 @@ export default class SpendingController {
 		const month = Utils.monthForName((urlParams.get('month')));
 		this.#defaultYear = year || now.getFullYear();
 		this.#defaultMonth = month || now.getMonth();
-		this.#gDriveEnabled = true;
-
-		/*
-		if (gdriveSync) {
-			// this.spendingGDrive = new SpendingGDrive(this.#spendingCache);
-			// this.planningGDrive = new PlanningGDrive(this.#planningCache);
-		} */
+		this.#gDriveEnabled = gDriveEnabled;
 	}
 
 	async init() {
 		const planningCache = await PlanningCache.get(this.#defaultYear);
 		this.#cache = await SpendingCache.get(this.#defaultYear);
 
-		const expenseCategories = [];
+		const planning = await planningCache.readForMonth(this.#defaultMonth);
+		const expenseCategories = await planning.readCategories(Statement.EXPENSE);
 		const spendings = await this.#cache.readAll();
 
 		/** @type {Map<number, SpendingReport>} */
@@ -102,7 +98,7 @@ export default class SpendingController {
 	/**
 	 * Fetch spending data from cache and build spending report from it
 	 * @param {number} forMonth
-	 * @returns {SpendingReport}
+	 * @returns {Promise<SpendingReport>}
 	 */
 	async buildSpendingReport(forMonth) {
 		const spendings = await this.#cache.readAllForMonth(forMonth);
@@ -120,21 +116,25 @@ export default class SpendingController {
 		const month = spending.spentOn.getMonth();
 
 		if (year !== this.#cache.year) {
-			const cache = SpendingCache.get(spending.spentOn.getFullYear());
-			await cache.insert(spending);
+			const cache = await SpendingCache.get(spending.spentOn.getFullYear());
+			await cache.store(spending);
 
 			if (this.#gDriveEnabled) {
-				this.#spendingGdrive.store(spending);
+				// TODO fetch info from GDrive first
+				return this.#spendingGdrive.storeSpending(spending);
 			}
-			return;
+			return spending;
 		}
-		await this.#cache.insert(spending);
-		const spendingReport = this.buildSpendingReport(year, month);
+		await this.#cache.store(spending);
+		const spendingReport = await this.buildSpendingReport(month);
 		this.#defaultScreen.refreshMonth(spendingReport);
 
 		if (this.#gDriveEnabled) {
-			this.#spendingGdrive.store(spending);
+			await this.fetchFromGDrive();
+			const spendings = await this.#cache.readAllForMonth(month);
+			return this.#spendingGdrive.storeSpendings(spendings);
 		}
+		return spending;
 	}
 
 	/**
@@ -143,13 +143,13 @@ export default class SpendingController {
 	 */
 	async onDeleteReport(spendingReport) {
 		const year = spendingReport.year();
-		const cache = await this.openSpendingCache(year);
+		const cache = await SpendingCache.get(year);
 		const spendings = spendingReport.spendings();
 
 		spendings.forEach(async (spending) => {
 			const localSpending = await cache.read(spending.id);
 			localSpending.deleted = true;
-			cache.insert(localSpending);
+			cache.store(localSpending);
 		});
 	}
 
@@ -191,7 +191,7 @@ export default class SpendingController {
 			if (gDriveSpendings) {
 				await this.#cache.storeAll(gDriveSpendings);
 				const monthlyReport = this.buildSpendingReport(this.#defaultMonth);
-				this.#defaultScreen.refresh(monthlyReport);
+				this.#defaultScreen.refreshMonth(monthlyReport);
 			}
 		}
 	}

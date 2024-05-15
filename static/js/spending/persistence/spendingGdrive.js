@@ -76,6 +76,10 @@ export default class SpendingGDrive {
 		this.#gDriveFolderId = yearFolderId;
 	}
 
+	/**
+	 * @param {number} forMonth
+	 * @returns {Spending}
+	 */
 	async readAll(forMonth) {
 		const localStorageFile = await this.#initializeLocalStorageFile(forMonth);
 		if (!localStorageFile.gDriveId) {
@@ -93,7 +97,7 @@ export default class SpendingGDrive {
 				date,
 				value.category,
 				value.description,
-				value.price,
+				+value.price,
 			);
 			spendings.push(spending);
 		});
@@ -101,12 +105,24 @@ export default class SpendingGDrive {
 		return spendings;
 	}
 
-	async store(spending) {
+	async storeSpending(spending) {
 		const gdriveFile = await this.#initializeLocalStorageFile(spending.month);
 		this.#markDirty(gdriveFile);
 		const fileName = this.#buildFileName(spending.month);
-		const spendings = this.readAll(spending.month);
+		const spendings = await this.readAll(spending.month);
 		spendings.push(spending);
+		const fileId = await this.#gDrive.writeFile(this.#gDriveFolderId, fileName, spendings, true);
+		const gDriveMetadata = await this.#gDrive.readFileMetadata(fileId, GDrive.MODIFIED_TIME_FIELD);
+		const modifiedTime = new Date(gDriveMetadata[GDrive.MODIFIED_TIME_FIELD]).getTime();
+		gdriveFile.modified = modifiedTime;
+		gdriveFile.gDriveId = fileId;
+		this.#markClean(gdriveFile);
+	}
+
+	async storeSpendings(spendings, forMonth) {
+		const gdriveFile = await this.#initializeLocalStorageFile(forMonth);
+		this.#markDirty(gdriveFile);
+		const fileName = this.#buildFileName(forMonth);
 		const fileId = await this.#gDrive.writeFile(this.#gDriveFolderId, fileName, spendings, true);
 		const gDriveMetadata = await this.#gDrive.readFileMetadata(fileId, GDrive.MODIFIED_TIME_FIELD);
 		const modifiedTime = new Date(gDriveMetadata[GDrive.MODIFIED_TIME_FIELD]).getTime();
@@ -169,13 +185,13 @@ export default class SpendingGDrive {
 	#markDirty(gDriveFile) {
 		const dirtyFile = gDriveFile;
 		dirtyFile.dirty = true;
-		this.#localStorage.storeFile(dirtyFile);
+		this.#localStorage.store(dirtyFile);
 	}
 
 	#markClean(gDriveFile) {
 		const cleanFile = gDriveFile;
 		cleanFile.dirty = false;
-		this.#localStorage.storeFile(cleanFile);
+		this.#localStorage.store(cleanFile);
 	}
 
 	#buildFileName(forMonth) {
