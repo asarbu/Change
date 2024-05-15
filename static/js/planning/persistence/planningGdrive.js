@@ -17,6 +17,9 @@ export default class PlanningGDrive {
 	/** @type {GDrive} */
 	#gDrive = undefined;
 
+	/** @type {boolean} */
+	#rememberLogin = false;
+
 	/**
 	 * @param {number} forYear
 	 * @returns {Promise<PlanningGDrive>}
@@ -30,12 +33,13 @@ export default class PlanningGDrive {
 	/**
 	 * @param {number} forYear
 	 */
-	constructor(forYear) {
+	constructor(forYear, rememberLogin) {
 		this.#year = forYear;
+		this.#rememberLogin = rememberLogin;
 	}
 
 	async init() {
-		this.#gDrive = await GDrive.get(true);
+		this.#gDrive = await GDrive.get(this.#rememberLogin);
 		this.#localStorage = new LocalStorage(LocalStorage.GDRIVE_FILES_KEY);
 
 		let changeAppFolderId = await this.#gDrive.findChangeAppFolder();

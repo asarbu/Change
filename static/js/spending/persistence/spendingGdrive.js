@@ -27,9 +27,11 @@ export default class SpendingGDrive {
 	/** @type {LocalStorage} */
 	#localStorage = undefined;
 
+	/** @type {boolean} */
+	#rememberLogin = false;
+
 	static async getAll() {
-		const rememberLogin = true;
-		const gDrive = await GDrive.get(rememberLogin);
+		const gDrive = await GDrive.get(true);
 		await gDrive.init();
 		const root = await gDrive.findChangeAppFolder();
 		const children = await gDrive.getChildren(root);
@@ -37,22 +39,22 @@ export default class SpendingGDrive {
 	}
 
 	static async get(forYear) {
-		const spendingGDrive = new SpendingGDrive(forYear);
+		const spendingGDrive = new SpendingGDrive(forYear, true);
 		await spendingGDrive.init();
 		return spendingGDrive;
 	}
 
 	/**
 	 * Use Get static factory method to instantiate this class
-	 * @param {GDrive} gDrive Gdrive associated with this object
 	 * @param {number} forYear Year folder to bind the logic to
 	 */
-	constructor(forYear) {
+	constructor(forYear, rememberLogin) {
 		this.#year = forYear;
+		this.#rememberLogin = rememberLogin;
 	}
 
 	async init() {
-		this.#gDrive = await GDrive.get(this.#year);
+		this.#gDrive = await GDrive.get(this.#rememberLogin);
 		this.#localStorage = new LocalStorage(LocalStorage.GDRIVE_FILES_KEY);
 
 		let changeAppFolderId = await this.#gDrive.findChangeAppFolder();
