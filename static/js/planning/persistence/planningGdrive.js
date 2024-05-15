@@ -166,13 +166,13 @@ export default class PlanningGDrive {
 	#markDirty(gDriveFile) {
 		const dirtyFile = gDriveFile;
 		dirtyFile.dirty = true;
-		this.#localStorage.storeFile(dirtyFile);
+		this.#localStorage.store(dirtyFile);
 	}
 
 	#markClean(gDriveFile) {
 		const cleanFile = gDriveFile;
 		cleanFile.dirty = false;
-		this.#localStorage.storeFile(cleanFile);
+		this.#localStorage.store(cleanFile);
 	}
 
 	#buildFileName(forMonth) {
