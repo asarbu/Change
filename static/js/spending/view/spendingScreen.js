@@ -202,8 +202,7 @@ export default class SpendingScreen {
 		return spentGoals.map((goal) => {
 			const spentForGoal = spendingReport.totalForGoal(goal).toFixed(2);
 			const foundGoal = goals.find((plannedGoal) => plannedGoal.name === goal);
-			if (!foundGoal)
-				alert(`Goal not found in planning ${goal}`);
+			if (!foundGoal) alert(`Goal not found in planning ${goal}`);
 			const budgetForGoal = foundGoal.monthly;
 			return new Dom('tr').append(
 				new Dom('td').text(goal),
@@ -315,7 +314,7 @@ export default class SpendingScreen {
 			new Dom('td').text(spending.description),
 			new Dom('td').text(spentOn),
 			new Dom('td').text(spending.category),
-			new Dom('td').text(spending.price),
+			new Dom('td').text(spending.price.toFixed(2)),
 			new Dom('td').hideable(this.editMode),
 		);
 
