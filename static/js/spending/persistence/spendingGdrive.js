@@ -91,10 +91,16 @@ export default class SpendingGDrive {
 		/** @type {Array} */
 		const array = await this.#gDrive.readFile(localStorageFile.gDriveId);
 		const spendings = [];
-		array.forEach(({ key, value }) => {
-			const date = new Date(this.#year, forMonth, value.boughtDate.split(' ')[1]);
+		array.forEach((value) => {
+			let date;
+			// TODO remove this after migration of old version
+			if (value.boughtDate) {
+				date = new Date(this.#year, forMonth, value.boughtDate.split(' ')[1]);
+			} else {
+				date = new Date(value.spentOn);
+			}
 			const spending = new Spending(
-				key,
+				value.id,
 				Statement.EXPENSE,
 				date,
 				value.category,

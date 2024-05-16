@@ -132,7 +132,7 @@ export default class SpendingController {
 		if (this.#gDriveEnabled) {
 			await this.fetchFromGDrive();
 			const spendings = await this.#cache.readAllForMonth(month);
-			return this.#spendingGdrive.storeSpendings(spendings);
+			return this.#spendingGdrive.storeSpendings(spendings, month);
 		}
 		return spending;
 	}
@@ -190,7 +190,7 @@ export default class SpendingController {
 			const gDriveSpendings = await this.#spendingGdrive.readAll(this.#defaultMonth);
 			if (gDriveSpendings) {
 				await this.#cache.storeAll(gDriveSpendings);
-				const monthlyReport = this.buildSpendingReport(this.#defaultMonth);
+				const monthlyReport = await this.buildSpendingReport(this.#defaultMonth);
 				this.#defaultScreen.refreshMonth(monthlyReport);
 			}
 		}

@@ -73,7 +73,7 @@ export default class SpendingCache {
 	async readAllForMonth(month) {
 		const fromDate = new Date(this.year, month, 1);
 		const toDate = new Date(this.year, month + 1, 1);
-		const keyRange = IDBKeyRange.bound(fromDate, toDate);
+		const keyRange = IDBKeyRange.bound(fromDate, toDate, false, true);
 		return this.idb.getAllByIndex(this.year, 'bySpentOn', keyRange);
 	}
 
@@ -126,19 +126,6 @@ export default class SpendingCache {
 
 	async clear() {
 		await this.idb.clear(this.storeName);
-	}
-
-	/**
-	 * Returns the timestamp when this cache was modified last time. Defaults to 0 epoch time.
-	 * @param {number} forMonth Month for which to check when the cache was last modified
-	 * @returns {number} time when this cache was modified
-	 */
-	timeOfChange(forMonth) {
-		const storageKey = `Cache_modified_${this.year}_${forMonth}`;
-		if (localStorage.getItem(storageKey)) {
-			return localStorage.getItem(storageKey);
-		}
-		return new Date(0).getTime();
 	}
 
 	/**
