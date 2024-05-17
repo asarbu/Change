@@ -102,9 +102,6 @@ export default class SpendingCache {
 	 */
 	async store(spending) {
 		const spendingToStore = spending;
-		// Used for IndexedDb indeces
-		spendingToStore.month = spending.spentOn.getMonth();
-		spendingToStore.day = spending.spentOn.getDay();
 		await this.idb.insert(this.year, spendingToStore, spending.id);
 	}
 

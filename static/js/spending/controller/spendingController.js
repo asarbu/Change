@@ -67,7 +67,6 @@ export default class SpendingController {
 			expenseCategories,
 		);
 		this.#defaultScreen.init();
-		this.#defaultScreen.refreshMonth(spendingReports.get(this.#defaultMonth));
 		this.#defaultScreen.onCreateSpendingCallback = this.onCreateSpending.bind(this);
 		this.#defaultScreen.onSaveReportCallback = this.onSaveReport.bind(this);
 		this.#defaultScreen.onDeleteReportCallback = this.onDeleteReport.bind(this);
@@ -77,21 +76,23 @@ export default class SpendingController {
 			this.#defaultScreen.updateYear(spendingCache.year);
 		});
 
-		for (let pastMonth = this.#defaultMonth - 1; pastMonth >= 0; pastMonth -= 1) {
-			if (spendingReports.has(pastMonth)) {
-				this.#defaultScreen.refreshMonth(spendingReports.get(pastMonth));
+		for (let month = 0; month < 12; month += 1) {
+			if (spendingReports.has(month)) {
+				this.#defaultScreen.refreshMonth(spendingReports.get(month));
 			}
 		}
 
-		for (let futureMonth = this.#defaultMonth + 1; futureMonth < 12; futureMonth += 1) {
-			if (spendingReports.has(futureMonth)) {
-				this.#defaultScreen.refreshMonth(spendingReports.get(futureMonth));
-			}
-		}
+		this.#defaultScreen.jumpToMonth(this.#defaultMonth);
 
 		if (this.#gDriveEnabled) {
-			this.#spendingGdrive = await SpendingGDrive.get(this.#defaultYear);
-			this.fetchFromGDrive();
+			this.fetchAllfromGDrive(this.#defaultYear);
+		}
+	}
+
+	async fetchAllfromGDrive(forYear) {
+		this.#spendingGdrive = await SpendingGDrive.get(forYear);
+		for (let month = 0; month < 12; month += 1) {
+			this.fetchFromGDrive(month);
 		}
 	}
 
@@ -130,7 +131,7 @@ export default class SpendingController {
 		this.#defaultScreen.refreshMonth(spendingReport);
 
 		if (this.#gDriveEnabled) {
-			await this.fetchFromGDrive();
+			await this.fetchFromGDrive(month);
 			const spendings = await this.#cache.readAllForMonth(month);
 			return this.#spendingGdrive.storeSpendings(spendings, month);
 		}
@@ -178,19 +179,26 @@ export default class SpendingController {
 			this.#defaultScreen.refreshMonth(spendingReport);
 		}
 
-		/* if(gdriveSync) {
-			await this.syncGDrive(month);
-		} */
+		if (this.#gDriveEnabled) {
+			await this.fetchFromGDrive(month);
+			const gDriveSpendings = await this.#cache.readAllForMonth(month);
+			return this.#spendingGdrive.storeSpendings(gDriveSpendings, month);
+		}
 	}
 
-	async fetchFromGDrive() {
-		if (await this.#spendingGdrive.fileChanged(this.#defaultMonth)) {
-			await this.#cache.clear();
+	async fetchFromGDrive(forMonth) {
+		let month;
+		if (forMonth === undefined) {
+			month = new Date().getMonth();
+		} else {
+			month = forMonth;
+		}
 
-			const gDriveSpendings = await this.#spendingGdrive.readAll(this.#defaultMonth);
+		if (await this.#spendingGdrive.fileChanged(month)) {
+			const gDriveSpendings = await this.#spendingGdrive.readAll(month);
 			if (gDriveSpendings) {
 				await this.#cache.storeAll(gDriveSpendings);
-				const monthlyReport = await this.buildSpendingReport(this.#defaultMonth);
+				const monthlyReport = await this.buildSpendingReport(month);
 				this.#defaultScreen.refreshMonth(monthlyReport);
 			}
 		}
