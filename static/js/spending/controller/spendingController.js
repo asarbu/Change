@@ -26,7 +26,7 @@ export default class SpendingController {
 	/** @type { SpendingGDrive } */
 	#spendingGdrive = undefined;
 
-	constructor(gDriveEnabled = false) {
+	constructor(gDriveEnabled) {
 		const now = new Date();
 		const queryString = window.location.search;
 		const urlParams = new URLSearchParams(queryString);
