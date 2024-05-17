@@ -80,6 +80,8 @@ export default class SpendingScreen {
 			);
 			this.section.append(reportSlice);
 			this.navbar.appendMonth(spendingReport.month());
+			// Screen changed, effects need reinitialization
+			this.gfx.init(this.screen.toHtml());
 		} else {
 			const sliceTable = document.getElementById(`table-${spendingReport.month()}`);
 			reportSlice.toHtml().removeChild(sliceTable);
@@ -107,6 +109,19 @@ export default class SpendingScreen {
 			reportSlice.toHtml(),
 		);
 		this.gfx.slideTo(sliceIndex);
+	}
+
+	/**
+	 * Jumps to the month selected without animation
+	 * @param {number} month
+	 */
+	jumpToMonth(month) {
+		const reportSlice = this.#drawnSlices.get(month);
+		const sliceIndex = Array.prototype.indexOf.call(
+			this.section.toHtml().childNodes,
+			reportSlice.toHtml(),
+		);
+		this.gfx.jumpTo(sliceIndex);
 	}
 
 	/**
