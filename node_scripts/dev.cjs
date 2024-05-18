@@ -23,4 +23,5 @@ fs.copyFile('./static/js/planning.json', './dist/planning.json', () => {});
 fs.copyFile('./manifest.json', './dist/manifest.json', () => {});
 fs.copyFile('./static/html/index.html', './dist/index.html', (error) => { if (error) throw new Error(error); });
 fs.copyFile('./static/html/planning.html', './dist/planning.html', (error) => { if (error) throw new Error(error); });
+fs.copyFile('./static/html/settings.html', './dist/settings.html', (error) => { if (error) throw new Error(error); });
 fs.copyFile('./static/icons/favicon.ico', './dist/favicon.ico', (error) => { if (error) throw new Error(error); });

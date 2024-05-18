@@ -248,12 +248,11 @@ export default class PlanningScreen {
 
 	onClickedDeletePlanning(planning) {
 		if (this.#onClickedDeletePlanning) {
-			const areYouSureModal = new Modal('are-you-sure-delete-planning')
-				.header(
-					new Dom('h1').text('Are you sure you want to delete planning?'),
-				)
-				.addCancelYesFooter(this.#onClickedDeletePlanning.bind(this, planning))
-				.open();
+			const areYouSureModal = Modal.areYouSureModal(
+				'are-you-sure-delete-planning',
+				'Are you sure you want to delete planning?',
+				this.#onClickedDeletePlanning.bind(this, planning),
+			).open();
 			const main = document.getElementById('main');
 			main.appendChild(areYouSureModal.toHtml());
 			return areYouSureModal;

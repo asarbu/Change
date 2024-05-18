@@ -35,8 +35,8 @@ export default class Sidenav {
 		this.#sideNavDom = new Dom('div').id('sidenav').cls('sidenav').append(
 			new Dom('a').cls('view-link').attr('href', Sidenav.PLANNING_SUFFIX).text('Plannings'),
 			new Dom('a').cls('view-link').attr('href', Sidenav.SPENDING_SUFFIX).text('Spendings'),
-			new Dom('a').cls('view-link').attr('href', Sidenav.SPENDING_SUFFIX).text('Savings'),
-			new Dom('a').cls('view-link').attr('href', Sidenav.SPENDING_SUFFIX).text('Settings'),
+			new Dom('a').cls('view-link').attr('href', Sidenav.SAVING_SUFFIX).text('Savings'),
+			new Dom('a').cls('view-link').attr('href', Sidenav.SETTINGS_SUFFIX).text('Settings'),
 		);
 
 		this.#fragment = new DocumentFragment();

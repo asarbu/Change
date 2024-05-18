@@ -1,38 +1,25 @@
-{% extends "Base.html" %}
-
-{% block tabs %}
-<li class="tab">
-	<a class="active" href="#Settings"><h6>Settings</h6></a>
-</li>
-{% endblock %}
-
-{% block content %}
-<div id="Settings" class="container">
-	<div class="section no-pad-bot">
-		<div class="container">
-			<div class="row center">
-				<h5 class="header col s12 light">Change here the synchronization details</h5>
-			</div>
-		</div>
-	</div>
-	<p>
-		<label>
-			<input id="GdriveSync" type="checkbox" />
-			<span style="color: black;">Sync to Google Drive</span>
-		</label>
-	</p>
-	<p>
-		<label>
-			<input id="GdriveKeepLoggedIn" type="checkbox" disabled="disabled" />
-			<span id="GdriveKeepLoggedInSpan">Keep me logged in (not working on Apple products)</span>
-		</label>
-	  </p>
-</div>
-{% endblock %}
-{% block script %}
-<script src="static/js/icons.js"></script>
-<script src="static/js/gui.js"></script>
-<script src="static/js/orm.js"></script>
-<script src="static/js/settings.js"></script>
-<script>initSettings()</script>
-{% endblock %}
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0" />
+		<title>Change!</title>
+		<!-- CSS  -->
+		<link href="css/style.css" type="text/css" rel="stylesheet" media="screen,projection" />
+		<link href="manifest.json" rel="manifest" />
+		<meta name="theme-color" content="#43a047"/>
+		<!-- iOS support -->
+		<link href="/icons/icon-96x96.png" rel="apple-touch-icon" />
+		<meta name="apple-mobile-web-app-status-bar" content="#43a047"/>
+	</head>
+	<body>		
+		<main id="main">
+		</main>
+		<script type="module">
+			import { Settings } from './js/app.js'
+			document.addEventListener("DOMContentLoaded", () => {
+				new Settings().init();
+			});
+		</script>
+	</body>
+</html>

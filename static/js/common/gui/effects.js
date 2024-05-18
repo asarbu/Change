@@ -21,7 +21,7 @@ export default class GraphicEffects {
 		/* Slice slider */
 		this.rootContainer = forContainer;
 		// TDO use percentages instead of width
-		// this.containerWidth = this.rootContainer.clientWidth;
+		this.containerWidth = this.rootContainer.clientWidth;
 		this.sliderWrapper = this.rootContainer.querySelector('.section');
 		this.lastIndex = this.sliderWrapper.children.length + 1;
 		// TDO reuse in memory DOM elements in order to accelerate reflows (use few DOM nodes)

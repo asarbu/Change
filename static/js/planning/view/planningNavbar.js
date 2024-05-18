@@ -69,12 +69,11 @@ export default class PlanningNavbar {
 			this.#selectedStatement = planning.statements[0].name;
 		}
 
-		const main = document.getElementById('main');
-		main.appendChild(this.buildYearModal().toHtml());
-		main.appendChild(this.buildMonthModal().toHtml());
-		main.appendChild(this.buildStatementModal().toHtml());
-		main.appendChild(this.buildStatementTypeModal().toHtml());
-		main.appendChild(this.buildAddStatementModal().toHtml());
+		this.buildYearModal();
+		this.buildMonthModal();
+		this.buildStatementModal();
+		this.buildStatementTypeModal();
+		this.buildAddStatementModal();
 
 		const onClickYearDropup = this.onClickedYearDropup.bind(this);
 		const onClickMonthDropup = this.onClickedMonthDropup.bind(this);

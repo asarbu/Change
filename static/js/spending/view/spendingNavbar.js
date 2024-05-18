@@ -42,12 +42,10 @@ export default class SpendingNavbar {
 		this.year = year;
 		this.#monthsInDropup = new Map();
 		this.#yearsInDropup = new Map();
-		this.#monthsDropup = new Modal();
 		this.#eventHandlers = eventHandlers;
 
-		const main = document.getElementById('main');
-		main.appendChild(this.buildMonthModal().toHtml());
-		main.appendChild(this.buildYearModal().toHtml());
+		this.buildMonthModal();
+		this.buildYearModal();
 
 		const onClickEdit = this.onClickEdit.bind(this);
 		const onClickSave = this.onClickSave.bind(this);

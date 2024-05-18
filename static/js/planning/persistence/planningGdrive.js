@@ -22,18 +22,20 @@ export default class PlanningGDrive {
 
 	/**
 	 * @param {number} forYear
+	 * @param {boolean} rememberLogin
 	 * @returns {Promise<PlanningGDrive>}
 	 */
-	static async get(forYear) {
-		const planningDrive = new PlanningGDrive(forYear);
+	static async get(forYear, rememberLogin) {
+		const planningDrive = new PlanningGDrive(forYear, rememberLogin);
 		await planningDrive.init();
 		return planningDrive;
 	}
 
 	/**
 	 * @param {number} forYear
+	 * @param {boolean} rememberLogin
 	 */
-	constructor(forYear, rememberLogin) {
+	constructor(forYear, rememberLogin = false) {
 		this.#year = forYear;
 		this.#rememberLogin = rememberLogin;
 	}

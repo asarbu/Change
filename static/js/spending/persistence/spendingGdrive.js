@@ -80,7 +80,7 @@ export default class SpendingGDrive {
 
 	/**
 	 * @param {number} forMonth
-	 * @returns {Spending}
+	 * @returns {Promise<Array<Spending>>}
 	 */
 	async readAll(forMonth) {
 		const localStorageFile = await this.#initializeLocalStorageFile(forMonth);

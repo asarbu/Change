@@ -55,9 +55,9 @@ export default class SpendingScreen {
 		this.navbar.selectMonth(this.defaultSpendingReport.month());
 		this.navbar.selectYear(this.year);
 
-		main.appendChild(this.buildCategoryModal(this.categories).toHtml());
-		main.appendChild(this.buildAddSpendingModal().toHtml());
-		main.appendChild(this.buildSpendingSummaryModal(this.defaultSpendingReport).toHtml());
+		this.buildCategoryModal(this.categories);
+		this.buildAddSpendingModal();
+		this.buildSpendingSummaryModal(this.defaultSpendingReport);
 
 		const container = this.build(this.defaultSpendingReport);
 		this.gfx = new GraphicEffects();

@@ -9,10 +9,17 @@ export default class LocalStorage {
 
 	static GDRIVE_OAUTH_KEY = 'gDrive_files';
 
+	static SETTINGS_KEY = 'settings';
+
+	/** @type {string} */
 	#key = undefined;
+
+	/** @type {Storage} */
+	#localStorage = undefined;
 
 	constructor(localStorageKey) {
 		this.#key = localStorageKey;
+		this.#localStorage = localStorage;
 	}
 
 	/**
@@ -43,5 +50,9 @@ export default class LocalStorage {
 		// put the ID back because we removed it to save space
 		object.id = objectId;
 		return object;
+	}
+
+	clear() {
+		this.#localStorage.clear();
 	}
 }

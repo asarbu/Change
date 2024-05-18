@@ -94,6 +94,15 @@ export default class Dom {
 		return this;
 	}
 
+	checked(value) {
+		if (value) {
+			this.elmt.checked = 'checked';
+		} else {
+			delete this.elmt.checked;
+		}
+		return this;
+	}
+
 	clear() {
 		this.elmt.innerHTML = '';
 		return this;
