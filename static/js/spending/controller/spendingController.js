@@ -5,27 +5,28 @@ import PlanningCache from '../../planning/persistence/planningCache.js';
 import Spending from '../model/spending.js';
 import SpendingReport from '../model/spendingReport.js';
 import Utils from '../../utils/utils.js';
+import { Statement } from '../../planning/model/planningModel.js';
 
 export default class SpendingController {
-	/** @type {Array<SpendingCache>} */
-	#spendingCaches = [];
-
 	/** @type {SpendingCache} */
-	#spendingCache = undefined;
+	#cache = undefined;
 
-	/**
-	 * Default year to select in screens
-	 * @type {number}
-	 */
+	/** @type {number} */
 	#defaultYear = undefined;
 
-	/**
-	 * Default month to select in screens
-	 * @type {number}
-	 */
+	/** @type {number} */
 	#defaultMonth = undefined;
 
-	constructor() {
+	/** @type {SpendingScreen} */
+	#defaultScreen = undefined;
+
+	/** @type {boolean} */
+	#gDriveEnabled = false;
+
+	/** @type { SpendingGDrive } */
+	#spendingGdrive = undefined;
+
+	constructor(gDriveEnabled) {
 		const now = new Date();
 		const queryString = window.location.search;
 		const urlParams = new URLSearchParams(queryString);
@@ -33,22 +34,16 @@ export default class SpendingController {
 		const month = Utils.monthForName((urlParams.get('month')));
 		this.#defaultYear = year || now.getFullYear();
 		this.#defaultMonth = month || now.getMonth();
-		this.gdriveSync = true;
-
-		/*
-		if (gdriveSync) {
-			// this.spendingGDrive = new SpendingGDrive(this.#spendingCache);
-			// this.planningGDrive = new PlanningGDrive(this.#planningCache);
-		} */
+		this.#gDriveEnabled = gDriveEnabled;
 	}
 
 	async init() {
 		const planningCache = await PlanningCache.get(this.#defaultYear);
-		this.#spendingCache = await SpendingCache.get(this.#defaultYear);
-		this.#spendingCaches = await SpendingCache.getAll();
+		this.#cache = await SpendingCache.get(this.#defaultYear);
 
-		const expenseCategories = [];
-		const spendings = await this.#spendingCache.readAll();
+		const planning = await planningCache.readForMonth(this.#defaultMonth);
+		const expenseCategories = await planning.readCategories(Statement.EXPENSE);
+		const spendings = await this.#cache.readAll();
 
 		/** @type {Map<number, SpendingReport>} */
 		const spendingReports = new Map();
@@ -58,7 +53,7 @@ export default class SpendingController {
 		);
 
 		spendings.forEach((spending) => {
-			const spendingMonth = spending.boughtOn.getMonth();
+			const spendingMonth = spending.spentOn.getMonth();
 			if (!spendingReports.has(spendingMonth)) {
 				spendingReports.set(spendingMonth, new SpendingReport(this.#defaultYear, spendingMonth));
 			}
@@ -66,125 +61,81 @@ export default class SpendingController {
 		});
 
 		/** @type {SpendingScreen} */
-		const spendingScreen = new SpendingScreen(
+		this.#defaultScreen = new SpendingScreen(
 			this.#defaultYear,
 			spendingReports.get(this.#defaultMonth),
 			expenseCategories,
 		);
-		spendingScreen.init();
-		spendingScreen.updateMonth(spendingReports.get(this.#defaultMonth));
-		spendingScreen.onCreateSpendingCallback = this.onCreateSpending.bind(this);
-		spendingScreen.onSaveReportCallback = this.onSaveReport.bind(this);
-		spendingScreen.onDeleteReportCallback = this.onDeleteReport.bind(this);
+		this.#defaultScreen.init();
+		this.#defaultScreen.onCreateSpendingCallback = this.onCreateSpending.bind(this);
+		this.#defaultScreen.onSaveReportCallback = this.onSaveReport.bind(this);
+		this.#defaultScreen.onDeleteReportCallback = this.onDeleteReport.bind(this);
 
-		this.#spendingCaches.forEach((spendingCache) => {
-			spendingScreen.updateYear(spendingCache.year);
+		const availableCaches = await SpendingCache.getAllCacheNames();
+		availableCaches.forEach((spendingCache) => {
+			this.#defaultScreen.updateYear(spendingCache.year);
 		});
 
-		for (let pastMonth = this.#defaultMonth - 1; pastMonth >= 0; pastMonth -= 1) {
-			if (spendingReports.has(pastMonth)) {
-				spendingScreen.updateMonth(spendingReports.get(pastMonth));
+		for (let month = 0; month < 12; month += 1) {
+			if (spendingReports.has(month)) {
+				this.#defaultScreen.refreshMonth(spendingReports.get(month));
 			}
 		}
 
-		for (let futureMonth = this.#defaultMonth + 1; futureMonth < 12; futureMonth += 1) {
-			if (spendingReports.has(futureMonth)) {
-				spendingScreen.updateMonth(spendingReports.get(futureMonth));
-			}
+		this.#defaultScreen.jumpToMonth(this.#defaultMonth);
+
+		if (this.#gDriveEnabled) {
+			this.fetchAllfromGDrive(this.#defaultYear);
 		}
-
-		this.spendingScreen = spendingScreen;
-
-		/**
-		const spendingGdrive = SpendingGDrive.get(this.#defaultYear, true);
-		(await spendingGdrive).init();
-		(await spendingGdrive).getAll();
-		*/
-
-		const children = await SpendingGDrive.getAll();
-		console.log(children);
-
-		/* if(gdriveSync) {
-			this.initGDrive(monthName);
-		} */
 	}
 
-	async initGDrive(monthName) {
-		await this.planningGDrive.init();
-		await this.spendingGDrive.init();
-
-		await this.syncGDrive(monthName);
-	}
-
-	async syncGDrive(monthName) {
-		const cacheLastUpdatedTime = this.#spendingCache.getLastUpdatedTime(
-			this.currentYear,
-			monthName,
-		);
-		const gdriveLastUpdatedTime = await this.spendingGDrive.getLastUpdatedTime(
-			this.currentYear,
-			monthName,
-		);
-
-		if (cacheLastUpdatedTime < gdriveLastUpdatedTime) {
-			// console.log('Found newer information on GDrive. Updating local cache');
-			await this.spendingGDrive.fetchGDriveToCache(this.currentYear, monthName);
-			this.#spendingCache.setLastUpdatedTime(this.currentYear, monthName, gdriveLastUpdatedTime);
-			/* if (this.#tabs.has(monthName)) {
-				this.refreshTab(monthName);
-				// M.toast({ html: 'Updated from GDrive', classes: 'rounded' });
-			} */
-		} else if (cacheLastUpdatedTime > gdriveLastUpdatedTime) {
-			// console.log('Found newer information on local cache. Updating GDrive');
-			const spendings = await this.#spendingCache.readAll(this.currentYear, monthName);
-			this.spendingGDrive.fetchCacheToGDrive(this.currentYear, monthName, spendings);
+	async fetchAllfromGDrive(forYear) {
+		this.#spendingGdrive = await SpendingGDrive.get(forYear);
+		for (let month = 0; month < 12; month += 1) {
+			this.fetchFromGDrive(month);
 		}
 	}
 
 	/**
 	 * Fetch spending data from cache and build spending report from it
-	 * @param {number} forYear
 	 * @param {number} forMonth
-	 * @returns {SpendingReport}
+	 * @returns {Promise<SpendingReport>}
 	 */
-	async buildSpendingReport(forYear, forMonth) {
-		const spendingCache = this.#spendingCaches.find((cache) => cache.year === forYear);
-		const spendings = await spendingCache.readAllForMonth(forMonth);
-		const spendingReport = new SpendingReport(forYear, forMonth);
+	async buildSpendingReport(forMonth) {
+		const spendings = await this.#cache.readAllForMonth(forMonth);
+		const spendingReport = new SpendingReport(this.#defaultYear, forMonth);
 		spendings.filter((currentSpending) => !currentSpending.deleted && !currentSpending.edited)
 			.forEach((currentSpending) => spendingReport.appendSpending(currentSpending));
 		return spendingReport;
 	}
 
 	/**
-	 * Opens a SpendingCache instance for the specified year
-	 * @param {number} forYear
-	 * @returns {SpendingCache}
-	 */
-	async openSpendingCache(forYear) {
-		let spendingCache = this.#spendingCaches.find((cache) => cache.year === forYear);
-		if (!spendingCache) {
-			spendingCache = await SpendingCache.get(forYear);
-			this.#spendingCaches.push(spendingCache);
-		}
-		return spendingCache;
-	}
-
-	/**
 	 * @param {Spending} spending
 	 */
 	async onCreateSpending(spending) {
-		const year = spending.boughtOn.getFullYear();
-		const month = spending.boughtOn.getMonth();
+		const year = spending.spentOn.getFullYear();
+		const month = spending.spentOn.getMonth();
 
-		const spendingCache = await this.openSpendingCache(year);
-		await spendingCache.insert(spending);
-		const spendingReport = await this.buildSpendingReport(year, month);
-		this.spendingScreen.updateMonth(spendingReport);
+		if (year !== this.#cache.year) {
+			const cache = await SpendingCache.get(spending.spentOn.getFullYear());
+			await cache.store(spending);
 
-		/* if(gdriveSync) {
-			this.syncGDrive(spending.month);
-		} */
+			if (this.#gDriveEnabled) {
+				// TODO fetch info from GDrive first
+				return this.#spendingGdrive.storeSpending(spending);
+			}
+			return spending;
+		}
+		await this.#cache.store(spending);
+		const spendingReport = await this.buildSpendingReport(month);
+		this.#defaultScreen.refreshMonth(spendingReport);
+
+		if (this.#gDriveEnabled) {
+			await this.fetchFromGDrive(month);
+			const spendings = await this.#cache.readAllForMonth(month);
+			return this.#spendingGdrive.storeSpendings(spendings, month);
+		}
+		return spending;
 	}
 
 	/**
@@ -193,13 +144,13 @@ export default class SpendingController {
 	 */
 	async onDeleteReport(spendingReport) {
 		const year = spendingReport.year();
-		const cache = await this.openSpendingCache(year);
+		const cache = await SpendingCache.get(year);
 		const spendings = spendingReport.spendings();
 
 		spendings.forEach(async (spending) => {
 			const localSpending = await cache.read(spending.id);
 			localSpending.deleted = true;
-			cache.insert(localSpending);
+			cache.store(localSpending);
 		});
 	}
 
@@ -213,23 +164,43 @@ export default class SpendingController {
 			.forEach((spending) => {
 				const spendingCopy = { ...spending };
 				delete spendingCopy.edited;
-				this.#spendingCache.insert(spendingCopy);
+				this.#cache.store(spendingCopy);
 			});
 
 		spendings
 			.filter((spending) => spending.deleted)
-			.forEach((spending) => this.#spendingCache.delete(spending));
+			.forEach((spending) => this.#cache.delete(spending));
 
-		const month = spendings ? spendings[0].boughtOn.getMonth() : undefined;
-		const year = spendings ? spendings[0].boughtOn.getFullYear() : undefined;
+		const month = spendings ? spendings[0].spentOn.getMonth() : undefined;
+		const year = spendings ? spendings[0].spentOn.getFullYear() : undefined;
 		const spendingReport = await this.buildSpendingReport(year, month);
 
 		if (month !== undefined && year !== undefined) {
-			this.spendingScreen.updateMonth(spendingReport);
+			this.#defaultScreen.refreshMonth(spendingReport);
 		}
 
-		/* if(gdriveSync) {
-			await this.syncGDrive(month);
-		} */
+		if (this.#gDriveEnabled) {
+			await this.fetchFromGDrive(month);
+			const gDriveSpendings = await this.#cache.readAllForMonth(month);
+			return this.#spendingGdrive.storeSpendings(gDriveSpendings, month);
+		}
+	}
+
+	async fetchFromGDrive(forMonth) {
+		let month;
+		if (forMonth === undefined) {
+			month = new Date().getMonth();
+		} else {
+			month = forMonth;
+		}
+
+		if (await this.#spendingGdrive.fileChanged(month)) {
+			const gDriveSpendings = await this.#spendingGdrive.readAll(month);
+			if (gDriveSpendings) {
+				await this.#cache.storeAll(gDriveSpendings);
+				const monthlyReport = await this.buildSpendingReport(month);
+				this.#defaultScreen.refreshMonth(monthlyReport);
+			}
+		}
 	}
 }

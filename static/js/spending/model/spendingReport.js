@@ -42,9 +42,13 @@ export default class SpendingReport {
 		this.#goals.add(spending.category);
 	}
 
+	/**
+	 * @param {Spending} spending
+	 * @returns {boolean}
+	 */
 	invalidBoughtDate(spending) {
-		return spending.boughtOn.getMonth() !== this.#month
-			|| spending.boughtOn.getFullYear() !== this.#year;
+		return spending.spentOn.getMonth() !== this.#month
+			|| spending.spentOn.getFullYear() !== this.#year;
 	}
 
 	/**
@@ -87,7 +91,7 @@ export default class SpendingReport {
 
 	/**
 	 * Returns a copy of the category data in current report
-	 * @returns {Array<Goal}
+	 * @returns {Array<Goal>}
 	 */
 	goals() {
 		return [...this.#goals];

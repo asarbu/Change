@@ -71,7 +71,7 @@ export default class SpendingScreen {
 	 * Builds or rebuilds the slice with the given report
 	 * @param {SpendingReport} spendingReport
 	 */
-	updateMonth(spendingReport) {
+	refreshMonth(spendingReport) {
 		let reportSlice = this.#drawnSlices.get(spendingReport.month());
 		const sliceId = `slice_${spendingReport.month()}`;
 		if (!reportSlice) {
@@ -80,6 +80,8 @@ export default class SpendingScreen {
 			);
 			this.section.append(reportSlice);
 			this.navbar.appendMonth(spendingReport.month());
+			// Screen changed, effects need reinitialization
+			this.gfx.init(this.screen.toHtml());
 		} else {
 			const sliceTable = document.getElementById(`table-${spendingReport.month()}`);
 			reportSlice.toHtml().removeChild(sliceTable);
@@ -107,6 +109,19 @@ export default class SpendingScreen {
 			reportSlice.toHtml(),
 		);
 		this.gfx.slideTo(sliceIndex);
+	}
+
+	/**
+	 * Jumps to the month selected without animation
+	 * @param {number} month
+	 */
+	jumpToMonth(month) {
+		const reportSlice = this.#drawnSlices.get(month);
+		const sliceIndex = Array.prototype.indexOf.call(
+			this.section.toHtml().childNodes,
+			reportSlice.toHtml(),
+		);
+		this.gfx.jumpTo(sliceIndex);
 	}
 
 	/**
@@ -200,8 +215,10 @@ export default class SpendingScreen {
 		const budgetTotal = goals.reduce((accumulator, current) => accumulator + current.monthly, 0);
 		const spendingTotal = spendingReport.total();
 		return spentGoals.map((goal) => {
-			const spentForGoal = spendingReport.totalForGoal(goal);
-			const budgetForGoal = goals.find((plannedGoal) => plannedGoal.name === goal).monthly;
+			const spentForGoal = spendingReport.totalForGoal(goal).toFixed(2);
+			const foundGoal = goals.find((plannedGoal) => plannedGoal.name === goal);
+			if (!foundGoal) alert(`Goal not found in planning ${goal}`);
+			const budgetForGoal = foundGoal.monthly;
 			return new Dom('tr').append(
 				new Dom('td').text(goal),
 				new Dom('td').text(spentForGoal),
@@ -285,10 +302,10 @@ export default class SpendingScreen {
 	appendEditableRowToSlice(spending) {
 		const onClickDelete = this.onClickDeleteSpending.bind(this);
 		const onSpendingChanged = this.onSpendingChanged.bind(this);
-		const boughtOn = spending.boughtOn.toLocaleString('en-GB', { day: 'numeric', month: 'short' });
+		const spentOn = spending.spentOn.toLocaleString('en-GB', { day: 'numeric', month: 'short' });
 		const newRow = new Dom('tr').id(spending.id).userData(spending).append(
 			new Dom('td').text(spending.description).editable().onKeyUp(onSpendingChanged),
-			new Dom('td').text(boughtOn).editable().onKeyUp(onSpendingChanged),
+			new Dom('td').text(spentOn).editable().onKeyUp(onSpendingChanged),
 			new Dom('td').text(spending.category).editable().onKeyUp(onSpendingChanged),
 			new Dom('td').text(spending.price).editable().onKeyUp(onSpendingChanged),
 			new Dom('td').hideable(this.editMode).append(
@@ -307,12 +324,12 @@ export default class SpendingScreen {
 	 * @param {Spending} spending
 	 */
 	appendReadOnlyRowToSlice(spending) {
-		const boughtOn = spending.boughtOn.toLocaleString('en-GB', { day: 'numeric', month: 'short' });
+		const spentOn = spending.spentOn.toLocaleString('en-GB', { day: 'numeric', month: 'short' });
 		const newRow = new Dom('tr').id(spending.id).userData(spending).append(
 			new Dom('td').text(spending.description),
-			new Dom('td').text(boughtOn),
+			new Dom('td').text(spentOn),
 			new Dom('td').text(spending.category),
-			new Dom('td').text(spending.price),
+			new Dom('td').text(spending.price.toFixed(2)),
 			new Dom('td').hideable(this.editMode),
 		);
 
@@ -324,7 +341,7 @@ export default class SpendingScreen {
 		event.preventDefault();
 		const newSpending = {
 			id: new Date().getTime(),
-			boughtOn: document.getElementById('date-input-field').valueAsDate,
+			spentOn: document.getElementById('date-input-field').valueAsDate,
 			description: document.getElementById('description-input-field').value,
 			price: +document.getElementById('price-input-field').value,
 			category: document.getElementById('category-input-field').value,
@@ -381,7 +398,7 @@ export default class SpendingScreen {
 			spending.description = cell.textContent;
 			break;
 		case 1:
-			spending.boughtOn = cell.valueAsDate;
+			spending.spentOn = cell.valueAsDate;
 			break;
 		case 2:
 			spending.category = cell.textContent;

@@ -10,20 +10,13 @@ export default class SpendingCache {
 	 */
 	static #initializedCaches = [];
 
-	static async getAll() {
+	static async getAllCacheNames() {
 		const idb = await Idb.of(
 			SpendingCache.DATABASE_NAME,
 			SpendingCache.upgradeSpendingsDb,
 		);
 		const objectStores = idb.getObjectStores();
-		const spendingsArray = new Array(objectStores.length);
-		for (let i = 0; i < objectStores.length; i += 1) {
-			const storeName = objectStores[i];
-			const spendingCache = new SpendingCache(storeName, idb);
-			spendingsArray[i] = (spendingCache);
-		}
-		SpendingCache.#initializedCaches = spendingsArray;
-		return spendingsArray;
+		return objectStores;
 	}
 
 	/**
@@ -80,15 +73,26 @@ export default class SpendingCache {
 	async readAllForMonth(month) {
 		const fromDate = new Date(this.year, month, 1);
 		const toDate = new Date(this.year, month + 1, 1);
-		const keyRange = IDBKeyRange.bound(fromDate, toDate);
-		return this.idb.getAllByIndex(this.year, 'byBoughtDate', keyRange);
+		const keyRange = IDBKeyRange.bound(fromDate, toDate, false, true);
+		return this.idb.getAllByIndex(this.year, 'bySpentOn', keyRange);
 	}
 
 	/**
 	 * @returns {Promise<Array<Spending>>}
 	 */
 	async readAll() {
-		const spendings = this.idb.getAll(this.year);
+		const objects = await this.idb.getAll(this.year);
+		const spendings = [];
+		objects.forEach((object) => {
+			spendings.push(new Spending(
+				object.id,
+				object.type,
+				object.spentOn,
+				object.category,
+				object.description,
+				+object.price,
+			));
+		});
 		return spendings;
 	}
 
@@ -96,9 +100,17 @@ export default class SpendingCache {
 	 * Persist a spending in cache at a certain key
 	 * @param {Spending} spending Spending to persist
 	 */
-	async insert(spending) {
-		await this.idb.insert(this.year, spending, spending.id);
-		this.onChange(spending);
+	async store(spending) {
+		const spendingToStore = spending;
+		await this.idb.insert(this.year, spendingToStore, spending.id);
+	}
+
+	/**
+	 * @param {Array<Spending>} spendings
+	 * @returns {Promise<void>}
+	 */
+	async storeAll(spendings) {
+		return this.idb.putAll(this.storeName, spendings);
 	}
 
 	/**
@@ -107,37 +119,10 @@ export default class SpendingCache {
 	 */
 	async delete(spending) {
 		await this.idb.delete(this.year, spending.id);
-		this.onChange(spending);
 	}
 
-	/**
-	 * Returns the timestamp when this cache was modified last time. Defaults to 0 epoch time.
-	 * @param {number} forMonth Month for which to check when the cache was last modified
-	 * @returns {number} time when this cache was modified
-	 */
-	timeOfChange(forMonth) {
-		const storageKey = `Cache_modified_${this.year}_${forMonth}`;
-		if (localStorage.getItem(storageKey)) {
-			return localStorage.getItem(storageKey);
-		}
-		return new Date(0).getTime();
-	}
-
-	/**
-	 * Persists the time of edit for cache in permanent storage
-	 * @param {Spending} spending Spending for which to record the edit
-	 * @param {number} time Timestamp to store in storage
-	 */
-	onChange(spending, time) {
-		if (!spending) {
-			throw new Error(`Illegal arguments!${this.year}${spending}${time}`);
-		}
-
-		const storageKey = `Cache_modified_${this.year}_${spending.boughtOn.getMonth()}`;
-		if (time) {
-			localStorage.setItem(storageKey, time);
-		}
-		localStorage.setItem(storageKey, new Date().getTime());
+	async clear() {
+		await this.idb.clear(this.storeName);
 	}
 
 	/**
@@ -156,7 +141,7 @@ export default class SpendingCache {
 		if (oldVersion < newVersion) {
 			objectStores.forEach((objectStore) => {
 				const store = db.createObjectStore(objectStore, { autoIncrement: true });
-				store.createIndex('byBoughtDate', 'boughtOn', { unique: false });
+				store.createIndex('bySpentOn', 'spentOn', { unique: false });
 				store.createIndex('byCategory', 'category', { unique: false });
 			});
 		}

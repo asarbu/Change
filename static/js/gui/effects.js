@@ -54,14 +54,22 @@ export default class GraphicEffects {
 	}
 
 	slideTo(index) {
+		this.currentIndex = +index;
+		// TODO remove this if not necessary. I am not sure why was needed
+		// this.currentIndex = Math.min(this.currentIndex, this.lastIndex);
+		requestAnimationFrame(() => {
+			this.sliderWrapper.style.transition = 'transform 0.2s linear';
+			this.sliderWrapper.style.transform = `translateX(${-this.containerWidth * index}px)`;
+		});
+	}
+
+	jumpTo(index) {
 		if (!this.containerWidth) {
 			this.containerWidth = this.rootContainer.clientWidth;
 		}
 
 		this.currentIndex = +index;
-		this.currentIndex = Math.min(this.currentIndex, this.lastIndex);
 		requestAnimationFrame(() => {
-			this.sliderWrapper.style.transition = 'transform 0.2s linear';
 			this.sliderWrapper.style.transform = `translateX(${-this.containerWidth * index}px)`;
 		});
 	}
@@ -77,9 +85,6 @@ export default class GraphicEffects {
 
 	startSlider(e) {
 		this.mouseDown = true;
-		if (!this.containerWidth) {
-			this.containerWidth = this.rootContainer.clientWidth;
-		}
 
 		// check desktop or mobile
 		this.startX = e.clientX ? e.clientX : e.touches[0].screenX;
@@ -149,78 +154,3 @@ export default class GraphicEffects {
 		this.slideTo(this.currentIndex);
 	}
 }
-
-/* function createRow(table, data, options) {
-	var index = -1;
-	if (options.index) {
-		index = options.index;
-	}
-	const row = table.tBodies[0].insertRow(index);
-	var dataCell;
-
-	for (const dataCtn of Object.values(data)) {
-		dataCell = row.insertCell(-1);
-		dataCell.textContent = dataCtn;
-		if (!options.readonly) {
-			dataCell.setAttribute('editable', true);
-		}
-		if (options.useBold == true) {
-			dataCell.style.fontWeight = 'bold';
-		}
-	}
-
-	if (options.color) {
-		dataCell.style.color = options.color;
-	}
-
-	if (options.deletable) {
-		const buttonsCell = row.insertCell(-1);
-		const btn = create('button');
-		btn.classList.add('waves-effect', 'waves-light', 'red', 'btn-small');
-		buttonsCell.appendChild(btn);
-		const img = create('img');
-		img.classList.add('white-fill');
-		img.innerText = 'Delete';
-		img.alt = 'Delete';
-		img.src = icons.delete;
-		btn.appendChild(img)
-
-		buttonsCell.setAttribute('hideable', 'true');
-		if (options.hidden) {
-			buttonsCell.style.display = 'none';
-		}
-	}
-	// console.log("Created row", row)
-	return row;
-}
-
-var percentColors = [
-	{ pct: 0.0, color: { r: 0x00, g: 0xdf, b: 0 } },
-	{ pct: 0.5, color: { r: 0xdf, g: 0xdf, b: 0 } },
-	{ pct: 1.0, color: { r: 0xdf, g: 0x00, b: 0 } }];
-
-function getColorForPercentage(pct) {
-
-	if (pct > 1) {
-		pct = 1
-	}
-
-	for (var i = 1; i < percentColors.length - 1; i++) {
-		if (pct < percentColors[i].pct) {
-			break;
-		}
-	}
-	var lower = percentColors[i - 1];
-	var upper = percentColors[i];
-	var range = upper.pct - lower.pct;
-	var rangePct = (pct - lower.pct) / range;
-	var pctLower = 1 - rangePct;
-	var pctUpper = rangePct;
-	var color = {
-		r: Math.floor(lower.color.r * pctLower + upper.color.r * pctUpper),
-		g: Math.floor(lower.color.g * pctLower + upper.color.g * pctUpper),
-		b: Math.floor(lower.color.b * pctLower + upper.color.b * pctUpper)
-	};
-	return 'rgb(' + [color.r, color.g, color.b].join(',') + ')';
-	// or output as hex if preferred
-}; */

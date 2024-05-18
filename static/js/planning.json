@@ -1,11 +1,11 @@
 [
 	{
-		"id": "VitalExpenses",
+		"id": "VitalExpensesStatement",
 		"name": "Vital expenses",
 		"type": "Expense",
 		"categories": [
 			{
-				"id": "VitalExpenses",
+				"id": "VitalExpensesCategory",
 				"name": "Vital Expenses",
 				"goals": [
 					{
@@ -122,7 +122,7 @@
 				]
 			},
 			{
-				"id": "Transport",
+				"id": "TransportCateogry",
 				"name": "Transport",
 				"goals": [
 					{
@@ -198,7 +198,7 @@
 				]
 			},
 			{
-				"id": "Savings",
+				"id": "SavingsCategory",
 				"name": "Savings",
 				"goals": [
 					{
@@ -234,12 +234,12 @@
 		]
 	},
 	{
-		"id": "OptionalExpenses",
+		"id": "OptionalExpensesStatement",
 		"name": "Optional expenses",
 		"type": "Expense",
 		"categories": [
 			{
-				"id": "OptionalExpenses",
+				"id": "OptionalExpensesCategory",
 				"name": "Optional expenses",
 				"goals": [
 					{
@@ -301,11 +301,11 @@
 				]
 			},
 			{
-				"id": "WastedMoney",
+				"id": "WastedMoneyStatement",
 				"name": "Wasted Money",
 				"goals": [
 					{
-						"id": "Cigarettes",
+						"id": "CigarettesCategory",
 						"name": "Cigarettes",
 						"daily": 0,
 						"monthly": 0,
@@ -330,12 +330,12 @@
 		]
 	},
 	{
-		"id": "Debt",
+		"id": "DebtStatement",
 		"name": "Debt",
 		"type": "Expense",
 		"categories": [
 			{
-				"id": "Debt",
+				"id": "DebtCategory",
 				"name": "Debt",
 				"goals": [
 					{
@@ -364,12 +364,12 @@
 		]
 	},
 	{
-		"id": "Income",
+		"id": "IncomeStatement",
 		"name": "Income",
 		"type": "Income",
 		"categories": [
 			{
-				"id": "ActiveIncome",
+				"id": "ActiveIncomeCategory",
 				"name": "Active Income",
 				"goals": [
 					{
@@ -403,7 +403,7 @@
 				]
 			},
 			{
-				"id": "PassiveIncome",
+				"id": "PassiveIncomeCategory",
 				"name": "Passive Income",
 				"goals": [
 					{

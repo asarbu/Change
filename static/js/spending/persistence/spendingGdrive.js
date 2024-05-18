@@ -1,4 +1,9 @@
 import GDrive from '../../persistence/gDrive.js';
+import GDriveFileInfo from '../../persistence/gDriveFileInfo.js';
+import LocalStorage from '../../persistence/localStorage.js';
+import { Statement } from '../../planning/model/planningModel.js';
+import Utils from '../../utils/utils.js';
+import Spending from '../model/spending.js';
 import SpendingCache from './spendingCache.js';
 
 export default class SpendingGDrive {
@@ -13,14 +18,20 @@ export default class SpendingGDrive {
 	 */
 	#gDrive = undefined;
 
+	/** @type {number} */
 	#year = undefined;
 
-	/** @type {Array<SpendingGDrive>} */
-	static #initializedGDrives = [];
+	/** @type {string} */
+	#gDriveFolderId = undefined;
+
+	/** @type {LocalStorage} */
+	#localStorage = undefined;
+
+	/** @type {boolean} */
+	#rememberLogin = false;
 
 	static async getAll() {
-		const rememberLogin = true;
-		const gDrive = await GDrive.get(rememberLogin);
+		const gDrive = await GDrive.get(true);
 		await gDrive.init();
 		const root = await gDrive.findChangeAppFolder();
 		const children = await gDrive.getChildren(root);
@@ -28,132 +39,170 @@ export default class SpendingGDrive {
 	}
 
 	static async get(forYear) {
-		const rememberLogin = true;
-		const initializedSpending = this.#initializedGDrives.find((init) => init.#year === forYear);
-		if (initializedSpending) return initializedSpending;
-
-		const gDrive = await GDrive.get(rememberLogin);
-		gDrive.init();
-		const spendingGDrive = new SpendingGDrive(forYear, gDrive);
-		this.#initializedGDrives.push(spendingGDrive);
+		const spendingGDrive = new SpendingGDrive(forYear, true);
+		await spendingGDrive.init();
 		return spendingGDrive;
 	}
 
 	/**
 	 * Use Get static factory method to instantiate this class
-	 * @param {GDrive} gDrive Gdrive associated with this object
 	 * @param {number} forYear Year folder to bind the logic to
 	 */
-	constructor(forYear, gDrive) {
-		this.#gDrive = gDrive;
+	constructor(forYear, rememberLogin) {
 		this.#year = forYear;
+		this.#rememberLogin = rememberLogin;
 	}
 
 	async init() {
-		await this.#gDrive.init();
+		this.#gDrive = await GDrive.get(this.#rememberLogin);
+		this.#localStorage = new LocalStorage(LocalStorage.GDRIVE_FILES_KEY);
+
+		let changeAppFolderId = await this.#gDrive.findChangeAppFolder();
+		if (!changeAppFolderId) {
+			changeAppFolderId = await this.#gDrive.createFolder(GDrive.APP_FOLDER);
+		}
+		if (!changeAppFolderId) throw Error('Could not create "Change" folder in GDrive');
+
+		let spendingFolderId = await this.#gDrive.findFolder('Spending', changeAppFolderId);
+		if (!spendingFolderId) {
+			spendingFolderId = await this.#gDrive.createFolder('Spending', changeAppFolderId);
+		}
+		if (!spendingFolderId) throw Error('Could not create "Spending" folder in GDrive');
+
+		let yearFolderId = await this.#gDrive.findFolder(`${this.#year}`, spendingFolderId);
+		if (!yearFolderId) {
+			yearFolderId = await this.#gDrive.createFolder(`${this.#year}`, spendingFolderId);
+		}
+		if (!yearFolderId) throw Error(`Could not create Spending folder ${this.#year} in GDrive`);
+
+		this.#gDriveFolderId = yearFolderId;
 	}
 
-	async fetchCacheToGDrive(month, localSpendings) {
-		const monthFileId = await this.getMonthFileId(this.#year, month);
-
-		if (!monthFileId) {
-			await this.createFile(this.#year, month, localSpendings);
-		} else {
-			await this.#gDrive.update(monthFileId, localSpendings);
+	/**
+	 * @param {number} forMonth
+	 * @returns {Spending}
+	 */
+	async readAll(forMonth) {
+		const localStorageFile = await this.#initializeLocalStorageFile(forMonth);
+		if (!localStorageFile.gDriveId) {
+			return undefined;
 		}
+		this.#updateLocalStorageModifiedField(localStorageFile.id);
+		/** @type {Array} */
+		const array = await this.#gDrive.readFile(localStorageFile.gDriveId);
+		const spendings = [];
+		array.forEach((value) => {
+			let date;
+			// TODO remove this after migration of old version
+			if (value.boughtDate) {
+				date = new Date(this.#year, forMonth, value.boughtDate.split(' ')[1]);
+			} else {
+				date = new Date(value.spentOn);
+			}
+			const spending = new Spending(
+				value.id,
+				Statement.EXPENSE,
+				date,
+				value.category,
+				value.description,
+				+value.price,
+			);
+			spendings.push(spending);
+		});
+
+		return spendings;
 	}
 
-	async fetchGDriveToCache(month) {
-		const monthFileId = await this.getMonthFileId(this.#year, month);
-		if (!monthFileId) {
-			await this.createFile(this.#year, month, []);
-			return;
-		}
-
-		const gDriveSpendings = await this.#gDrive.readFile(monthFileId);
-		if (!gDriveSpendings) {
-			await this.createFile(this.#year, month, []);
-			return;
-		}
-
-		this.#spendingsCache.updateAll(this.#year, Object.values(gDriveSpendings));
+	async storeSpending(spending) {
+		const gdriveFile = await this.#initializeLocalStorageFile(spending.month);
+		this.#markDirty(gdriveFile);
+		const fileName = this.#buildFileName(spending.month);
+		const spendings = await this.readAll(spending.month);
+		spendings.push(spending);
+		const fileId = await this.#gDrive.writeFile(this.#gDriveFolderId, fileName, spendings, true);
+		const gDriveMetadata = await this.#gDrive.readFileMetadata(fileId, GDrive.MODIFIED_TIME_FIELD);
+		const modifiedTime = new Date(gDriveMetadata[GDrive.MODIFIED_TIME_FIELD]).getTime();
+		gdriveFile.modified = modifiedTime;
+		gdriveFile.gDriveId = fileId;
+		this.#markClean(gdriveFile);
 	}
 
-	async lastUpdatedTime(forMonth) {
-		const fileId = await this.getMonthFileId(forMonth);
-		if (!fileId) {
-			// Not updated before. Return 1970 to force update
-			return new Date(0).toISOString();
-		}
-
-		const metadata = await this.#gDrive.readFileMetadata(fileId, GDrive.MODIFIED_TIME_FIELD);
-		if (metadata) return metadata[GDrive.MODIFIED_TIME_FIELD];
-
-		return new Date().toISOString();
+	async storeSpendings(spendings, forMonth) {
+		const gdriveFile = await this.#initializeLocalStorageFile(forMonth);
+		this.#markDirty(gdriveFile);
+		const fileName = this.#buildFileName(forMonth);
+		const fileId = await this.#gDrive.writeFile(this.#gDriveFolderId, fileName, spendings, true);
+		const gDriveMetadata = await this.#gDrive.readFileMetadata(fileId, GDrive.MODIFIED_TIME_FIELD);
+		const modifiedTime = new Date(gDriveMetadata[GDrive.MODIFIED_TIME_FIELD]).getTime();
+		gdriveFile.modified = modifiedTime;
+		gdriveFile.gDriveId = fileId;
+		this.#markClean(gdriveFile);
 	}
 
-	storeGDriveFileId(year, month, fileId) {
-		if (!year || !month || !fileId) {
-			throw new Error(`StoreGdriveFileId ${year},${month},${fileId}`);
+	/**
+	 * @param {number} forMonth
+	 */
+	async fileChanged(forMonth) {
+		const localStorageFile = await this.#initializeLocalStorageFile(forMonth);
+		const gDriveFileId = localStorageFile.gDriveId;
+		if (gDriveFileId) {
+			const metadata = await this.#gDrive
+				.readFileMetadata(gDriveFileId, GDrive.MODIFIED_TIME_FIELD);
+			const modifiedTime = new Date(metadata[GDrive.MODIFIED_TIME_FIELD]).getTime();
+			if (localStorageFile.modified < modifiedTime) {
+				return true;
+			}
 		}
-		localStorage.setItem(`gDrive_fileId_${year}${month}`, fileId);
+		return false;
 	}
 
-	async createFile(year, month, localSpendings) {
-		const yearFolderId = await this.getYearFolderId(year);
-		const fileId = await this.#gDrive.writeFile(yearFolderId, `${month}.json`, localSpendings);
-		if (!fileId) {
-			throw Error(`No file id generated, ${yearFolderId}, ${month}, ${localSpendings}`);
+	/**
+	 * Reads file metadata from localStorage and GDrive.
+	 * Initializes an empty one in case none is found
+	 * @param {number} forMonth
+	 * @returns {Promise<GDriveFileInfo>}
+	 */
+	async #initializeLocalStorageFile(forMonth) {
+		if (!this.#gDriveFolderId) throw new Error('Spending Gdrive not properly initialized');
+		const fileName = this.#buildFileName(forMonth);
+		let localStorageFile = this.#localStorage.readById(fileName);
+		if (!localStorageFile || !localStorageFile.gDriveId) {
+			const gDriveId = await this.#gDrive.findFile(fileName, this.#gDriveFolderId);
+			if (gDriveId) {
+				// Store 0 in modified time to force load
+				localStorageFile = new GDriveFileInfo(fileName, gDriveId, 0);
+				this.#localStorage.store(localStorageFile);
+			} else {
+				localStorageFile = new GDriveFileInfo(fileName, undefined, 0, true);
+			}
 		}
-		await this.storeGDriveFileId(year, month, fileId);
+		return localStorageFile;
 	}
 
-	async readAll(monthFileId) {
-		return this.#gDrive.readFile(monthFileId);
+	async #updateLocalStorageModifiedField(fileId) {
+		const localStorageFile = this.#localStorage.readById(fileId);
+		const metadata = await this.#gDrive.readFileMetadata(
+			localStorageFile.gDriveId,
+			GDrive.MODIFIED_TIME_FIELD,
+		);
+		const modifiedTime = new Date(metadata[GDrive.MODIFIED_TIME_FIELD]).getTime();
+		localStorageFile.modified = modifiedTime;
+		this.#localStorage.store(localStorageFile);
 	}
 
-	async getYearFolderId(year) {
-		if (localStorage.getItem(year)) {
-			return localStorage.getItem(year);
-		}
-
-		const APP_FOLDER = 'Change!';
-		let topFolder = await this.#gDrive.findChangeAppFolder();
-
-		if (!topFolder) {
-			topFolder = await this.#gDrive.createFolder(APP_FOLDER);
-		}
-		if (!topFolder) return undefined;
-
-		let yearFolder = await this.#gDrive.findFolder(year, topFolder);
-		if (!yearFolder) {
-			yearFolder = await this.#gDrive.createFolder(year, topFolder);
-		}
-		if (!yearFolder) return undefined;
-
-		localStorage.setItem(year, yearFolder);
-		return yearFolder;
+	#markDirty(gDriveFile) {
+		const dirtyFile = gDriveFile;
+		dirtyFile.dirty = true;
+		this.#localStorage.store(dirtyFile);
 	}
 
-	async getMonthFileId(year, month) {
-		const fileId = localStorage.getItem(`gDrive_fileId_${year}${month}`);
-
-		// Not found in memory, look on drive
-		if (!fileId) {
-			const monthFileName = `${month}.json`;
-			const yearFolderId = await this.getYearFolderId(year);
-			const networkFileId = await this.#gDrive.findFile(monthFileName, yearFolderId);
-
-			if (!networkFileId) return undefined;
-
-			this.storeGDriveFileId(year, month, networkFileId);
-			return networkFileId;
-		}
-		return fileId;
+	#markClean(gDriveFile) {
+		const cleanFile = gDriveFile;
+		cleanFile.dirty = false;
+		this.#localStorage.store(cleanFile);
 	}
 
-	async insert(values, key) {
-		await this.spendingsCache.insert(values, key);
-		await this.mergeLocalSpendingsToNetwork();
+	#buildFileName(forMonth) {
+		return `Spending_${this.#year}_${Utils.nameForMonth(forMonth)}.json`;
 	}
 }

@@ -135,7 +135,7 @@ export default class PlanningScreen {
 
 		for (let i = 0; i < planningCategories.length; i += 1) {
 			const category = planningCategories[i];
-			const categoryDom = new Dom('table').id(`category-${category.id}`).cls('top-round', 'bot-round').append(
+			const categoryDom = new Dom('table').id(`${category.id}`).cls('top-round', 'bot-round').append(
 				new Dom('thead').append(
 					new Dom('tr').append(
 						new Dom('th').text(category.name).editable().contentEditable(this.#editMode)
@@ -203,7 +203,7 @@ export default class PlanningScreen {
 	 * @param {Category} category
 	 */
 	refreshCategory(category) {
-		const categoryHtml = document.getElementById(`category-${category.id}`);
+		const categoryHtml = document.getElementById(`${category.id}`);
 		const categoryDom = this.buildStatement(category);
 		const { scrollTop } = categoryHtml;
 		categoryHtml.parentElement.replaceChild(categoryDom.toHtml(), categoryHtml);
