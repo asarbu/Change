@@ -1,7 +1,7 @@
 /* eslint-disable max-classes-per-file */
-import Dom from '../../gui/dom.js';
-import icons from '../../gui/icons.js';
-import Modal from '../../gui/modal.js';
+import Dom from '../../common/gui/dom.js';
+import icons from '../../common/gui/icons.js';
+import Modal from '../../common/gui/modal.js';
 import SpendingNavbarEventHandlers from './spendingNavbarHandlers.js';
 
 export default class SpendingNavbar {

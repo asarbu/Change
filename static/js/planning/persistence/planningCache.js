@@ -1,4 +1,4 @@
-import Idb from '../../persistence/idb.js';
+import Idb from '../../common/persistence/idb.js';
 import Planning from '../model/planningModel.js';
 
 export default class PlanningCache {

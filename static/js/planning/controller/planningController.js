@@ -1,4 +1,4 @@
-import Utils from '../../utils/utils.js';
+import Utils from '../../common/utils/utils.js';
 import Planning, { Statement } from '../model/planningModel.js';
 import PlanningCache from '../persistence/planningCache.js';
 import PlanningGDrive from '../persistence/planningGdrive.js';

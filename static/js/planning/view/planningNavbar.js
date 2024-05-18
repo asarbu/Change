@@ -1,8 +1,8 @@
 /* eslint-disable prefer-destructuring */
-import Dom from '../../gui/dom.js';
-import icons from '../../gui/icons.js';
-import Modal from '../../gui/modal.js';
-import Utils from '../../utils/utils.js';
+import Dom from '../../common/gui/dom.js';
+import icons from '../../common/gui/icons.js';
+import Modal from '../../common/gui/modal.js';
+import Utils from '../../common/utils/utils.js';
 import Planning, { Statement } from '../model/planningModel.js';
 import PlanningNavbarEventListeners from './planningNavbarEventListeners.js';
 

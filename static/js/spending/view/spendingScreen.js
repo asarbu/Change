@@ -1,13 +1,13 @@
 import Spending from '../model/spending.js';
 import SpendingReport from '../model/spendingReport.js';
 import { Category } from '../../planning/model/planningModel.js';
-import Dom from '../../gui/dom.js';
-import icons from '../../gui/icons.js';
-import GraphicEffects from '../../gui/effects.js';
-import Modal from '../../gui/modal.js';
+import Dom from '../../common/gui/dom.js';
+import icons from '../../common/gui/icons.js';
+import GraphicEffects from '../../common/gui/effects.js';
+import Modal from '../../common/gui/modal.js';
 import SpendingNavbar from './spendingNavbar.js';
 import SpendingNavbarEventHandlers from './spendingNavbarHandlers.js';
-import Sidenav from '../../gui/sidenav.js';
+import Sidenav from '../../common/gui/sidenav.js';
 
 export default class SpendingScreen {
 	onCreateSpendingCallback = undefined;

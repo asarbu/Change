@@ -1,5 +1,5 @@
 import Spending from '../model/spending.js';
-import Idb from '../../persistence/idb.js';
+import Idb from '../../common/persistence/idb.js';
 
 export default class SpendingCache {
 	static DATABASE_NAME = 'Spendings';

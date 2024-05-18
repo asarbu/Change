@@ -4,7 +4,7 @@ import SpendingGDrive from '../persistence/spendingGdrive.js';
 import PlanningCache from '../../planning/persistence/planningCache.js';
 import Spending from '../model/spending.js';
 import SpendingReport from '../model/spendingReport.js';
-import Utils from '../../utils/utils.js';
+import Utils from '../../common/utils/utils.js';
 import { Statement } from '../../planning/model/planningModel.js';
 
 export default class SpendingController {

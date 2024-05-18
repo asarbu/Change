@@ -1,11 +1,11 @@
 /* eslint-disable class-methods-use-this */
-import GraphicEffects from '../../gui/effects.js';
-import Sidenav from '../../gui/sidenav.js';
-import Dom from '../../gui/dom.js';
+import GraphicEffects from '../../common/gui/effects.js';
+import Sidenav from '../../common/gui/sidenav.js';
+import Dom from '../../common/gui/dom.js';
 import Planning, { Statement, Category, Goal } from '../model/planningModel.js';
-import icons from '../../gui/icons.js';
+import icons from '../../common/gui/icons.js';
 import PlanningNavbar from './planningNavbar.js';
-import Modal from '../../gui/modal.js';
+import Modal from '../../common/gui/modal.js';
 
 export default class PlanningScreen {
 	onClickUpdate = undefined;

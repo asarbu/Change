@@ -1,8 +1,8 @@
-import GDrive from '../../persistence/gDrive.js';
-import GDriveFileInfo from '../../persistence/gDriveFileInfo.js';
-import LocalStorage from '../../persistence/localStorage.js';
+import GDrive from '../../common/persistence/gDrive.js';
+import GDriveFileInfo from '../../common/persistence/gDriveFileInfo.js';
+import LocalStorage from '../../common/persistence/localStorage.js';
 import { Statement } from '../../planning/model/planningModel.js';
-import Utils from '../../utils/utils.js';
+import Utils from '../../common/utils/utils.js';
 import Spending from '../model/spending.js';
 import SpendingCache from './spendingCache.js';
 
