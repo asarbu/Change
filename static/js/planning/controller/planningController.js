@@ -29,7 +29,7 @@ export default class PlanningController {
 	/** @type {PlanningGDrive} */
 	#planningGDrive = undefined;
 
-	constructor(forYear = undefined, forMonth = undefined, forStatement = undefined) {
+	constructor(forYear = undefined, forMonth = undefined, forStatement = undefined, gDriveEnabled) {
 		const queryString = window.location.search;
 		const urlParams = new URLSearchParams(queryString);
 		const urlYear = urlParams.get('year');
@@ -60,7 +60,7 @@ export default class PlanningController {
 			this.#defaultStatement = '';
 		}
 
-		this.#gDriveEnabled = true;
+		this.#gDriveEnabled = gDriveEnabled;
 	}
 
 	/**
