@@ -17,6 +17,7 @@ export default class Modal {
 		this.modalHtml = this.modal.toHtml();
 		this.contentHtml = this.content.toHtml();
 		this.modalBackdropHtml = this.modalBackdrop.toHtml();
+		this.closeModalEventListener = this.#closeModal.bind(this);
 	}
 
 	/**
@@ -120,14 +121,17 @@ export default class Modal {
 			requestAnimationFrame(() => {
 				this.modalBackdropHtml.classList.remove('show-modal-backdrop');
 				this.contentHtml.classList.remove('show-modal-content');
-				this.contentHtml.addEventListener('transitionend', () => {
-					const main = document.getElementById('main');
-					main.removeChild(this.modalHtml);
-					this.#isOpen = false;
-				});
+				this.contentHtml.addEventListener('transitionend', this.closeModalEventListener);
 			});
 		}
 		return this;
+	}
+
+	#closeModal() {
+		this.contentHtml.removeEventListener('transitionend', this.closeModalEventListener);
+		const main = document.getElementById('main');
+		main.removeChild(this.modalHtml);
+		this.#isOpen = false;
 	}
 
 	#triggeredCancelEvent(event) {
