@@ -52,7 +52,7 @@ export default class Settings {
 								.cls('setting-state').type('checkbox').hide()
 								.checked(gDriveSettings.enabled),
 							new Dom('span').cls('setting-outline'),
-							new Dom('i').cls('setting-indicator')
+							new Dom('i').cls('setting-indicator'),
 						),
 					),
 				),
@@ -64,7 +64,7 @@ export default class Settings {
 								.cls('setting-state').type('checkbox').hide()
 								.checked(gDriveSettings.rememberLogin),
 							new Dom('span').cls('setting-outline'),
-							new Dom('i').cls('setting-indicator')
+							new Dom('i').cls('setting-indicator'),
 						),
 					),
 				),
@@ -80,22 +80,22 @@ export default class Settings {
 			new Dom('div').cls('nav-header').append(
 				new Dom('button').id('setting-del-databses').cls('nav-item').onClick(onDeleteLocalStorage)
 					.append(
-						new Dom('img').cls('white-fill').text('Delete Planning').attr('alt', 'Delete Planning').attr('src', icons.remove_table)
+						new Dom('img').cls('white-fill').text('Delete Planning').attr('alt', 'Delete Planning').attr('src', icons.remove_table),
 					),
 				new Dom('button').id('planning-del-statement').cls('nav-item').onClick(onDeleteDatabase)
 					.append(
-						new Dom('img').cls('white-fill').text('Delete Statement').attr('alt', 'Delete Statement').attr('src', icons.remove_database)
+						new Dom('img').cls('white-fill').text('Delete Statement').attr('alt', 'Delete Statement').attr('src', icons.remove_database),
 					),
 			),
 			new Dom('div').cls('nav-footer').append(
 				new Dom('button').cls('nav-item', 'nav-trigger').attr('data-side', 'left').append(
-					new Dom('img').cls('white-fill').text('Menu').attr('alt', 'Menu').attr('src', icons.menu)
+					new Dom('img').cls('white-fill').text('Menu').attr('alt', 'Menu').attr('src', icons.menu),
 				),
 				new Dom('button').cls('nav-item', 'nav-trigger').attr('data-side', 'right').append(
-					new Dom('img').cls('white-fill').text('Menu').attr('alt', 'Menu').attr('src', icons.menu)
+					new Dom('img').cls('white-fill').text('Menu').attr('alt', 'Menu').attr('src', icons.menu),
 				),
 			),
-			new Dom('div').cls('dropup-content', 'top-round').hide()
+			new Dom('div').cls('dropup-content', 'top-round').hide(),
 		);
 		return this.#navbar;
 	}
