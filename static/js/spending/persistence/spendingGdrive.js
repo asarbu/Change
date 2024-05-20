@@ -150,10 +150,10 @@ export default class SpendingGDrive {
 				.readFileMetadata(gDriveFileId, GDrive.MODIFIED_TIME_FIELD);
 			const modifiedTime = new Date(metadata[GDrive.MODIFIED_TIME_FIELD]).getTime();
 			if (localStorageFile.modified < modifiedTime) {
-				return true;
+				return { oldModified: localStorageFile.modified, newModified: modifiedTime };
 			}
 		}
-		return false;
+		return undefined;
 	}
 
 	/**

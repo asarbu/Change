@@ -114,6 +114,19 @@ export default class SpendingCache {
 	}
 
 	/**
+	 * @param {Array<Spending>} spendings
+	 * @returns {Promise<void>}
+	 */
+	async deleteAll(spendings) {
+		const deletePromises = [];
+		for (let index = 0; index < spendings.length; index += 1) {
+			const spending = spendings[index];
+			deletePromises.push(this.idb.delete(spending));
+		}
+		return Promise.all(deletePromises);
+	}
+
+	/**
 	 * Remove a Spending from the cache
 	 * @param {Spending} spending Spending to delete
 	 */

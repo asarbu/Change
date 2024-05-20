@@ -143,7 +143,7 @@ export default class SpendingController {
 	 * Sets deleted flag in cache for all spendings in a month
 	 * @param {SpendingReport} spendingReport
 	 */
-	async onDeleteReport(spendingReport) {
+	static async onDeleteReport(spendingReport) {
 		const year = spendingReport.year();
 		const cache = await SpendingCache.get(year);
 		const spendings = spendingReport.spendings();
@@ -200,9 +200,19 @@ export default class SpendingController {
 			month = forMonth;
 		}
 
-		if (await gdrive.fileChanged(month)) {
+		const fileChanged = await gdrive.fileChanged(month);
+		if (fileChanged) {
 			const gDriveSpendings = await gdrive.readAll(month);
 			if (gDriveSpendings) {
+				const cachedSpendings = await this.#cache.readAllForMonth(month);
+				// Only filter for deleted spendings.
+				// The added and modified ones will be handled by storeAll
+				const deletedGDriveSpendings = gDriveSpendings.filter(
+					(gDriveSpending) => gDriveSpending.id < fileChanged.oldModified
+					&& !cachedSpendings.find((cachedSpending) => cachedSpending.id === gDriveSpending.id),
+				);
+
+				await this.#cache.deleteAll(deletedGDriveSpendings);
 				await this.#cache.storeAll(gDriveSpendings);
 				const monthlyReport = await this.buildSpendingReport(month);
 				this.#defaultScreen.refreshMonth(monthlyReport);
