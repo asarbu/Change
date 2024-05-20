@@ -115,15 +115,12 @@ export default class Modal {
 		return this;
 	}
 
-	close(event) {
-		// Force close if not triggered by an event (triggered by code)
-		if (!event || this.#triggeredCancelEvent(event)) {
-			requestAnimationFrame(() => {
-				this.modalBackdropHtml.classList.remove('show-modal-backdrop');
-				this.contentHtml.classList.remove('show-modal-content');
-				this.contentHtml.addEventListener('transitionend', this.closeModalEventListener);
-			});
-		}
+	close() {
+		requestAnimationFrame(() => {
+			this.modalBackdropHtml.classList.remove('show-modal-backdrop');
+			this.contentHtml.classList.remove('show-modal-content');
+			this.contentHtml.addEventListener('transitionend', this.closeModalEventListener);
+		});
 		return this;
 	}
 

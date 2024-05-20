@@ -377,8 +377,9 @@ export default class PlanningNavbar {
 				),
 				new Dom('input').type('submit').hide().onClick(onClickSave),
 			),
-		).footer(
-			new Dom('h3').text('Cancel'),
+		);
+		this.#addStatementDropup.footer(
+			new Dom('h3').text('Cancel').onClick(this.#addStatementDropup.close.bind(this.#addStatementDropup)),
 			new Dom('h3').text('Save').onClick(onClickSave),
 		);
 
