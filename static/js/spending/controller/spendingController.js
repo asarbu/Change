@@ -67,7 +67,7 @@ export default class SpendingController {
 		this.#defaultScreen.init();
 		this.#defaultScreen.onCreateSpendingCallback = this.onCreateSpending.bind(this);
 		this.#defaultScreen.onSaveReportCallback = this.onSaveReport.bind(this);
-		this.#defaultScreen.onDeleteReportCallback = this.onDeleteReport.bind(this);
+		this.#defaultScreen.onDeleteReportCallback = SpendingController.onDeleteReport;
 
 		const availableCaches = await SpendingCache.getAllCacheNames();
 		availableCaches.forEach((spendingCache) => {
