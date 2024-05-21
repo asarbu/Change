@@ -1,4 +1,5 @@
-import Utils from '../../utils/utils.js';
+import Utils from '../../common/utils/utils.js';
+import Settings from '../../settings/settings.js';
 import Planning, { Statement } from '../model/planningModel.js';
 import PlanningCache from '../persistence/planningCache.js';
 import PlanningGDrive from '../persistence/planningGdrive.js';
@@ -23,13 +24,10 @@ export default class PlanningController {
 	/** @type {PlanningCache} */
 	#cache = undefined;
 
-	/** @type {boolean} */
-	#gDriveEnabled = false;
-
 	/** @type {PlanningGDrive} */
 	#planningGDrive = undefined;
 
-	constructor(forYear = undefined, forMonth = undefined, forStatement = undefined, gDriveEnabled) {
+	constructor(forYear = undefined, forMonth = undefined, forStatement = undefined) {
 		const queryString = window.location.search;
 		const urlParams = new URLSearchParams(queryString);
 		const urlYear = urlParams.get('year');
@@ -59,8 +57,6 @@ export default class PlanningController {
 		} else {
 			this.#defaultStatement = '';
 		}
-
-		this.#gDriveEnabled = gDriveEnabled;
 	}
 
 	/**
@@ -96,16 +92,22 @@ export default class PlanningController {
 			screen.appendMonth(plan.month);
 		});
 
-		if (this.#gDriveEnabled) {
-			this.#planningGDrive = await PlanningGDrive.get(this.#defaultYear);
-			this.fetchFromGDrive();
-		}
+		const gDriveSettings = new Settings().gDriveSettings();
+		if (!gDriveSettings || !gDriveSettings.enabled) return screen;
+		this.#planningGDrive = await PlanningGDrive.get(
+			this.#defaultYear,
+			gDriveSettings.rememberLogin,
+		);
+		this.fetchFromGDrive(this.#planningGDrive);
 
 		return screen;
 	}
 
-	async fetchFromGDrive() {
-		if (await this.#planningGDrive.fileChanged(this.#defaultMonth)) {
+	/**
+	 * @param {PlanningGDrive} planningGDrive
+	 */
+	async fetchFromGDrive(planningGDrive) {
+		if (await planningGDrive.fileChanged(this.#defaultMonth)) {
 			const planning = (await this.#cache.readForMonth(this.#defaultMonth));
 			if (planning) {
 				await this.#cache.delete(planning.id);
@@ -137,7 +139,7 @@ export default class PlanningController {
 	 */
 	async onClickUpdate(planning) {
 		await this.#cache.storePlanning(planning);
-		if (this.#gDriveEnabled) {
+		if (this.#planningGDrive) {
 			const success = this.#planningGDrive.store(planning);
 			if (!success) this.#planningGDrive.markDirty(planning);
 		}
@@ -148,7 +150,7 @@ export default class PlanningController {
 	 */
 	async onClickedDeletePlanning(planning) {
 		await this.#cache.delete(planning.id);
-		if (this.#gDriveEnabled) {
+		if (this.#planningGDrive) {
 			this.#planningGDrive.delete(planning);
 		}
 	}

@@ -4,8 +4,9 @@ import SpendingGDrive from '../persistence/spendingGdrive.js';
 import PlanningCache from '../../planning/persistence/planningCache.js';
 import Spending from '../model/spending.js';
 import SpendingReport from '../model/spendingReport.js';
-import Utils from '../../utils/utils.js';
+import Utils from '../../common/utils/utils.js';
 import { Statement } from '../../planning/model/planningModel.js';
+import Settings from '../../settings/settings.js';
 
 export default class SpendingController {
 	/** @type {SpendingCache} */
@@ -20,13 +21,11 @@ export default class SpendingController {
 	/** @type {SpendingScreen} */
 	#defaultScreen = undefined;
 
-	/** @type {boolean} */
-	#gDriveEnabled = false;
-
 	/** @type { SpendingGDrive } */
 	#spendingGdrive = undefined;
 
-	constructor(gDriveEnabled) {
+	/** @type {Settings} */
+	constructor() {
 		const now = new Date();
 		const queryString = window.location.search;
 		const urlParams = new URLSearchParams(queryString);
@@ -34,7 +33,6 @@ export default class SpendingController {
 		const month = Utils.monthForName((urlParams.get('month')));
 		this.#defaultYear = year || now.getFullYear();
 		this.#defaultMonth = month || now.getMonth();
-		this.#gDriveEnabled = gDriveEnabled;
 	}
 
 	async init() {
@@ -84,15 +82,18 @@ export default class SpendingController {
 
 		this.#defaultScreen.jumpToMonth(this.#defaultMonth);
 
-		if (this.#gDriveEnabled) {
-			this.fetchAllfromGDrive(this.#defaultYear);
-		}
+		const gDriveSettings = new Settings().gDriveSettings();
+		if (!gDriveSettings || !gDriveSettings.enabled) return;
+		this.#spendingGdrive = await SpendingGDrive.get(
+			this.#defaultYear,
+			gDriveSettings.rememberLogin,
+		);
+		this.fetchAllfromGDrive(this.#spendingGdrive);
 	}
 
-	async fetchAllfromGDrive(forYear) {
-		this.#spendingGdrive = await SpendingGDrive.get(forYear);
+	async fetchAllfromGDrive(gDrive) {
 		for (let month = 0; month < 12; month += 1) {
-			this.fetchFromGDrive(month);
+			this.fetchFromGDrive(gDrive, month);
 		}
 	}
 
@@ -120,7 +121,7 @@ export default class SpendingController {
 			const cache = await SpendingCache.get(spending.spentOn.getFullYear());
 			await cache.store(spending);
 
-			if (this.#gDriveEnabled) {
+			if (this.#spendingGdrive) {
 				// TODO fetch info from GDrive first
 				return this.#spendingGdrive.storeSpending(spending);
 			}
@@ -130,8 +131,8 @@ export default class SpendingController {
 		const spendingReport = await this.buildSpendingReport(month);
 		this.#defaultScreen.refreshMonth(spendingReport);
 
-		if (this.#gDriveEnabled) {
-			await this.fetchFromGDrive(month);
+		if (this.#spendingGdrive) {
+			await this.fetchFromGDrive(this.#spendingGdrive, month);
 			const spendings = await this.#cache.readAllForMonth(month);
 			return this.#spendingGdrive.storeSpendings(spendings, month);
 		}
@@ -142,7 +143,7 @@ export default class SpendingController {
 	 * Sets deleted flag in cache for all spendings in a month
 	 * @param {SpendingReport} spendingReport
 	 */
-	async onDeleteReport(spendingReport) {
+	static async onDeleteReport(spendingReport) {
 		const year = spendingReport.year();
 		const cache = await SpendingCache.get(year);
 		const spendings = spendingReport.spendings();
@@ -156,7 +157,7 @@ export default class SpendingController {
 
 	/**
 	 * Handler
-	 * @param {Array<Spending} spendings Spendings to be persisted
+	 * @param {Promise<Array<Spending>>} spendings Spendings to be persisted
 	 */
 	async onSaveReport(spendings) {
 		spendings
@@ -179,14 +180,19 @@ export default class SpendingController {
 			this.#defaultScreen.refreshMonth(spendingReport);
 		}
 
-		if (this.#gDriveEnabled) {
-			await this.fetchFromGDrive(month);
+		if (this.#spendingGdrive) {
+			await this.fetchFromGDrive(this.#spendingGdrive, month);
 			const gDriveSpendings = await this.#cache.readAllForMonth(month);
 			return this.#spendingGdrive.storeSpendings(gDriveSpendings, month);
 		}
+		return spendingReport.spendings();
 	}
 
-	async fetchFromGDrive(forMonth) {
+	/**
+	 * @param {SpendingGDrive} gdrive
+	 * @param {number} forMonth
+	 */
+	async fetchFromGDrive(gdrive, forMonth) {
 		let month;
 		if (forMonth === undefined) {
 			month = new Date().getMonth();
@@ -194,9 +200,19 @@ export default class SpendingController {
 			month = forMonth;
 		}
 
-		if (await this.#spendingGdrive.fileChanged(month)) {
-			const gDriveSpendings = await this.#spendingGdrive.readAll(month);
+		const fileChanged = await gdrive.fileChanged(month);
+		if (fileChanged) {
+			const gDriveSpendings = await gdrive.readAll(month);
 			if (gDriveSpendings) {
+				const cachedSpendings = await this.#cache.readAllForMonth(month);
+				// Only filter for deleted spendings.
+				// The added and modified ones will be handled by storeAll
+				const deletedGDriveSpendings = gDriveSpendings.filter(
+					(gDriveSpending) => gDriveSpending.id < fileChanged.oldModified
+					&& !cachedSpendings.find((cachedSpending) => cachedSpending.id === gDriveSpending.id),
+				);
+
+				await this.#cache.deleteAll(deletedGDriveSpendings);
 				await this.#cache.storeAll(gDriveSpendings);
 				const monthlyReport = await this.buildSpendingReport(month);
 				this.#defaultScreen.refreshMonth(monthlyReport);

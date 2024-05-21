@@ -1,7 +1,7 @@
 /* eslint-disable max-classes-per-file */
-import Dom from '../../gui/dom.js';
-import icons from '../../gui/icons.js';
-import Modal from '../../gui/modal.js';
+import Dom from '../../common/gui/dom.js';
+import icons from '../../common/gui/icons.js';
+import Modal from '../../common/gui/modal.js';
 import SpendingNavbarEventHandlers from './spendingNavbarHandlers.js';
 
 export default class SpendingNavbar {
@@ -42,12 +42,10 @@ export default class SpendingNavbar {
 		this.year = year;
 		this.#monthsInDropup = new Map();
 		this.#yearsInDropup = new Map();
-		this.#monthsDropup = new Modal();
 		this.#eventHandlers = eventHandlers;
 
-		const main = document.getElementById('main');
-		main.appendChild(this.buildMonthModal().toHtml());
-		main.appendChild(this.buildYearModal().toHtml());
+		this.buildMonthModal();
+		this.buildYearModal();
 
 		const onClickEdit = this.onClickEdit.bind(this);
 		const onClickSave = this.onClickSave.bind(this);

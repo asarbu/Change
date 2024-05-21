@@ -4,7 +4,6 @@ export default class Modal {
 	/** @type {boolean} */
 	#isOpen = false;
 
-	// TODO - try to reuse modals to avoid having duplicates across DOM
 	constructor(id) {
 		this.id = id;
 		const onClose = this.close.bind(this);
@@ -18,6 +17,17 @@ export default class Modal {
 		this.modalHtml = this.modal.toHtml();
 		this.contentHtml = this.content.toHtml();
 		this.modalBackdropHtml = this.modalBackdrop.toHtml();
+		this.closeModalEventListener = this.#closeModal.bind(this);
+	}
+
+	/**
+	 * @param {Function} yesCallback
+	 */
+	static areYouSureModal(id, message, yesCallback) {
+		const areYouSureModal = new Modal(id).header(
+			new Dom('h1').text(message),
+		).#addCancelYesFooter(yesCallback);
+		return areYouSureModal;
 	}
 
 	header(...domElements) {
@@ -62,11 +72,14 @@ export default class Modal {
 		return this;
 	}
 
-	addCancelYesFooter(yesHandler) {
+	#addCancelYesFooter(yesHandler) {
 		this.cancelButton = new Dom('h3').id(`modal-cancel-${this.id}`)
 			.text('Cancel').onClick(this.close.bind(this));
 		this.cancelButtonHtml = this.cancelButton.toHtml();
-		this.yesButton = new Dom('h3').text('Yes').onClick(yesHandler);
+		this.yesButton = new Dom('h3').text('Yes').onClick(() => {
+			yesHandler();
+			this.close();
+		});
 
 		this.footer(
 			this.cancelButton,
@@ -91,20 +104,31 @@ export default class Modal {
 	}
 
 	open() {
-		this.modalBackdropHtml.classList.add('show-modal-backdrop');
-		this.contentHtml.classList.add('show-modal-content');
-		this.#isOpen = true;
+		const main = document.getElementById('main');
+		main.appendChild(this.modalHtml);
+		requestAnimationFrame(() => {
+			this.modalBackdropHtml.classList.add('show-modal-backdrop');
+			this.contentHtml.classList.add('show-modal-content');
+			this.#isOpen = true;
+		});
+
 		return this;
 	}
 
-	close(event) {
-		// Force close if not triggered by an event (triggered by code)
-		if (!event || this.#triggeredCancelEvent(event)) {
+	close() {
+		requestAnimationFrame(() => {
 			this.modalBackdropHtml.classList.remove('show-modal-backdrop');
 			this.contentHtml.classList.remove('show-modal-content');
-		}
-		this.#isOpen = false;
+			this.contentHtml.addEventListener('transitionend', this.closeModalEventListener);
+		});
 		return this;
+	}
+
+	#closeModal() {
+		this.contentHtml.removeEventListener('transitionend', this.closeModalEventListener);
+		const main = document.getElementById('main');
+		main.removeChild(this.modalHtml);
+		this.#isOpen = false;
 	}
 
 	#triggeredCancelEvent(event) {

@@ -6,3 +6,4 @@
 
 export { default as PlanningController } from './planning/controller/planningController.js';
 export { default as SpendingController } from './spending/controller/spendingController.js';
+export { default as Settings } from './settings/settings.js';

@@ -3,7 +3,7 @@ import {
 } from '@jest/globals';
 import PlanningCache from '../static/js/planning/persistence/planningCache.js';
 import Planning, { Category, Goal, Statement } from '../static/js/planning/model/planningModel.js';
-import Idb from '../static/js/persistence/idb.js';
+import Idb from '../static/js/common/persistence/idb.js';
 
 /** @type {PlanningCache} */
 let defaultPlanningCache;

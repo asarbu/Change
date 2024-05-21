@@ -1,8 +1,8 @@
 /* eslint-disable prefer-destructuring */
-import Dom from '../../gui/dom.js';
-import icons from '../../gui/icons.js';
-import Modal from '../../gui/modal.js';
-import Utils from '../../utils/utils.js';
+import Dom from '../../common/gui/dom.js';
+import icons from '../../common/gui/icons.js';
+import Modal from '../../common/gui/modal.js';
+import Utils from '../../common/utils/utils.js';
 import Planning, { Statement } from '../model/planningModel.js';
 import PlanningNavbarEventListeners from './planningNavbarEventListeners.js';
 
@@ -69,12 +69,11 @@ export default class PlanningNavbar {
 			this.#selectedStatement = planning.statements[0].name;
 		}
 
-		const main = document.getElementById('main');
-		main.appendChild(this.buildYearModal().toHtml());
-		main.appendChild(this.buildMonthModal().toHtml());
-		main.appendChild(this.buildStatementModal().toHtml());
-		main.appendChild(this.buildStatementTypeModal().toHtml());
-		main.appendChild(this.buildAddStatementModal().toHtml());
+		this.buildYearModal();
+		this.buildMonthModal();
+		this.buildStatementModal();
+		this.buildStatementTypeModal();
+		this.buildAddStatementModal();
 
 		const onClickYearDropup = this.onClickedYearDropup.bind(this);
 		const onClickMonthDropup = this.onClickedMonthDropup.bind(this);
@@ -378,8 +377,9 @@ export default class PlanningNavbar {
 				),
 				new Dom('input').type('submit').hide().onClick(onClickSave),
 			),
-		).footer(
-			new Dom('h3').text('Cancel'),
+		);
+		this.#addStatementDropup.footer(
+			new Dom('h3').text('Cancel').onClick(this.#addStatementDropup.close.bind(this.#addStatementDropup)),
 			new Dom('h3').text('Save').onClick(onClickSave),
 		);
 

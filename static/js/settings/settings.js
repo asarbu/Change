@@ -1,97 +1,152 @@
-const settings = {
-	GDRIVE_SYNC : "GdriveSync",
-	GDRIVE_KEEP_LOGGED_IN : "GdriveKeepLoggedIn"
-}
-GDRIVE_KEEP_LOGGED_IN_SPAN = "GdriveKeepLoggedInSpan";
-SAVE_BTN = "SaveBtn";
-ATTRIBUTE_CHECKED = "checked";
-ATTRIBUTE_DISABLED = "disabled";
+import Dom from '../common/gui/dom.js';
+import GraphicEffects from '../common/gui/effects.js';
+import icons from '../common/gui/icons.js';
+import Sidenav from '../common/gui/sidenav.js';
+import Modal from '../common/gui/modal.js';
+import LocalStorage from '../common/persistence/localStorage.js';
+import PlanningCache from '../planning/persistence/planningCache.js';
+import SpendingCache from '../spending/persistence/spendingCache.js';
 
-const gdriveSync = localStorage.getItem(settings.GDRIVE_SYNC);
-const gdriveKeepLoggedin = localStorage.getItem(settings.GDRIVE_KEEP_LOGGED_IN);
-const gdriveCheckbox = document.getElementById(settings.GDRIVE_SYNC);
-const gdriveKeepLoggedInCheckbox = document.getElementById(settings.GDRIVE_KEEP_LOGGED_IN);
-const saveBtn = document.getElementById(SAVE_BTN);
+export default class Settings {
+	/** @type {Dom} */
+	#settongsScreen = undefined;
 
-function initSettings() {
-	if(gdriveSync) {
-		gdriveCheckbox.setAttribute(ATTRIBUTE_CHECKED, ATTRIBUTE_CHECKED);
-	
-		if(gdriveKeepLoggedin) {
-			toggleGdriveKeepLoggedIn(true, true);
-		} else {
-			toggleGdriveKeepLoggedIn(true, false);
+	/** @type {Dom} */
+	#navbar = undefined;
+
+	/** @type {LocalStorage} */
+	#localStorage = undefined;
+
+	static #SYNC_GDRIVE = 'sync_gdrive';
+
+	constructor() {
+		this.#localStorage = new LocalStorage(LocalStorage.SETTINGS_KEY);
+	}
+
+	init() {
+		const settingsScreen = this.buildSettingsScreen();
+		const navbar = this.buildNavBar();
+
+		const main = document.getElementById('main');
+		main.appendChild(settingsScreen.toHtml());
+		main.appendChild(navbar.toHtml());
+
+		const gfx = new GraphicEffects(settingsScreen.toHtml());
+		const sidenav = new Sidenav(gfx);
+		document.body.appendChild(sidenav.toHtml());
+	}
+
+	buildSettingsScreen() {
+		const onClickedSyncGdrive = this.onClickedSyncGdrive.bind(this);
+		const onClickedRememberGdrive = this.onClickedRememberLogin.bind(this);
+		const gDriveSettings = this.gDriveSettings();
+
+		const settingsScreen = new Dom('div').append(
+			new Dom('h1').text('Settings'),
+			new Dom('div').cls('top-round', 'bot-round').append(
+				new Dom('div').cls('accordion-secondary').append(
+					new Dom('span').text('Sync to Google Drive'),
+					new Dom('span').append(
+						new Dom('label').cls('setting').append(
+							new Dom('input').onClick(onClickedSyncGdrive)
+								.cls('setting-state').type('checkbox').hide()
+								.checked(gDriveSettings.enabled),
+							new Dom('span').cls('setting-outline'),
+							new Dom('i').cls('setting-indicator'),
+						),
+					),
+				),
+				new Dom('div').cls('accordion-secondary').append(
+					new Dom('span').text('Keep me logged in'),
+					new Dom('span').append(
+						new Dom('label').cls('setting').append(
+							new Dom('input').onClick(onClickedRememberGdrive)
+								.cls('setting-state').type('checkbox').hide()
+								.checked(gDriveSettings.rememberLogin),
+							new Dom('span').cls('setting-outline'),
+							new Dom('i').cls('setting-indicator'),
+						),
+					),
+				),
+			),
+		);
+		return settingsScreen;
+	}
+
+	buildNavBar() {
+		const onDeleteDatabase = Settings.#onClickedDeleteDatabase.bind(this);
+		const onDeleteLocalStorage = Settings.#onClickedDeleteLocalStorage.bind(this);
+		this.#navbar = new Dom('nav').append(
+			new Dom('div').cls('nav-header').append(
+				new Dom('button').id('setting-del-databses').cls('nav-item').onClick(onDeleteLocalStorage)
+					.append(
+						new Dom('img').cls('white-fill').text('Delete Planning').attr('alt', 'Delete Planning').attr('src', icons.remove_table),
+					),
+				new Dom('button').id('planning-del-statement').cls('nav-item').onClick(onDeleteDatabase)
+					.append(
+						new Dom('img').cls('white-fill').text('Delete Statement').attr('alt', 'Delete Statement').attr('src', icons.remove_database),
+					),
+			),
+			new Dom('div').cls('nav-footer').append(
+				new Dom('button').cls('nav-item', 'nav-trigger').attr('data-side', 'left').append(
+					new Dom('img').cls('white-fill').text('Menu').attr('alt', 'Menu').attr('src', icons.menu),
+				),
+				new Dom('button').cls('nav-item', 'nav-trigger').attr('data-side', 'right').append(
+					new Dom('img').cls('white-fill').text('Menu').attr('alt', 'Menu').attr('src', icons.menu),
+				),
+			),
+			new Dom('div').cls('dropup-content', 'top-round').hide(),
+		);
+		return this.#navbar;
+	}
+
+	static #onClickedDeleteDatabase() {
+		const areYouSureModal = Modal.areYouSureModal(
+			'delete-databases',
+			'Are you sure you want to delete all local databases?',
+			() => {
+				window.indexedDB.deleteDatabase(PlanningCache.DATABASE_NAME);
+				window.indexedDB.deleteDatabase(SpendingCache.DATABASE_NAME);
+			},
+		);
+		areYouSureModal.open();
+	}
+
+	static #onClickedDeleteLocalStorage() {
+		const areYouSureModal = Modal.areYouSureModal(
+			'delete-local-storage',
+			'Are you sure you want to delete all local storage?',
+			() => localStorage.clear(),
+		);
+		areYouSureModal.open();
+	}
+
+	onClickedSyncGdrive(event) {
+		const value = event.currentTarget.checked;
+		let syncGdrive = this.#localStorage.readById(Settings.#SYNC_GDRIVE);
+		if (!syncGdrive) {
+			syncGdrive = { id: Settings.#SYNC_GDRIVE };
 		}
-	}
-	
-	gdriveCheckbox.addEventListener("click", onClickGdriveSync);
-	gdriveKeepLoggedInCheckbox.addEventListener("click", onClickGdriveKeepLoggedIn);
-
-	const buttonRow = create("div", {classes:["row", "center"]});
-	const saveBtn = createImageButton("SaveBtn", "", ["waves-effect", "red", "waves-light", "btn"],	icons.save);
-	saveBtn.addEventListener("click", onClickSave);
-	buttonRow.appendChild(saveBtn);
-	document.getElementById("main").appendChild(buttonRow);
-	
-	var sideNavs = document.querySelectorAll('.sidenav');
-	M.Sidenav.init(sideNavs, {});
-}
-
-function toggleGdriveKeepLoggedIn(enable, set) {
-	const gdriveKeepLoggedInSpan = document.getElementById(GDRIVE_KEEP_LOGGED_IN_SPAN);
-	if(enable) {
-		gdriveKeepLoggedInCheckbox.removeAttribute(ATTRIBUTE_DISABLED);
-		gdriveKeepLoggedInSpan.style.color="black";
-	} else {
-		gdriveKeepLoggedInCheckbox.setAttribute(ATTRIBUTE_DISABLED, ATTRIBUTE_DISABLED);
-		gdriveKeepLoggedInSpan.style.color="gray";
-	}
-
-	if(set) {
-		gdriveKeepLoggedInCheckbox.setAttribute(ATTRIBUTE_CHECKED, ATTRIBUTE_CHECKED);
-	} else {
-		gdriveKeepLoggedInCheckbox.removeAttribute(ATTRIBUTE_CHECKED, ATTRIBUTE_CHECKED);
-	}
-}
-
-function onClickGdriveSync() {
-	const gdriveChecked = gdriveCheckbox.getAttribute(ATTRIBUTE_CHECKED);
-	const gdriveKeepLoggedInChecked = gdriveKeepLoggedInCheckbox.getAttribute(ATTRIBUTE_CHECKED);
-	if(gdriveChecked === ATTRIBUTE_CHECKED) {
-		gdriveCheckbox.removeAttribute(ATTRIBUTE_CHECKED);
-
-		if(gdriveKeepLoggedInChecked) {
-			gdriveKeepLoggedInCheckbox.click();
+		syncGdrive.enabled = value;
+		if (!value) {
+			syncGdrive.rememberLogin = false;
 		}
-		toggleGdriveKeepLoggedIn(false, false);
-	} else {
-		gdriveCheckbox.setAttribute(ATTRIBUTE_CHECKED, ATTRIBUTE_CHECKED);
-		toggleGdriveKeepLoggedIn(true, false);
+		this.#localStorage.store(syncGdrive);
 	}
-}
 
-function onClickGdriveKeepLoggedIn() {
-	const gdriveKeepLoggedInChecked = gdriveKeepLoggedInCheckbox.getAttribute(ATTRIBUTE_CHECKED);
-	if(gdriveKeepLoggedInChecked === ATTRIBUTE_CHECKED) {
-		toggleGdriveKeepLoggedIn(true, false);
-	} else {
-		toggleGdriveKeepLoggedIn(true, true);
+	onClickedRememberLogin(event) {
+		const value = event.currentTarget.checked;
+		const syncGdrive = this.#localStorage.readById(Settings.#SYNC_GDRIVE);
+		if (!syncGdrive || !syncGdrive.enabled) {
+			throw Error('Cannot store Remember login password without enabling GDrive first');
+		}
+		syncGdrive.rememberLogin = value;
+		this.#localStorage.store(syncGdrive);
 	}
-}
 
-function onClickSave() {
-	const gdriveChecked = gdriveCheckbox.getAttribute(ATTRIBUTE_CHECKED);
-	const gdriveKeepLoggedInChecked = gdriveKeepLoggedInCheckbox.getAttribute(ATTRIBUTE_CHECKED);
-	
-	if(gdriveChecked)
-		localStorage.setItem(settings.GDRIVE_SYNC, true);
-	else 
-		localStorage.removeItem(settings.GDRIVE_SYNC);
-
-	if(gdriveKeepLoggedInChecked)
-		localStorage.setItem(settings.GDRIVE_KEEP_LOGGED_IN, true);
-	else
-		localStorage.removeItem(settings.GDRIVE_KEEP_LOGGED_IN);
-
-	M.toast({html: 'Saved!', classes: 'rounded'});
+	gDriveSettings() {
+		const gDriveSettings = this.#localStorage.readById(Settings.#SYNC_GDRIVE);
+		if (!gDriveSettings) return { enabled: false, rememberLogin: false };
+		return gDriveSettings;
+	}
 }

@@ -1,5 +1,5 @@
 import Spending from '../model/spending.js';
-import Idb from '../../persistence/idb.js';
+import Idb from '../../common/persistence/idb.js';
 
 export default class SpendingCache {
 	static DATABASE_NAME = 'Spendings';
@@ -111,6 +111,19 @@ export default class SpendingCache {
 	 */
 	async storeAll(spendings) {
 		return this.idb.putAll(this.storeName, spendings);
+	}
+
+	/**
+	 * @param {Array<Spending>} spendings
+	 * @returns {Promise<void>}
+	 */
+	async deleteAll(spendings) {
+		const deletePromises = [];
+		for (let index = 0; index < spendings.length; index += 1) {
+			const spending = spendings[index];
+			deletePromises.push(this.idb.delete(spending));
+		}
+		return Promise.all(deletePromises);
 	}
 
 	/**

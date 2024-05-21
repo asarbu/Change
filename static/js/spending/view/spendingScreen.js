@@ -1,13 +1,13 @@
 import Spending from '../model/spending.js';
 import SpendingReport from '../model/spendingReport.js';
 import { Category } from '../../planning/model/planningModel.js';
-import Dom from '../../gui/dom.js';
-import icons from '../../gui/icons.js';
-import GraphicEffects from '../../gui/effects.js';
-import Modal from '../../gui/modal.js';
+import Dom from '../../common/gui/dom.js';
+import icons from '../../common/gui/icons.js';
+import GraphicEffects from '../../common/gui/effects.js';
+import Modal from '../../common/gui/modal.js';
 import SpendingNavbar from './spendingNavbar.js';
 import SpendingNavbarEventHandlers from './spendingNavbarHandlers.js';
-import Sidenav from '../../gui/sidenav.js';
+import Sidenav from '../../common/gui/sidenav.js';
 
 export default class SpendingScreen {
 	onCreateSpendingCallback = undefined;
@@ -55,9 +55,9 @@ export default class SpendingScreen {
 		this.navbar.selectMonth(this.defaultSpendingReport.month());
 		this.navbar.selectYear(this.year);
 
-		main.appendChild(this.buildCategoryModal(this.categories).toHtml());
-		main.appendChild(this.buildAddSpendingModal().toHtml());
-		main.appendChild(this.buildSpendingSummaryModal(this.defaultSpendingReport).toHtml());
+		this.buildCategoryModal(this.categories);
+		this.buildAddSpendingModal();
+		this.buildSpendingSummaryModal(this.defaultSpendingReport);
 
 		const container = this.build(this.defaultSpendingReport);
 		this.gfx = new GraphicEffects();
@@ -258,8 +258,9 @@ export default class SpendingScreen {
 				),
 				new Dom('input').type('submit').hide().onClick(onClickSave),
 			),
-		).footer(
-			new Dom('h3').text('Cancel'),
+		);
+		this.#addSpendingModal.footer(
+			new Dom('h3').text('Cancel').onClick(this.#addSpendingModal.close.bind(this.#addSpendingModal)),
 			new Dom('h3').text('Save').onClick(onClickSave),
 		);
 
@@ -463,7 +464,9 @@ export default class SpendingScreen {
 	}
 
 	onClickCategoryInput() {
-		this.#addSpendingModal.close();
+		if (this.#addSpendingModal.isOpen()) {
+			this.#addSpendingModal.close();
+		}
 		this.#categoryModal.open();
 	}
 
@@ -474,12 +477,12 @@ export default class SpendingScreen {
 
 	onClickCategory(event) {
 		// TODO move setters in modal
+		this.#categoryModal.close();
+		this.#addSpendingModal.open();
 		const categoryInput = document.getElementById('category-input-field');
 		const descriptionInput = document.getElementById('description-input-field');
 		categoryInput.value = event.target.textContent;
 		descriptionInput.value = event.target.textContent;
-		this.#categoryModal.close();
-		this.#addSpendingModal.open();
 		this.focusInputField('price-input-field');
 	}
 
