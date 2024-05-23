@@ -8,6 +8,7 @@ import Modal from '../../common/gui/modal.js';
 import SpendingNavbar from './spendingNavbar.js';
 import SpendingNavbarEventHandlers from './spendingNavbarHandlers.js';
 import Sidenav from '../../common/gui/sidenav.js';
+import Alert from '../../common/gui/alert.js';
 
 export default class SpendingScreen {
 	onCreateSpendingCallback = undefined;
@@ -217,7 +218,9 @@ export default class SpendingScreen {
 		return spentGoals.map((goal) => {
 			const spentForGoal = spendingReport.totalForGoal(goal).toFixed(2);
 			const foundGoal = goals.find((plannedGoal) => plannedGoal.name === goal);
-			if (!foundGoal) alert(`Goal not found in planning ${goal}`);
+			if (!foundGoal) {
+				Alert.show('Planning error', `Goal not found in planning: ${goal}`);
+			}
 			const budgetForGoal = foundGoal.monthly;
 			return new Dom('tr').append(
 				new Dom('td').text(goal),
@@ -455,6 +458,7 @@ export default class SpendingScreen {
 	}
 
 	onClickSummary() {
+		Alert.show('Google Drive', 'Started synchronization with Google Drive...');
 		this.summaryModal.open();
 	}
 

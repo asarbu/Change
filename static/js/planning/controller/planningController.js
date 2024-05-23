@@ -1,3 +1,4 @@
+import Alert from '../../common/gui/alert.js';
 import Utils from '../../common/utils/utils.js';
 import Settings from '../../settings/settings.js';
 import Planning, { Statement } from '../model/planningModel.js';
@@ -108,6 +109,7 @@ export default class PlanningController {
 	 */
 	async fetchFromGDrive(planningGDrive) {
 		if (await planningGDrive.fileChanged(this.#defaultMonth)) {
+			Alert.show('Google Drive', 'Started synchronization with Google Drive...');
 			const planning = (await this.#cache.readForMonth(this.#defaultMonth));
 			if (planning) {
 				await this.#cache.delete(planning.id);
@@ -116,6 +118,7 @@ export default class PlanningController {
 			const gDrivePlanning = await this.#planningGDrive.read(this.#defaultMonth);
 			await this.#cache.storePlanning(gDrivePlanning);
 			this.#defaultScreen.refresh(gDrivePlanning);
+			Alert.show('Google Drive', 'Finished synchronization with Google Drive');
 		}
 	}
 

@@ -7,6 +7,7 @@ import SpendingReport from '../model/spendingReport.js';
 import Utils from '../../common/utils/utils.js';
 import { Statement } from '../../planning/model/planningModel.js';
 import Settings from '../../settings/settings.js';
+import Alert from '../../common/gui/alert.js';
 
 export default class SpendingController {
 	/** @type {SpendingCache} */
@@ -84,6 +85,8 @@ export default class SpendingController {
 
 		const gDriveSettings = new Settings().gDriveSettings();
 		if (!gDriveSettings || !gDriveSettings.enabled) return;
+
+		Alert.show('Google Drive', 'Started synchronization with Google Drive...');
 		this.#spendingGdrive = await SpendingGDrive.get(
 			this.#defaultYear,
 			gDriveSettings.rememberLogin,
@@ -92,9 +95,12 @@ export default class SpendingController {
 	}
 
 	async fetchAllfromGDrive(gDrive) {
+		const promises = [];
 		for (let month = 0; month < 12; month += 1) {
-			this.fetchFromGDrive(gDrive, month);
+			promises.push(this.fetchFromGDrive(gDrive, month));
 		}
+		await Promise.all(promises);
+		Alert.show('Google Drive', 'Finished synchronization with Google Drive');
 	}
 
 	/**
