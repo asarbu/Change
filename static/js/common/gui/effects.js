@@ -30,6 +30,7 @@ export default class GraphicEffects {
 		this.rootContainer = forContainer;
 		// TDO use percentages instead of width
 		this.containerWidth = this.rootContainer.clientWidth;
+		// TODO remove below line to improve performance. It causes reflow
 		this.sliderWrapper = this.rootContainer.querySelector('.section');
 		this.lastIndex = this.sliderWrapper.children.length + 1;
 		// TDO reuse in memory DOM elements in order to accelerate reflows (use few DOM nodes)
