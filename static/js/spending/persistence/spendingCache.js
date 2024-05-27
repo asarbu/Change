@@ -121,7 +121,7 @@ export default class SpendingCache {
 		const deletePromises = [];
 		for (let index = 0; index < spendings.length; index += 1) {
 			const spending = spendings[index];
-			deletePromises.push(this.idb.delete(spending));
+			deletePromises.push(this.idb.delete(this.storeName, spending.id));
 		}
 		return Promise.all(deletePromises);
 	}
