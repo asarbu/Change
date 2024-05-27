@@ -3,7 +3,7 @@
     "short_name": "Change",
     "start_url": "/index.html",
     "display": "standalone",
-    "background_color": "#fdfdfd",
+    "background_color": "#black-translucent",
     "theme_color": "black-translucent",
     "orientation": "portrait-primary",
     "icons": [
