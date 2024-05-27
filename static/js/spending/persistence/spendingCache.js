@@ -62,7 +62,7 @@ export default class SpendingCache {
 	 * @returns {Promise<Spending>}
 	 */
 	async read(key) {
-		return this.idb.get(this.year, key);
+		return this.idb.get(this.storeName, key);
 	}
 
 	/**
@@ -74,14 +74,14 @@ export default class SpendingCache {
 		const fromDate = new Date(this.year, month, 1);
 		const toDate = new Date(this.year, month + 1, 1);
 		const keyRange = IDBKeyRange.bound(fromDate, toDate, false, true);
-		return this.idb.getAllByIndex(this.year, 'bySpentOn', keyRange);
+		return this.idb.getAllByIndex(this.storeName, 'bySpentOn', keyRange);
 	}
 
 	/**
 	 * @returns {Promise<Array<Spending>>}
 	 */
 	async readAll() {
-		const objects = await this.idb.getAll(this.year);
+		const objects = await this.idb.getAll(this.storeName);
 		const spendings = [];
 		objects.forEach((object) => {
 			spendings.push(new Spending(
@@ -102,7 +102,7 @@ export default class SpendingCache {
 	 */
 	async store(spending) {
 		const spendingToStore = spending;
-		await this.idb.insert(this.year, spendingToStore, spending.id);
+		await this.idb.insert(this.storeName, spendingToStore, spending.id);
 	}
 
 	/**
@@ -131,7 +131,7 @@ export default class SpendingCache {
 	 * @param {Spending} spending Spending to delete
 	 */
 	async delete(spending) {
-		await this.idb.delete(this.year, spending.id);
+		await this.idb.delete(this.storeName, spending.id);
 	}
 
 	async clear() {
