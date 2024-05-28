@@ -30,7 +30,7 @@ const outputOptions = {
 rollup.rollup(inputOptions).then((bundle) => {
 	bundle.generate(outputOptions).then(({ output }) => {
 		output.forEach((chunk) => {
-			const uglified = uglify.minify(chunk.code, { compress: true, mangle: true });
+			const uglified = uglify.minify(chunk.code, { compress: true, mangle: true, webkit: true });
 			if (uglified.error) { throw uglified.error;	}
 
 			if (!fs.existsSync('./dist/js')) {
