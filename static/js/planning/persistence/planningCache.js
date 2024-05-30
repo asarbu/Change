@@ -53,8 +53,42 @@ export default class PlanningCache {
 			await idb.createObjectStores([`${forYear}`]);
 		}
 		const planningCache = new PlanningCache(forYear, idb);
+		if ((await planningCache.count()) < 1) {
+			for (let pastYear = forYear - 1; pastYear > forYear - 11; pastYear -= 1) {
+				if (objectStores.find((objectStore) => objectStore === `${pastYear}`)) {
+					const pastYearCache = new PlanningCache(pastYear, idb);
+					PlanningCache.#fetchPlanningFromCache(pastYearCache);
+					break;
+				}
+			}
+
+			if ((await planningCache.count()) < 1) {
+				const planning = await PlanningCache.#fetchDefaultPlanningFromServer();
+				if (planning) {
+					await planningCache.storePlanning(planning);
+				}
+			}
+		}
 		PlanningCache.#initializedCaches.push(planningCache);
 		return planningCache;
+	}
+
+	static async #fetchPlanningFromCache(cache) {
+		const pastPlannings = await cache.readAll();
+		await cache.updateAll(pastPlannings);
+	}
+
+	static async #fetchDefaultPlanningFromServer() {
+		const response = await fetch(PlanningCache.PLANNING_TEMPLATE_URI);
+		if (response.ok) {
+			const planning = await response.json();
+			const now = new Date();
+			const time = now.getTime();
+			const year = now.getFullYear();
+			const month = now.getMonth();
+			return new Planning(time, year, month, planning);
+		}
+		return undefined;
 	}
 
 	/** @type {Idb} */
