@@ -459,7 +459,6 @@ export default class SpendingScreen {
 	}
 
 	onClickSummary() {
-		Alert.show('Google Drive', 'Started synchronization with Google Drive...');
 		this.summaryModal.open();
 	}
 
