@@ -71,15 +71,15 @@ export default class PlanningController {
 		if (fetchDefaultPlanning) {
 			const emptyCache = (await this.#cache.count()) === 0;
 			if (emptyCache) {
-				await fetch(PlanningCache.PLANNING_TEMPLATE_URI)
-					.then((response) => response.json())
-					.then((planningFile) => {
-						const now = new Date();
-						const time = now.getTime();
-						const year = now.getFullYear();
-						const month = now.getMonth();
-						this.#cache.storePlanning(new Planning(time, year, month, planningFile), time);
-					});
+				const response = await fetch(PlanningCache.PLANNING_TEMPLATE_URI);
+				if (response.ok) {
+					const planning = await response.json();
+					const now = new Date();
+					const time = now.getTime();
+					const year = now.getFullYear();
+					const month = now.getMonth();
+					await this.#cache.storePlanning(new Planning(time, year, month, planning), time);
+				}
 			}
 		}
 		const planning = (await this.#cache.readForMonth(this.#defaultMonth));
