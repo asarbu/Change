@@ -213,12 +213,14 @@ export default class SpendingController {
 				const cachedSpendings = await this.#cache.readAllForMonth(month);
 				// Only filter for deleted spendings.
 				// The added and modified ones will be handled by storeAll
-				const deletedGDriveSpendings = gDriveSpendings.filter(
-					(gDriveSpending) => gDriveSpending.id < fileChanged.oldModified
-					&& !cachedSpendings.find((cachedSpending) => cachedSpending.id === gDriveSpending.id),
+				const deletedGDriveSpendings = cachedSpendings.filter(
+					(cachedSpending) => cachedSpending.id < fileChanged.oldModified
+					&& !gDriveSpendings.find((gDriveSpending) => cachedSpending.id === gDriveSpending.id),
 				);
 
-				await this.#cache.deleteAll(deletedGDriveSpendings);
+				if (deletedGDriveSpendings && deletedGDriveSpendings.length > 0) {
+					await this.#cache.deleteAll(deletedGDriveSpendings);
+				}
 				await this.#cache.storeAll(gDriveSpendings);
 				const monthlyReport = await this.buildSpendingReport(month);
 				this.#defaultScreen.refreshMonth(monthlyReport);

@@ -220,6 +220,7 @@ export default class SpendingScreen {
 			const foundGoal = goals.find((plannedGoal) => plannedGoal.name === goal);
 			if (!foundGoal) {
 				Alert.show('Planning error', `Goal not found in planning: ${goal}`);
+				return new Dom('tr');
 			}
 			const budgetForGoal = foundGoal.monthly;
 			return new Dom('tr').append(
@@ -458,7 +459,6 @@ export default class SpendingScreen {
 	}
 
 	onClickSummary() {
-		Alert.show('Google Drive', 'Started synchronization with Google Drive...');
 		this.summaryModal.open();
 	}
 
