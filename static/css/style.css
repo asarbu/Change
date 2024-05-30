@@ -201,13 +201,12 @@ table {
 	overflow: hidden;
 	border-collapse: collapse;
 	table-layout: auto;
-	width: 90%;
-	margin: 4rem 5% 2rem 5%;
+	width: 95%;
+	margin: 2rem 2.5% 1rem 2.5%;
 }
 
 thead tr {
 	font-weight: bold;
-	font-size: 1rem;
 	text-align: left;
 	background: rgba(200, 200, 200, 0.4);
 	-webkit-backdrop-filter: blur(5px);
@@ -223,11 +222,13 @@ table td {
 	font-size: 1em;
 	overflow: hidden;
 	text-overflow: ellipsis;
+	max-width: 6rem;
 }
 
 th:first-child,
 td:first-child {
 	padding-left: 0.75rem;
+	max-width: 50vw;
 }
 
 tbody>tr {
@@ -486,6 +487,7 @@ label {
 	width: 80%;
 	transition: top 0.2s;
 	box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+	z-index: 7;
 }
 
 .show-alert {
