@@ -140,7 +140,7 @@ export default class PlanningScreen {
 					new Dom('tr').append(
 						new Dom('th').text(category.name).editable().contentEditable(this.#editMode)
 							.onKeyUp(onKeyUpCategoryName),
-						new Dom('th').text('Daily'),
+						new Dom('th').cls('large-screen-only').text('Daily'),
 						new Dom('th').text('Monthly'),
 						new Dom('th').text('Yearly'),
 						new Dom('th').hideable(this.#editMode).onClick(onClickedDeleteCategory).append(
@@ -169,7 +169,7 @@ export default class PlanningScreen {
 		const onKeyUpGoal = this.onKeyUpGoal.bind(this);
 		return new Dom('tr').id(`Goal_${goal.id}`).userData(goal).append(
 			new Dom('td').text(goal.name).editable().contentEditable(this.#editMode).onKeyUp(onKeyUpGoal),
-			new Dom('td').text(goal.daily).editable().contentEditable(this.#editMode).onKeyUp(onKeyUpGoal),
+			new Dom('td').cls('large-screen-only').text(goal.daily).editable().contentEditable(this.#editMode).onKeyUp(onKeyUpGoal),
 			new Dom('td').text(goal.monthly).editable().contentEditable(this.#editMode).onKeyUp(onKeyUpGoal),
 			new Dom('td').text(goal.yearly).editable().contentEditable(this.#editMode).onKeyUp(onKeyUpGoal),
 			new Dom('td').hideable(this.#editMode).onClick(onClickDeleteGoal).append(
@@ -216,7 +216,7 @@ export default class PlanningScreen {
 	buildTotalRow(forCategory) {
 		return new Dom('tr').append(
 			new Dom('td').text('Total'),
-			new Dom('td').text(forCategory.totalDaily()),
+			new Dom('td').cls('large-screen-only').text(forCategory.totalDaily()),
 			new Dom('td').text(forCategory.totalMonthly()),
 			new Dom('td').text(forCategory.totalYearly()),
 			new Dom('td').hideable(this.#editMode).onClick(this.onClickedAddGoal.bind(this)).append(

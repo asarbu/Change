@@ -198,9 +198,9 @@ img {
 
 /*Table styling*/
 table {
-	border-collapse: collapse;
 	overflow: hidden;
-	table-layout: fixed;
+	border-collapse: collapse;
+	table-layout: auto;
 	width: 90%;
 	margin: 4rem 5% 2rem 5%;
 }
@@ -216,8 +216,18 @@ thead tr {
 
 table th,
 table td {
-	padding: 0.75rem 1rem;
-	font-size: 1rem;
+	padding-top: 0.5rem;
+	padding-bottom: 0.5rem;
+	padding-right: 0.25rem;
+	padding-left: 0.25rem;
+	font-size: 1em;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+th:first-child,
+td:first-child {
+	padding-left: 0.75rem;
 }
 
 tbody>tr {
@@ -518,6 +528,9 @@ label {
 		transform: translateX(-33vw);
 		transition: transform .2s;
 	}
+	.large-screen-only{
+		display: none;
+	}
 }
 
 /* Tablet / Small laptop */
@@ -555,5 +568,9 @@ label {
 		/* Need to subtract 20% due to sidenav */
 		width: 75vw;
 		transition: transform 0.2s ease;
+	}
+	
+	.large-screen-only{
+		display: block;
 	}
 }
