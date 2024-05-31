@@ -143,13 +143,15 @@ export default class PlanningScreen {
 						new Dom('th').cls('large-screen-only', 'normal-col').text('Daily'),
 						new Dom('th').cls('normal-col').text('Monthly'),
 						new Dom('th').cls('normal-col').text('Yearly'),
-						new Dom('th').hideable(this.#editMode).onClick(onClickedDeleteCategory).append(
+						new Dom('th').cls('narrow-col').hideable(this.#editMode).onClick(onClickedDeleteCategory).append(
 							Dom.imageButton('Delete row', icons.delete),
 						),
 					),
 				),
 				new Dom('tbody').append(
 					...category.goals.map((goal) => this.buildGoal(goal)),
+				),
+				new Dom('tfoot').append(
 					this.buildTotalRow(category),
 				),
 			).userData(category);

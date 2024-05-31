@@ -156,22 +156,21 @@ export default class SpendingScreen {
 					new Dom('th').text(spendingReport),
 					new Dom('th').cls('normal-col').text('Category'),
 					new Dom('th').cls('normal-col').text('Amount'),
-					new Dom('th').hideable(this.editMode).append(
+					new Dom('th').cls('narrow-col').hideable(this.editMode).append(
 						new Dom('button').onClick(onClickDelete).append(
 							new Dom('img').cls('white-fill').text('Delete').attr('alt', 'Delete').attr('src', icons.delete),
 						),
 					),
 				),
 			),
-			new Dom('tbody'),
+			new Dom('tbody').append(
+				...spendingReport.spendings().map((spending) => this.buildEditableRow(spending)),
+			),
+			new Dom('tfoot').append(
+				this.buildReadOnlyRow(spendingReport.totalAsSpending()),
+			),
 		).userData(spendingReport);
 		this.spendingsHtml = spendingsDom.toHtml();
-
-		const spendings = spendingReport.spendings();
-		for (let i = 0; i < spendings.length; i += 1) {
-			this.appendEditableRowToSlice(spendings[i]);
-		}
-		this.appendReadOnlyRowToSlice(spendingReport.totalAsSpending());
 
 		return spendingsDom;
 	}
@@ -182,6 +181,14 @@ export default class SpendingScreen {
 	 */
 	buildSpendingSummaryModal(spendingReport) {
 		// TODO. Build summary modal according to currently clicked month
+		const spentGoals = spendingReport.goals();
+		const goals = this.categories
+			.map((category) => category.goals)
+			.flat()
+			.filter((goal) => spentGoals.filter((spentGoal) => spentGoal === goal.name).length > 0);
+		const budgetTotal = goals.reduce((accumulator, current) => accumulator + current.monthly, 0);
+		const spendingTotal = spendingReport.total();
+
 		this.summaryModal = new Modal('summary').header(
 			new Dom('h2').text('Expenses summary'),
 		).body(
@@ -195,46 +202,35 @@ export default class SpendingScreen {
 					),
 				),
 				new Dom('tbody').append(
-					...this.buildSummary(spendingReport),
+					...spentGoals.map((goal) => {
+						const spentForGoal = spendingReport.totalForGoal(goal).toFixed(2);
+						const foundGoal = goals.find((plannedGoal) => plannedGoal.name === goal);
+						let budgetForGoal = 1;
+						if (!foundGoal) {
+							Alert.show('Planning error', `Goal not found in planning: ${goal}`);
+						} else {
+							budgetForGoal = foundGoal.monthly;
+						}
+						return new Dom('tr').append(
+							new Dom('td').text(goal),
+							new Dom('td').text(spentForGoal),
+							new Dom('td').text(budgetForGoal),
+							new Dom('td').text(((100 * spentForGoal) / budgetForGoal).toFixed(2)),
+						);
+					}),
+				),
+				new Dom('tfoot').append(
+					new Dom('tr').append(
+						new Dom('td').text('Total'),
+						new Dom('td').text(spendingTotal),
+						new Dom('td').text(budgetTotal),
+						new Dom('td').text(((100 * spendingTotal) / budgetTotal).toFixed(2)),
+					),
 				),
 			),
 		).addCancelFooter();
 
 		return this.summaryModal;
-	}
-
-	/**
-	 * @param {SpendingReport} spendingReport
-	 * @returns {void}
-	 */
-	buildSummary(spendingReport) {
-		const spentGoals = spendingReport.goals();
-		const goals = this.categories
-			.map((category) => category.goals)
-			.flat()
-			.filter((goal) => spentGoals.filter((spentGoal) => spentGoal === goal.name).length > 0);
-		const budgetTotal = goals.reduce((accumulator, current) => accumulator + current.monthly, 0);
-		const spendingTotal = spendingReport.total();
-		return spentGoals.map((goal) => {
-			const spentForGoal = spendingReport.totalForGoal(goal).toFixed(2);
-			const foundGoal = goals.find((plannedGoal) => plannedGoal.name === goal);
-			if (!foundGoal) {
-				Alert.show('Planning error', `Goal not found in planning: ${goal}`);
-				return new Dom('tr');
-			}
-			const budgetForGoal = foundGoal.monthly;
-			return new Dom('tr').append(
-				new Dom('td').text(goal),
-				new Dom('td').text(spentForGoal),
-				new Dom('td').text(budgetForGoal),
-				new Dom('td').text(((100 * spentForGoal) / budgetForGoal).toFixed(2)),
-			);
-		}).concat(new Dom('tr').append(
-			new Dom('td').text('Total'),
-			new Dom('td').text(spendingTotal),
-			new Dom('td').text(budgetTotal),
-			new Dom('td').text(((100 * spendingTotal) / budgetTotal).toFixed(2)),
-		));
 	}
 
 	buildAddSpendingModal() {
@@ -304,7 +300,7 @@ export default class SpendingScreen {
 	 * The row is editable and can be deleted.
 	 * @param {Spending} spending Spending to append
 	 */
-	appendEditableRowToSlice(spending) {
+	buildEditableRow(spending) {
 		const onClickDelete = this.onClickDeleteSpending.bind(this);
 		const onSpendingChanged = this.onSpendingChanged.bind(this);
 		const spentOn = spending.spentOn.toLocaleString('en-GB', { day: 'numeric' });
@@ -320,7 +316,8 @@ export default class SpendingScreen {
 			),
 		);
 
-		this.spendingsHtml.tBodies[0].appendChild(newRow.toHtml());
+		return newRow;
+		// this.spendingsHtml.tBodies[0].appendChild(newRow.toHtml());
 	}
 
 	/**
@@ -328,7 +325,7 @@ export default class SpendingScreen {
 	 * The row cannot be edited nor deleted.
 	 * @param {Spending} spending
 	 */
-	appendReadOnlyRowToSlice(spending) {
+	buildReadOnlyRow(spending) {
 		const spentOn = spending.spentOn.toLocaleString('en-GB', { day: 'numeric' });
 		const newRow = new Dom('tr').id(spending.id).userData(spending).append(
 			new Dom('td').text(spentOn),
@@ -337,8 +334,7 @@ export default class SpendingScreen {
 			new Dom('td').text(spending.price.toFixed(2)),
 			new Dom('td').hideable(this.editMode),
 		);
-
-		this.spendingsHtml.tBodies[0].appendChild(newRow.toHtml());
+		return newRow;
 	}
 
 	// #region event handlers
