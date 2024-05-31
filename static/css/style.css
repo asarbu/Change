@@ -321,6 +321,7 @@ tbody>tr:last-of-type {
 .modal-body {
 	height: 85%;
 	margin: 0 5%;
+	margin-bottom: 7.5%;
 	overflow-y: scroll;
 	position: relative;
 }
