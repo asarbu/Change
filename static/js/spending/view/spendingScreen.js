@@ -149,13 +149,13 @@ export default class SpendingScreen {
 	 */
 	buildTable(spendingReport) {
 		const onClickDelete = this.onClickDeleteSlice.bind(this);
-		const spendingsDom = new Dom('table').id(`table-${spendingReport.month()}`).cls('top-round', 'bot-round').append(
+		const spendingsDom = new Dom('table').id(`table-${spendingReport.month()}`).append(
 			new Dom('thead').append(
 				new Dom('tr').append(
+					new Dom('th').cls('narrow-col').text('Date'),
 					new Dom('th').text(spendingReport),
-					new Dom('th').text('Date'),
-					new Dom('th').text('Category'),
-					new Dom('th').text('Amount'),
+					new Dom('th').cls('normal-col').text('Category'),
+					new Dom('th').cls('normal-col').text('Amount'),
 					new Dom('th').hideable(this.editMode).append(
 						new Dom('button').onClick(onClickDelete).append(
 							new Dom('img').cls('white-fill').text('Delete').attr('alt', 'Delete').attr('src', icons.delete),
@@ -185,13 +185,13 @@ export default class SpendingScreen {
 		this.summaryModal = new Modal('summary').header(
 			new Dom('h2').text('Expenses summary'),
 		).body(
-			new Dom('table').id(`summary-table-${spendingReport}`).cls('top-round', 'bot-round').append(
+			new Dom('table').id(`summary-table-${spendingReport}`).append(
 				new Dom('thead').append(
 					new Dom('tr').append(
 						new Dom('th').text('Category'),
-						new Dom('th').text('Spending'),
-						new Dom('th').text('Budget'),
-						new Dom('th').text('Percent'),
+						new Dom('th').cls('normal-col').text('Spending'),
+						new Dom('th').cls('normal-col').text('Budget'),
+						new Dom('th').cls('normal-col').text('Percent'),
 					),
 				),
 				new Dom('tbody').append(
@@ -307,10 +307,10 @@ export default class SpendingScreen {
 	appendEditableRowToSlice(spending) {
 		const onClickDelete = this.onClickDeleteSpending.bind(this);
 		const onSpendingChanged = this.onSpendingChanged.bind(this);
-		const spentOn = spending.spentOn.toLocaleString('en-GB', { day: 'numeric', month: 'short' });
+		const spentOn = spending.spentOn.toLocaleString('en-GB', { day: 'numeric' });
 		const newRow = new Dom('tr').id(spending.id).userData(spending).append(
-			new Dom('td').text(spending.description).editable().onKeyUp(onSpendingChanged),
 			new Dom('td').text(spentOn).editable().onKeyUp(onSpendingChanged),
+			new Dom('td').text(spending.description).editable().onKeyUp(onSpendingChanged),
 			new Dom('td').text(spending.category).editable().onKeyUp(onSpendingChanged),
 			new Dom('td').text(spending.price).editable().onKeyUp(onSpendingChanged),
 			new Dom('td').hideable(this.editMode).append(
@@ -329,10 +329,10 @@ export default class SpendingScreen {
 	 * @param {Spending} spending
 	 */
 	appendReadOnlyRowToSlice(spending) {
-		const spentOn = spending.spentOn.toLocaleString('en-GB', { day: 'numeric', month: 'short' });
+		const spentOn = spending.spentOn.toLocaleString('en-GB', { day: 'numeric' });
 		const newRow = new Dom('tr').id(spending.id).userData(spending).append(
-			new Dom('td').text(spending.description),
 			new Dom('td').text(spentOn),
+			new Dom('td').text(spending.description),
 			new Dom('td').text(spending.category),
 			new Dom('td').text(spending.price.toFixed(2)),
 			new Dom('td').hideable(this.editMode),

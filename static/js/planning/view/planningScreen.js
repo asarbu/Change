@@ -135,14 +135,14 @@ export default class PlanningScreen {
 
 		for (let i = 0; i < planningCategories.length; i += 1) {
 			const category = planningCategories[i];
-			const categoryDom = new Dom('table').id(`${category.id}`).cls('top-round', 'bot-round').append(
+			const categoryDom = new Dom('table').id(`${category.id}`).append(
 				new Dom('thead').append(
 					new Dom('tr').append(
 						new Dom('th').text(category.name).editable().contentEditable(this.#editMode)
 							.onKeyUp(onKeyUpCategoryName),
-						new Dom('th').cls('large-screen-only').text('Daily'),
-						new Dom('th').text('Monthly'),
-						new Dom('th').text('Yearly'),
+						new Dom('th').cls('large-screen-only', 'normal-col').text('Daily'),
+						new Dom('th').cls('normal-col').text('Monthly'),
+						new Dom('th').cls('normal-col').text('Yearly'),
 						new Dom('th').hideable(this.#editMode).onClick(onClickedDeleteCategory).append(
 							Dom.imageButton('Delete row', icons.delete),
 						),
