@@ -160,9 +160,22 @@ export default class PlanningCache {
 	 */
 	async readForMonth(month) {
 		const keyRange = IDBKeyRange.only(month);
-		const objects = await this.#idb.getAllByIndex(`${this.year}`, 'byMonth', keyRange);
+		const objects = await this.#idb.getAllByIndex(this.#storeName, 'byMonth', keyRange);
 		if (objects.length > 1) throw Error('More than one monthly planning encountered in cache');
-		if (objects.length === 0) return undefined;
+		if (objects.length === 0) {
+			/** @type {Array<Planning>} */
+			const allPlannings = await this.#idb.getAll(this.#storeName);
+			if (allPlannings.length === 0) return PlanningCache.#fetchDefaultPlanningFromServer();
+			for (let pastMonth = month - 1; pastMonth >= 0; pastMonth -= 1) {
+				const foundPlanning = allPlannings.find((pastPlanning) => pastPlanning.month === pastMonth);
+				if (foundPlanning) {
+					foundPlanning.month = month;
+					this.storePlanning(foundPlanning);
+					return foundPlanning;
+				}
+			}
+			return PlanningCache.#fetchDefaultPlanningFromServer();
+		}
 		return Planning.fromJavascriptObject(objects[0]);
 	}
 
