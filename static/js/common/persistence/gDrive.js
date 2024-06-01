@@ -81,11 +81,8 @@ export default class GDrive {
 		}
 		if (Object.keys(params).length > 0) {
 			if (params.state && params.state === this.oauth2.state) {
-				if (localStorage.getItem(this.oauth2.refreshToken) === null) {
-					await this.getRefreshToken(params);
-				} else {
-					await this.#refreshAccessToken();
-				}
+				await this.getRefreshToken(params);
+				await this.#refreshAccessToken();
 			}
 		}
 	}
