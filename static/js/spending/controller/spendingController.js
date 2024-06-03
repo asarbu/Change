@@ -11,7 +11,10 @@ import Alert from '../../common/gui/alert.js';
 
 export default class SpendingController {
 	/** @type {SpendingCache} */
-	#cache = undefined;
+	#spendingCache = undefined;
+
+	/** @type {PlanningCache} */
+	#planningCache = undefined;
 
 	/** @type {number} */
 	#defaultYear = undefined;
@@ -37,27 +40,32 @@ export default class SpendingController {
 	}
 
 	async init() {
-		const planningCache = await PlanningCache.get(this.#defaultYear);
-		this.#cache = await SpendingCache.get(this.#defaultYear);
+		this.#planningCache = await PlanningCache.get(this.#defaultYear);
+		this.#spendingCache = await SpendingCache.get(this.#defaultYear);
 
-		const planning = await planningCache.readForMonth(this.#defaultMonth);
-		const expenseCategories = await planning.readCategories(Statement.EXPENSE);
-		const spendings = await this.#cache.readAll();
+		const planning = await this.#planningCache.readForMonth(this.#defaultMonth);
+		const expenseCategories = planning.readCategories(Statement.EXPENSE);
+		const spendings = await this.#spendingCache.readAll();
 
 		/** @type {Map<number, SpendingReport>} */
 		const spendingReports = new Map();
 		spendingReports.set(
 			this.#defaultMonth,
-			new SpendingReport(this.#defaultYear, this.#defaultMonth),
+			new SpendingReport(this.#defaultYear, this.#defaultMonth, planning.readGoals()),
 		);
 
-		spendings.forEach((spending) => {
+		for (let index = 0; index < spendings.length; index += 1) {
+			const spending = spendings[index];
 			const spendingMonth = spending.spentOn.getMonth();
 			if (!spendingReports.has(spendingMonth)) {
-				spendingReports.set(spendingMonth, new SpendingReport(this.#defaultYear, spendingMonth));
+				const planningInstance = await this.#planningCache.readForMonth(spendingMonth);
+				spendingReports.set(
+					spendingMonth,
+					new SpendingReport(this.#defaultYear, spendingMonth, planningInstance.readGoals()),
+				);
 			}
 			spendingReports.get(spendingMonth).appendSpending(spending);
-		});
+		}
 
 		/** @type {SpendingScreen} */
 		this.#defaultScreen = new SpendingScreen(
@@ -109,8 +117,9 @@ export default class SpendingController {
 	 * @returns {Promise<SpendingReport>}
 	 */
 	async buildSpendingReport(forMonth) {
-		const spendings = await this.#cache.readAllForMonth(forMonth);
-		const spendingReport = new SpendingReport(this.#defaultYear, forMonth);
+		const spendings = await this.#spendingCache.readAllForMonth(forMonth);
+		const planningCategories = (await this.#planningCache.readForMonth(forMonth)).readGoals();
+		const spendingReport = new SpendingReport(this.#defaultYear, forMonth, planningCategories);
 		spendings.filter((currentSpending) => !currentSpending.deleted && !currentSpending.edited)
 			.forEach((currentSpending) => spendingReport.appendSpending(currentSpending));
 		return spendingReport;
@@ -123,7 +132,7 @@ export default class SpendingController {
 		const year = spending.spentOn.getFullYear();
 		const month = spending.spentOn.getMonth();
 
-		if (year !== this.#cache.year) {
+		if (year !== this.#spendingCache.year) {
 			const cache = await SpendingCache.get(spending.spentOn.getFullYear());
 			await cache.store(spending);
 
@@ -133,13 +142,13 @@ export default class SpendingController {
 			}
 			return spending;
 		}
-		await this.#cache.store(spending);
+		await this.#spendingCache.store(spending);
 		const spendingReport = await this.buildSpendingReport(month);
 		this.#defaultScreen.refreshMonth(spendingReport);
 
 		if (this.#spendingGdrive) {
 			await this.fetchFromGDrive(this.#spendingGdrive, month);
-			const spendings = await this.#cache.readAllForMonth(month);
+			const spendings = await this.#spendingCache.readAllForMonth(month);
 			return this.#spendingGdrive.storeSpendings(spendings, month);
 		}
 		return spending;
@@ -171,12 +180,12 @@ export default class SpendingController {
 			.forEach((spending) => {
 				const spendingCopy = { ...spending };
 				delete spendingCopy.edited;
-				this.#cache.store(spendingCopy);
+				this.#spendingCache.store(spendingCopy);
 			});
 
 		spendings
 			.filter((spending) => spending.deleted)
-			.forEach((spending) => this.#cache.delete(spending));
+			.forEach((spending) => this.#spendingCache.delete(spending));
 
 		const month = spendings ? spendings[0].spentOn.getMonth() : undefined;
 		const year = spendings ? spendings[0].spentOn.getFullYear() : undefined;
@@ -188,7 +197,7 @@ export default class SpendingController {
 
 		if (this.#spendingGdrive) {
 			await this.fetchFromGDrive(this.#spendingGdrive, month);
-			const gDriveSpendings = await this.#cache.readAllForMonth(month);
+			const gDriveSpendings = await this.#spendingCache.readAllForMonth(month);
 			return this.#spendingGdrive.storeSpendings(gDriveSpendings, month);
 		}
 		return spendingReport.spendings();
@@ -210,7 +219,7 @@ export default class SpendingController {
 		if (fileChanged) {
 			const gDriveSpendings = await gdrive.readAll(month);
 			if (gDriveSpendings) {
-				const cachedSpendings = await this.#cache.readAllForMonth(month);
+				const cachedSpendings = await this.#spendingCache.readAllForMonth(month);
 				// Only filter for deleted spendings.
 				// The added and modified ones will be handled by storeAll
 				const deletedGDriveSpendings = cachedSpendings.filter(
@@ -219,9 +228,9 @@ export default class SpendingController {
 				);
 
 				if (deletedGDriveSpendings && deletedGDriveSpendings.length > 0) {
-					await this.#cache.deleteAll(deletedGDriveSpendings);
+					await this.#spendingCache.deleteAll(deletedGDriveSpendings);
 				}
-				await this.#cache.storeAll(gDriveSpendings);
+				await this.#spendingCache.storeAll(gDriveSpendings);
 				const monthlyReport = await this.buildSpendingReport(month);
 				this.#defaultScreen.refreshMonth(monthlyReport);
 			}

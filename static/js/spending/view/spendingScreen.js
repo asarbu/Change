@@ -8,7 +8,7 @@ import Modal from '../../common/gui/modal.js';
 import SpendingNavbar from './spendingNavbar.js';
 import SpendingNavbarEventHandlers from './spendingNavbarHandlers.js';
 import Sidenav from '../../common/gui/sidenav.js';
-import Alert from '../../common/gui/alert.js';
+import SpendingSummaryModal from './spendingSummaryModal.js';
 
 export default class SpendingScreen {
 	onCreateSpendingCallback = undefined;
@@ -48,7 +48,7 @@ export default class SpendingScreen {
 		eventHandlers.onClickAddSpending = this.onClickAddSpending.bind(this);
 		eventHandlers.onClickEdit = this.onClickEdit.bind(this);
 		eventHandlers.onClickSave = this.onClickSave.bind(this);
-		eventHandlers.onClickSummary = this.onClickSummary.bind(this);
+		eventHandlers.onClickSummary = this.onClickedSummary.bind(this);
 		eventHandlers.onMonthChanged = this.slideToMonth.bind(this);
 		this.navbar = new SpendingNavbar(this.year, this.defaultSpendingReport, eventHandlers);
 		const main = document.getElementById('main');
@@ -58,7 +58,6 @@ export default class SpendingScreen {
 
 		this.buildCategoryModal(this.categories);
 		this.buildAddSpendingModal();
-		this.buildSpendingSummaryModal(this.defaultSpendingReport);
 
 		const container = this.build(this.defaultSpendingReport);
 		this.gfx = new GraphicEffects();
@@ -173,64 +172,6 @@ export default class SpendingScreen {
 		this.spendingsHtml = spendingsDom.toHtml();
 
 		return spendingsDom;
-	}
-
-	/**
-	 * @param {SpendingReport} spendingReport
-	 * @returns {HTMLElement}
-	 */
-	buildSpendingSummaryModal(spendingReport) {
-		// TODO. Build summary modal according to currently clicked month
-		const spentGoals = spendingReport.goals();
-		const goals = this.categories
-			.map((category) => category.goals)
-			.flat()
-			.filter((goal) => spentGoals.filter((spentGoal) => spentGoal === goal.name).length > 0);
-		const budgetTotal = goals.reduce((accumulator, current) => accumulator + current.monthly, 0);
-		const spendingTotal = spendingReport.total();
-
-		this.summaryModal = new Modal('summary').header(
-			new Dom('h2').text('Expenses summary'),
-		).body(
-			new Dom('table').id(`summary-table-${spendingReport}`).append(
-				new Dom('thead').append(
-					new Dom('tr').append(
-						new Dom('th').text('Category'),
-						new Dom('th').cls('normal-col').text('Spending'),
-						new Dom('th').cls('normal-col').text('Budget'),
-						new Dom('th').cls('normal-col').text('Percent'),
-					),
-				),
-				new Dom('tbody').append(
-					...spentGoals.map((goal) => {
-						const spentForGoal = spendingReport.totalForGoal(goal).toFixed(2);
-						const foundGoal = goals.find((plannedGoal) => plannedGoal.name === goal);
-						let budgetForGoal = 1;
-						if (!foundGoal) {
-							Alert.show('Planning error', `Goal not found in planning: ${goal}`);
-						} else {
-							budgetForGoal = foundGoal.monthly;
-						}
-						return new Dom('tr').append(
-							new Dom('td').text(goal),
-							new Dom('td').text(spentForGoal),
-							new Dom('td').text(budgetForGoal),
-							new Dom('td').text(((100 * spentForGoal) / budgetForGoal).toFixed(2)),
-						);
-					}),
-				),
-				new Dom('tfoot').append(
-					new Dom('tr').append(
-						new Dom('td').text('Total'),
-						new Dom('td').text(spendingTotal),
-						new Dom('td').text(budgetTotal),
-						new Dom('td').text(((100 * spendingTotal) / budgetTotal).toFixed(2)),
-					),
-				),
-			),
-		).addCancelFooter();
-
-		return this.summaryModal;
 	}
 
 	buildAddSpendingModal() {
@@ -454,8 +395,10 @@ export default class SpendingScreen {
 		});
 	}
 
-	onClickSummary() {
-		this.summaryModal.open();
+	onClickedSummary() {
+		const selectedSlice = this.gfx.selectedSlice();
+		new SpendingSummaryModal(selectedSlice.userData).open();
+		// this.summaryModal.open();
 	}
 
 	onClickAddSpending() {
