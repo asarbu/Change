@@ -1,4 +1,4 @@
-import { Category, Goal } from '../../planning/model/planningModel.js';
+import { Goal } from '../../planning/model/planningModel.js';
 import Spending from './spending.js';
 
 export default class SpendingReport {
@@ -11,8 +11,11 @@ export default class SpendingReport {
 	/** @type {Array<Spending>} */
 	#spendings = undefined;
 
-	/** @type {Set<Category>} */
-	#goals = undefined;
+	/** @type {Set<Goal>} */
+	#spentGoals = undefined;
+
+	/** @type {Array<Goal>} */
+	#plannedGoals = undefined;
 
 	/** @type {number} */
 	#total = 0;
@@ -22,12 +25,14 @@ export default class SpendingReport {
 	/**
 	 * @param {number} month Month for which to build the report
 	 * @param {number} year Year for which to build the report
+	 * @param {Array<Goal>} plannedGoals
 	 */
-	constructor(year, month) {
+	constructor(year, month, plannedGoals) {
 		this.#month = month;
 		this.#year = year;
 		this.#spendings = [];
-		this.#goals = new Set();
+		this.#spentGoals = new Set();
+		this.#plannedGoals = plannedGoals;
 	}
 
 	/**
@@ -39,7 +44,7 @@ export default class SpendingReport {
 
 		this.#spendings.push(spending);
 		this.#total += spending.price;
-		this.#goals.add(spending.category);
+		this.#spentGoals.add(spending.category);
 	}
 
 	/**
@@ -65,7 +70,7 @@ export default class SpendingReport {
 	 * @returns {number}
 	 */
 	totalForGoal(goal) {
-		if (!this.#goals.has(goal)) return 0;
+		if (!this.#spentGoals.has(goal)) return 0;
 
 		return this.#spendings.reduce(
 			(accumulator, spending) => accumulator + (spending.category === goal ? spending.price : 0),
@@ -90,11 +95,19 @@ export default class SpendingReport {
 	}
 
 	/**
-	 * Returns a copy of the category data in current report
+	 * Returns a copy of the goal data in current report
 	 * @returns {Array<Goal>}
 	 */
-	goals() {
-		return [...this.#goals];
+	plannedGoals() {
+		return [...this.#plannedGoals];
+	}
+
+	/**
+	 * Returns a copy of the goal data in current report
+	 * @returns {Array<Goal>}
+	 */
+	spentGoals() {
+		return [...this.#spentGoals];
 	}
 
 	/**

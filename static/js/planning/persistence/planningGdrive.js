@@ -134,6 +134,11 @@ export default class PlanningGDrive {
 		return false;
 	}
 
+	async fileExists(forMonth) {
+		const localStorageFile = await this.#initializeLocalStorageFile(forMonth);
+		return localStorageFile.gDriveId === undefined;
+	}
+
 	// #region GDrive LocalStorage operations
 	async #updateLocalStorageModifiedField(fileId) {
 		const localStorageFile = this.#localStorage.readById(fileId);

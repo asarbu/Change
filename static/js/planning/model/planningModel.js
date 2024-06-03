@@ -165,13 +165,18 @@ export default class Planning {
 
 	/**
 	 * Fetch only the categories of type "Expense"
-	 * @returns {Promise<Array<Category>>}
+	 * @returns {Array<Category>}
 	 */
-	async readCategories(forStatementType) {
+	readCategories(forStatementType = Statement.EXPENSE) {
 		/** @type {Array<Planning>} */
 		const expenseStatements = this.statements
 			.filter((statement) => statement.type === forStatementType);
 		return expenseStatements
 			.reduce((categories, statement) => categories.concat(...statement.categories), []);
+	}
+
+	readGoals(forStatementType = Statement.EXPENSE) {
+		const categories = this.readCategories(forStatementType);
+		return categories.reduce((accumulator, current) => accumulator.concat(current.goals), []);
 	}
 }
