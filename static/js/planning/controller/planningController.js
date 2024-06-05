@@ -4,12 +4,10 @@ import Settings from '../../settings/settings.js';
 import Planning, { Statement } from '../model/planningModel.js';
 import PlanningCache from '../persistence/planningCache.js';
 import PlanningGDrive from '../persistence/planningGdrive.js';
+import PlanningPersistence from '../persistence/planningPersistence.js';
 import PlanningScreen from '../view/planningScreen.js';
 
 export default class PlanningController {
-	/** @type {Array<PlanningCache>} */
-	#caches = undefined;
-
 	/** @type {PlanningScreen} */
 	#defaultScreen = undefined;
 
@@ -24,6 +22,9 @@ export default class PlanningController {
 
 	/** @type {PlanningCache} */
 	#cache = undefined;
+
+	/** @type {PlanningPersistence} */
+	#planningPersistence = undefined;
 
 	/** @type {PlanningGDrive} */
 	#planningGDrive = undefined;
@@ -64,28 +65,14 @@ export default class PlanningController {
 	 * @param {boolean} fetchDefaultPlanning
 	 * @returns {Promise<PlanningScreen>}
 	 */
-	async init(fetchDefaultPlanning = false) {
-		this.#caches = await PlanningCache.getAll();
+	async init() {
 		this.#cache = await PlanningCache.get(this.#defaultYear);
-		// TODO ask user if he wants to fetch defaults from server
-		if (fetchDefaultPlanning) {
-			const emptyCache = (await this.#cache.count()) === 0;
-			if (emptyCache) {
-				const response = await fetch(PlanningCache.PLANNING_TEMPLATE_URI);
-				if (response.ok) {
-					const planning = await response.json();
-					const now = new Date();
-					const time = now.getTime();
-					const year = now.getFullYear();
-					const month = now.getMonth();
-					await this.#cache.storePlanning(new Planning(time, year, month, planning), time);
-				}
-			}
-		}
-		const planning = (await this.#cache.readForMonth(this.#defaultMonth));
+		this.#planningPersistence = await PlanningPersistence.get(this.#defaultYear);
+		const planning = await this.#planningPersistence.read(this.#defaultMonth);
 		const screen = await this.initPlanningScreen(planning);
 
-		this.#caches.forEach((cache) => {
+		const years = await this.#planningPersistence.availableYears();
+		years.forEach((cache) => {
 			screen.appendYear(cache.year);
 		});
 		const planningsPerMonths = await this.#cache.readAll();

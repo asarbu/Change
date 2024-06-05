@@ -1,20 +1,20 @@
 import SpendingScreen from '../view/spendingScreen.js';
 import SpendingCache from '../persistence/spendingCache.js';
 import SpendingGDrive from '../persistence/spendingGdrive.js';
-import PlanningCache from '../../planning/persistence/planningCache.js';
 import Spending from '../model/spending.js';
 import SpendingReport from '../model/spendingReport.js';
 import Utils from '../../common/utils/utils.js';
 import { Statement } from '../../planning/model/planningModel.js';
 import Settings from '../../settings/settings.js';
 import Alert from '../../common/gui/alert.js';
+import PlanningPersistence from '../../planning/persistence/planningPersistence.js';
 
 export default class SpendingController {
 	/** @type {SpendingCache} */
 	#spendingCache = undefined;
 
-	/** @type {PlanningCache} */
-	#planningCache = undefined;
+	/** @type {PlanningPersistence} */
+	#planningPersistence = undefined;
 
 	/** @type {number} */
 	#defaultYear = undefined;
@@ -28,7 +28,6 @@ export default class SpendingController {
 	/** @type { SpendingGDrive } */
 	#spendingGdrive = undefined;
 
-	/** @type {Settings} */
 	constructor() {
 		const now = new Date();
 		const queryString = window.location.search;
@@ -40,10 +39,10 @@ export default class SpendingController {
 	}
 
 	async init() {
-		this.#planningCache = await PlanningCache.get(this.#defaultYear);
 		this.#spendingCache = await SpendingCache.get(this.#defaultYear);
+		this.#planningPersistence = await PlanningPersistence.get(this.#defaultYear);
 
-		const planning = await this.#planningCache.readForMonth(this.#defaultMonth);
+		const planning = await this.#planningPersistence.read(this.#defaultMonth);
 		const expenseCategories = planning.readCategories(Statement.EXPENSE);
 		const spendings = await this.#spendingCache.readAll();
 
@@ -58,7 +57,7 @@ export default class SpendingController {
 			const spending = spendings[index];
 			const spendingMonth = spending.spentOn.getMonth();
 			if (!spendingReports.has(spendingMonth)) {
-				const planningInstance = await this.#planningCache.readForMonth(spendingMonth);
+				const planningInstance = await this.#planningPersistence.read(spendingMonth);
 				spendingReports.set(
 					spendingMonth,
 					new SpendingReport(this.#defaultYear, spendingMonth, planningInstance.readGoals()),
@@ -118,7 +117,7 @@ export default class SpendingController {
 	 */
 	async buildSpendingReport(forMonth) {
 		const spendings = await this.#spendingCache.readAllForMonth(forMonth);
-		const planningCategories = (await this.#planningCache.readForMonth(forMonth)).readGoals();
+		const planningCategories = (await this.#planningPersistence.read(forMonth)).readGoals();
 		const spendingReport = new SpendingReport(this.#defaultYear, forMonth, planningCategories);
 		spendings.filter((currentSpending) => !currentSpending.deleted && !currentSpending.edited)
 			.forEach((currentSpending) => spendingReport.appendSpending(currentSpending));

@@ -20,6 +20,9 @@ export default class PlanningGDrive {
 	/** @type {boolean} */
 	#rememberLogin = false;
 
+	/** @type {boolean} */
+	#initialized = false;
+
 	/**
 	 * @param {number} forYear
 	 * @param {boolean} rememberLogin
@@ -63,6 +66,7 @@ export default class PlanningGDrive {
 		if (!yearFolderId) throw Error(`Could not create Planning folder ${this.#year} in GDrive`);
 
 		this.#gdriveFolderId = yearFolderId;
+		this.#initialized = true;
 	}
 
 	// #region CRUD operations
@@ -70,6 +74,7 @@ export default class PlanningGDrive {
 	 * @param {Planning} planning
 	 */
 	async store(planning) {
+		if (!this.#initialized) await this.init();
 		const gdriveFile = await this.#initializeLocalStorageFile(planning.month);
 		this.#markDirty(gdriveFile);
 		const fileName = this.#buildFileName(planning.month);
@@ -82,8 +87,9 @@ export default class PlanningGDrive {
 	}
 
 	async delete(planning) {
+		if (!this.#initialized) await this.init();
 		const localStorageFile = await this.#initializeLocalStorageFile(planning.month);
-		return this.gdrive.delete(localStorageFile.gDriveId);
+		return this.#gDrive.delete(localStorageFile.gDriveId);
 	}
 
 	/**
@@ -93,6 +99,7 @@ export default class PlanningGDrive {
 	 * @returns {Promise<Planning>}
 	 */
 	async read(forMonth) {
+		if (!this.#initialized) await this.init();
 		const localStorageFile = await this.#initializeLocalStorageFile(forMonth);
 		if (!localStorageFile.gDriveId) {
 			return undefined;
@@ -103,12 +110,13 @@ export default class PlanningGDrive {
 	}
 
 	async readAll() {
-		if (!this.#gdriveFolderId) throw new Error('Planning Gdrivenot properly initialized');
+		if (!this.#initialized) await this.init();
 		const children = await this.#gDrive.getChildren(this.#gdriveFolderId);
 		return children;
 	}
 
 	async updateAll(planningCollections) {
+		if (!this.#initialized) await this.init();
 		await this.store(planningCollections);
 	}
 
@@ -121,6 +129,7 @@ export default class PlanningGDrive {
 	 * @returns {Promise<boolean>}
 	 */
 	async fileChanged(forMonth) {
+		if (!this.#initialized) await this.init();
 		const localStorageFile = await this.#initializeLocalStorageFile(forMonth);
 		const gDriveFileId = localStorageFile.gDriveId;
 		if (gDriveFileId) {
@@ -135,8 +144,16 @@ export default class PlanningGDrive {
 	}
 
 	async fileExists(forMonth) {
+		if (!this.#initialized) await this.init();
 		const localStorageFile = await this.#initializeLocalStorageFile(forMonth);
 		return localStorageFile.gDriveId === undefined;
+	}
+
+	async availableFolders() {
+		if (!this.#initialized) await this.init();
+		const changeAppFolderId = await this.#gDrive.findChangeAppFolder();
+		if (!changeAppFolderId) return [];
+		return this.#gDrive.getChildren(changeAppFolderId);
 	}
 
 	// #region GDrive LocalStorage operations
