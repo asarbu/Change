@@ -424,8 +424,10 @@ export default class SpendingScreen {
 		this.#addSpendingModal.open();
 		const categoryInput = document.getElementById('category-input-field');
 		const descriptionInput = document.getElementById('description-input-field');
+		const priceInput = document.getElementById('price-input-field');
 		categoryInput.value = event.target.textContent;
-		descriptionInput.value = event.target.textContent;
+		descriptionInput.value = '';
+		priceInput.value = '';
 		this.focusInputField('price-input-field');
 	}
 
