@@ -52,6 +52,12 @@ export default class Modal {
 		return this;
 	}
 
+	clearBody() {
+		this.content.toHtml().removeChild(this.bodyDom.toHtml());
+		this.bodyDom = undefined;
+		return this;
+	}
+
 	footer(...domElements) {
 		this.content.append(
 			new Dom('div').cls('modal-footer').append(

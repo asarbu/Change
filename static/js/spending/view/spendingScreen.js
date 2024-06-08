@@ -299,6 +299,8 @@ export default class SpendingScreen {
 			this.onCreateSpendingCallback(newSpending);
 		}
 
+		// TODO add here the item in the interface, similar to how we remove/edit items at delete/edit
+
 		this.#addSpendingModal.close();
 	}
 
@@ -384,10 +386,14 @@ export default class SpendingScreen {
 		this.editMode = false;
 
 		this.#drawnSlices.forEach((slice) => {
+			/** @type {SpendingReport} */
 			const spendingReport = slice.toHtml().userData;
 			if (spendingReport) {
 				const changedSpendings = spendingReport.spendings()
-					.filter((spending) => spending.deleted || spending.edited);
+					.filter((spending) => spending.edited);
+				const deletedSpendings = spendingReport.spendings()
+					.filter((spending) => spending.deleted);
+				spendingReport.deleteAll(deletedSpendings);
 
 				if (this.onSaveReportCallback && changedSpendings?.length > 0) {
 					this.onSaveReportCallback(changedSpendings);

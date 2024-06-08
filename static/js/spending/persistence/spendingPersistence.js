@@ -1,7 +1,8 @@
-import Settings from "../../settings/settings";
-import SpendingReport from "../model/spendingReport";
-import SpendingCache from "./spendingCache";
-import SpendingGDrive from "./spendingGdrive";
+import Settings from '../../settings/settings.js';
+import Spending from '../model/spending.js';
+import SpendingReport from '../model/spendingReport.js';
+import SpendingCache from './spendingCache.js';
+import SpendingGDrive from './spendingGdrive.js';
 
 export default class SpendingPersistence {
 	/** @type {number} */
@@ -29,7 +30,7 @@ export default class SpendingPersistence {
 	async readFromCache(forMonth) {
 		const spendings = await this.#spendingCache.readAllForMonth(forMonth);
 		const spendingReport = new SpendingReport(this.#year, forMonth);
-		spendingReport.updateSpendings(spendings);
+		spendingReport.updateAll(spendings);
 		return spendingReport;
 	}
 
@@ -84,11 +85,40 @@ export default class SpendingPersistence {
 				}
 				await this.#spendingCache.storeAll(gDriveSpendings);
 				const monthlyReport = new SpendingReport(this.#year, forMonth);
-				monthlyReport.updateSpendings(gDriveSpendings);
+				monthlyReport.updateAll(gDriveSpendings);
 				return monthlyReport;
 			}
 		}
 		return undefined;
+	}
+
+	/**
+	 * @param {Spending} spending
+	 */
+	async store(spending) {
+		if (spending.spentOn.getFullYear() === this.#year) {
+			await this.#spendingCache.store(spending);
+			if (this.#spendingGDrive) {
+				await this.#spendingGDrive.store(spending);
+			}
+		} else {
+			const year = spending.spentOn.getFullYear();
+			const spendingCache = new SpendingCache(year);
+			await spendingCache.store(spending);
+			if (this.#spendingGDrive) {
+				const spendingGDrive = new SpendingGDrive(year);
+				await spendingGDrive.store(spending);
+			}
+		}
+		return spending;
+	}
+
+	/**
+	 * @param {SpendingReport} fromSpendingReport
+	 */
+	async deleteAll(fromSpendingReport) {
+		this.#spendingCache.deleteAll(fromSpendingReport.spendings());
+		return this.#spendingGDrive.deleteFile(fromSpendingReport.month());
 	}
 
 	/**

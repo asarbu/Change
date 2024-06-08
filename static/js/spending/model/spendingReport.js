@@ -60,7 +60,7 @@ export default class SpendingReport {
 	 * Updates internal information about spendings (e.g. after GDrive sync)
 	 * @param {Array<Spending>} spendings
 	 */
-	updateSpendings(spendings) {
+	updateAll(spendings) {
 		this.#spendings = spendings;
 	}
 

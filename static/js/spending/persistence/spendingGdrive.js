@@ -4,15 +4,8 @@ import LocalStorage from '../../common/persistence/localStorage.js';
 import { Statement } from '../../planning/model/planningModel.js';
 import Utils from '../../common/utils/utils.js';
 import Spending from '../model/spending.js';
-import SpendingCache from './spendingCache.js';
 
 export default class SpendingGDrive {
-	/**
-	 * Used for quick access of local data.
-	 * @type {SpendingCache}
-	 */
-	#spendingsCache = undefined;
-
 	/**
 	 * @type {GDrive}
 	 */
@@ -113,7 +106,7 @@ export default class SpendingGDrive {
 		return spendings;
 	}
 
-	async storeSpending(spending) {
+	async store(spending) {
 		const gdriveFile = await this.#initializeLocalStorageFile(spending.month);
 		this.#markDirty(gdriveFile);
 		const fileName = this.#buildFileName(spending.month);
@@ -154,6 +147,11 @@ export default class SpendingGDrive {
 			}
 		}
 		return undefined;
+	}
+
+	async deleteFile(forMonth) {
+		const file = await this.#initializeLocalStorageFile(forMonth);
+		if (file.gDriveId) this.#gDrive.deleteFile(file.gDriveId);
 	}
 
 	/**
@@ -204,5 +202,9 @@ export default class SpendingGDrive {
 
 	#buildFileName(forMonth) {
 		return `Spending_${this.#year}_${Utils.nameForMonth(forMonth)}.json`;
+	}
+
+	year() {
+		return this.#year;
 	}
 }
