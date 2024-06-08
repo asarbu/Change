@@ -1,4 +1,4 @@
-import { Goal } from '../../planning/model/planningModel.js';
+import Planning, { Goal, Statement } from '../../planning/model/planningModel.js';
 import Spending from './spending.js';
 
 export default class SpendingReport {
@@ -14,8 +14,8 @@ export default class SpendingReport {
 	/** @type {Set<Goal>} */
 	#spentGoals = undefined;
 
-	/** @type {Array<Goal>} */
-	#plannedGoals = undefined;
+	/** @type {Planning} */
+	#planning = undefined;
 
 	/** @type {number} */
 	#total = 0;
@@ -23,16 +23,17 @@ export default class SpendingReport {
 	static MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 	/**
+	 * TODO Pass optional spendings array to constructor
 	 * @param {number} month Month for which to build the report
 	 * @param {number} year Year for which to build the report
-	 * @param {Array<Goal>} plannedGoals
+	 * @param {Planning} planning
 	 */
-	constructor(year, month, plannedGoals) {
+	constructor(year, month, planning) {
 		this.#month = month;
 		this.#year = year;
 		this.#spendings = [];
 		this.#spentGoals = new Set();
-		this.#plannedGoals = plannedGoals;
+		this.#planning = planning;
 	}
 
 	/**
@@ -45,6 +46,22 @@ export default class SpendingReport {
 		this.#spendings.push(spending);
 		this.#total += spending.price;
 		this.#spentGoals.add(spending.category);
+	}
+
+	/**
+	 * Updates internal information about planning (e.g. after GDrive sync)
+	 * @param {Planning} planning
+	 */
+	updatePlanning(planning) {
+		this.#planning = planning;
+	}
+
+	/**
+	 * Updates internal information about spendings (e.g. after GDrive sync)
+	 * @param {Array<Spending>} spendings
+	 */
+	updateSpendings(spendings) {
+		this.#spendings = spendings;
 	}
 
 	/**
@@ -99,7 +116,7 @@ export default class SpendingReport {
 	 * @returns {Array<Goal>}
 	 */
 	plannedGoals() {
-		return [...this.#plannedGoals];
+		return [...this.#planning.readGoals(Statement.EXPENSE)];
 	}
 
 	/**

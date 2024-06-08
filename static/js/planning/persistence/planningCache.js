@@ -38,7 +38,7 @@ export default class PlanningCache {
 	/**
 	 * @returns {Promise<Array<string>>}
 	 */
-	static async availableStores() {
+	static async availableYears() {
 		const idb = await Idb.of(
 			PlanningCache.DATABASE_NAME,
 			PlanningCache.upgradePlanningDatabase,

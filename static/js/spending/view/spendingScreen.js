@@ -33,14 +33,14 @@ export default class SpendingScreen {
 	#sidenav = undefined;
 
 	/**
-	 * @param {number} year
-	 * @param {SpendingReport} defaultSpendingReport
-	 * @param {Array<Category>} categories
+	 * @param {number} defaultYear
+	 * @param {number} defaultMonth
+	 * @param {Array<SpendingReport>} spendingReports
 	 */
-	constructor(year, defaultSpendingReport, categories) {
-		this.year = year;
-		this.defaultSpendingReport = defaultSpendingReport;
-		this.categories = categories;
+	constructor(defaultYear, defaultMonth, spendingReports) {
+		this.year = defaultYear;
+		this.month = defaultMonth;
+		this.spendingReports = spendingReports;
 	}
 
 	init() {
@@ -53,10 +53,11 @@ export default class SpendingScreen {
 		this.navbar = new SpendingNavbar(this.year, this.defaultSpendingReport, eventHandlers);
 		const main = document.getElementById('main');
 		main.appendChild(this.navbar.toHtml());
-		this.navbar.selectMonth(this.defaultSpendingReport.month());
+		this.navbar.selectMonth(this.defaultMonth);
 		this.navbar.selectYear(this.year);
 
-		this.buildCategoryModal(this.categories);
+		// TODO make this dynamic for each month
+		this.buildCategoryModal(this.spendingReports[this.defaultMonth].plannedGoals());
 		this.buildAddSpendingModal();
 
 		const container = this.build(this.defaultSpendingReport);

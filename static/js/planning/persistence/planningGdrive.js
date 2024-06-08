@@ -9,7 +9,10 @@ export default class PlanningGDrive {
 	#year = undefined;
 
 	/** @type {string} */
-	#gdriveFolderId = undefined;
+	#yearFolderId = undefined;
+
+	/** @type {string} */
+	#planningFolderId = undefined;
 
 	/** @type {LocalStorage} */
 	#localStorage = undefined;
@@ -58,6 +61,7 @@ export default class PlanningGDrive {
 			planningFolderId = await this.#gDrive.createFolder('Planning', changeAppFolderId);
 		}
 		if (!planningFolderId) throw Error('Could not create "Planning" folder in GDrive');
+		this.#planningFolderId = planningFolderId;
 
 		let yearFolderId = await this.#gDrive.findFolder(`${this.#year}`, planningFolderId);
 		if (!yearFolderId) {
@@ -65,7 +69,7 @@ export default class PlanningGDrive {
 		}
 		if (!yearFolderId) throw Error(`Could not create Planning folder ${this.#year} in GDrive`);
 
-		this.#gdriveFolderId = yearFolderId;
+		this.#yearFolderId = yearFolderId;
 		this.#initialized = true;
 	}
 
@@ -78,7 +82,7 @@ export default class PlanningGDrive {
 		const gdriveFile = await this.#initializeLocalStorageFile(planning.month);
 		this.#markDirty(gdriveFile);
 		const fileName = this.#buildFileName(planning.month);
-		const fileId = await this.#gDrive.writeFile(this.#gdriveFolderId, fileName, planning, true);
+		const fileId = await this.#gDrive.writeFile(this.#yearFolderId, fileName, planning, true);
 		const gDriveMetadata = await this.#gDrive.readFileMetadata(fileId, GDrive.MODIFIED_TIME_FIELD);
 		const modifiedTime = new Date(gDriveMetadata[GDrive.MODIFIED_TIME_FIELD]).getTime();
 		gdriveFile.modified = modifiedTime;
@@ -111,7 +115,7 @@ export default class PlanningGDrive {
 
 	async readAll() {
 		if (!this.#initialized) await this.init();
-		const children = await this.#gDrive.getChildren(this.#gdriveFolderId);
+		const children = await this.#gDrive.getChildren(this.#yearFolderId);
 		return children;
 	}
 
@@ -149,11 +153,20 @@ export default class PlanningGDrive {
 		return localStorageFile.gDriveId === undefined;
 	}
 
-	async availableFolders() {
+	async availableYears() {
 		if (!this.#initialized) await this.init();
-		const changeAppFolderId = await this.#gDrive.findChangeAppFolder();
-		if (!changeAppFolderId) return [];
-		return this.#gDrive.getChildren(changeAppFolderId);
+		if (!this.#planningFolderId) return [];
+		const yearFolders = await this.#gDrive.getChildren(this.#planningFolderId);
+		if (!yearFolders) return [];
+		return yearFolders.files.map((yearFolder) => yearFolder.name);
+	}
+
+	async availableMonths() {
+		if (!this.#initialized) await this.init();
+		if (!this.#yearFolderId) return [];
+		const monthFiles = await this.#gDrive.getChildren(this.#yearFolderId);
+		if (!monthFiles) return [];
+		return monthFiles.files.map((monthFile) => monthFile.name);
 	}
 
 	// #region GDrive LocalStorage operations
@@ -175,11 +188,11 @@ export default class PlanningGDrive {
 	 * @returns {Promise<GDriveFileInfo>}
 	 */
 	async #initializeLocalStorageFile(forMonth) {
-		if (!this.#gdriveFolderId) throw new Error('Planning Gdrivenot properly initialized');
+		if (!this.#initialized) await this.init();
 		const fileName = this.#buildFileName(forMonth);
 		let localStorageFile = this.#localStorage.readById(fileName);
 		if (!localStorageFile || !localStorageFile.gDriveId) {
-			const gDriveId = await this.#gDrive.findFile(fileName, this.#gdriveFolderId);
+			const gDriveId = await this.#gDrive.findFile(fileName, this.#yearFolderId);
 			if (gDriveId) {
 				// Store 0 in modified time to force load
 				localStorageFile = new GDriveFileInfo(fileName, gDriveId, 0);

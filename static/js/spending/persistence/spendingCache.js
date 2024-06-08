@@ -10,7 +10,7 @@ export default class SpendingCache {
 	 */
 	static #initializedCaches = [];
 
-	static async getAllCacheNames() {
+	static async readYears() {
 		const idb = await Idb.of(
 			SpendingCache.DATABASE_NAME,
 			SpendingCache.upgradeSpendingsDb,

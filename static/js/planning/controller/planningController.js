@@ -23,11 +23,11 @@ export default class PlanningController {
 	/** @type {PlanningCache} */
 	#cache = undefined;
 
-	/** @type {PlanningPersistence} */
-	#planningPersistence = undefined;
-
 	/** @type {PlanningGDrive} */
 	#planningGDrive = undefined;
+
+	/** @type {PlanningPersistence} */
+	#planningPersistence = undefined;
 
 	constructor(forYear = undefined, forMonth = undefined, forStatement = undefined) {
 		const queryString = window.location.search;
@@ -67,46 +67,35 @@ export default class PlanningController {
 	 */
 	async init() {
 		this.#cache = await PlanningCache.get(this.#defaultYear);
-		this.#planningPersistence = await PlanningPersistence.get(this.#defaultYear);
-		const planning = await this.#planningPersistence.read(this.#defaultMonth);
+		const gDriveSettings = new Settings().gDriveSettings();
+		if (!gDriveSettings || !gDriveSettings.enabled);
+
+		this.#planningPersistence = new PlanningPersistence(this.#defaultYear);
+		let planning = await this.#planningPersistence.readFromCache(this.#defaultMonth);
+		if (!planning) {
+			planning = new Planning(0, this.#defaultYear, this.#defaultMonth, []);
+		}
 		const screen = await this.initPlanningScreen(planning);
 
-		const years = await this.#planningPersistence.availableYears();
-		years.forEach((cache) => {
-			screen.appendYear(cache.year);
-		});
-		const planningsPerMonths = await this.#cache.readAll();
-		planningsPerMonths.forEach((plan) => {
-			screen.appendMonth(plan.month);
-		});
+		const cachedYears = await this.#planningPersistence.cachedYears();
+		cachedYears.forEach((year) => screen.appendYear(year));
+		const cachedMonths = await this.#planningPersistence.cachedMonths();
+		cachedMonths.forEach((month) => screen.appendMonth(month));
 
-		const gDriveSettings = new Settings().gDriveSettings();
-		if (!gDriveSettings || !gDriveSettings.enabled) return screen;
-		this.#planningGDrive = await PlanningGDrive.get(
-			this.#defaultYear,
-			gDriveSettings.rememberLogin,
-		);
-		this.fetchFromGDrive(this.#planningGDrive);
+		if (!gDriveSettings.enabled) return screen;
+		Alert.show('Google Drive', 'Started synchronization with Google Drive...');
+		const gDrivePlanning = await this.#planningPersistence.readFromGDrive(this.#defaultMonth);
+		if (gDrivePlanning) screen.refresh(gDrivePlanning);
 
-		return screen;
-	}
-
-	/**
-	 * @param {PlanningGDrive} planningGDrive
-	 */
-	async fetchFromGDrive(planningGDrive) {
-		if (await planningGDrive.fileChanged(this.#defaultMonth)) {
-			Alert.show('Google Drive', 'Started synchronization with Google Drive...');
-			const planning = (await this.#cache.readForMonth(this.#defaultMonth));
-			if (planning) {
-				await this.#cache.delete(planning.id);
+		const gDriveYears = await this.#planningPersistence.gDriveYears();
+		gDriveYears.forEach((year) => {
+			if (!cachedYears.find((cachedYear) => cachedYear === year)) {
+				screen.appendYear(year);
 			}
+		});
 
-			const gDrivePlanning = await this.#planningGDrive.read(this.#defaultMonth);
-			await this.#cache.storePlanning(gDrivePlanning);
-			this.#defaultScreen.refresh(gDrivePlanning);
-			Alert.show('Google Drive', 'Finished synchronization with Google Drive');
-		}
+		Alert.show('Google Drive', 'Finished synchronization with Google Drive');
+		return screen;
 	}
 
 	/**
