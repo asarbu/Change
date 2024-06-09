@@ -71,6 +71,8 @@ export default class PlanningGDrive {
 
 		this.#yearFolderId = yearFolderId;
 		this.#initialized = true;
+
+		// TODO sync dirty plannings
 	}
 
 	// #region CRUD operations
@@ -150,7 +152,7 @@ export default class PlanningGDrive {
 	async fileExists(forMonth) {
 		if (!this.#initialized) await this.init();
 		const localStorageFile = await this.#initializeLocalStorageFile(forMonth);
-		return localStorageFile.gDriveId === undefined;
+		return localStorageFile.gDriveId !== undefined;
 	}
 
 	async availableYears() {

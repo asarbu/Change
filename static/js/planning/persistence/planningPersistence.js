@@ -2,6 +2,7 @@ import Settings from '../../settings/settings.js';
 import PlanningCache from './planningCache.js';
 import Planning from '../model/planningModel.js';
 import PlanningGDrive from './planningGdrive.js';
+import Utils from '../../common/utils/utils.js';
 
 export default class PlanningPersistence {
 	/** @type {number} */
@@ -11,17 +12,20 @@ export default class PlanningPersistence {
 	#planningIdb = undefined;
 
 	/** @type {PlanningGDrive} */
-	#planningGdrive = undefined;
+	#planningGDrive = undefined;
 
 	/** @type {Planning} */
 	#defaultPlanning = undefined;
+
+	/** @type {boolean} */
+	#fetchingFromServer = false;
 
 	constructor(forYear) {
 		this.#defaultYear = forYear;
 		this.#planningIdb = new PlanningCache(forYear);
 		const gDriveSettings = new Settings().gDriveSettings();
 		if (gDriveSettings && gDriveSettings.enabled) {
-			this.#planningGdrive = new PlanningGDrive(forYear, gDriveSettings.rememberLogin);
+			this.#planningGDrive = new PlanningGDrive(forYear, gDriveSettings.rememberLogin);
 		}
 	}
 
@@ -38,24 +42,25 @@ export default class PlanningPersistence {
 	}
 
 	async readAllFromCache() {
+		const availableMonths = await this.cachedMonths();
 		const plannings = [];
-		for (let month = 0; month < 12; month += 1) {
+		availableMonths.forEach((month) => {
 			plannings[month] = this.readFromCache(month);
-		}
+		});
 		return Promise.all(plannings);
 	}
 
 	async readFromGDrive(forMonth) {
 		const cachedPlanning = await this.#planningIdb.readForMonth(forMonth);
-		if (cachedPlanning && !await this.#planningGdrive.fileExists(forMonth)) {
-			this.#planningGdrive.store(cachedPlanning);
+		if (cachedPlanning && !await this.#planningGDrive.fileExists(forMonth)) {
+			this.#planningGDrive.store(cachedPlanning);
 			return undefined;
 		}
-		if (await this.#planningGdrive.fileChanged(forMonth)) {
+		if (await this.#planningGDrive.fileChanged(forMonth)) {
 			if (cachedPlanning) {
 				await this.#planningIdb.delete(cachedPlanning.id);
 			}
-			const gDrivePlanning = await this.#planningGdrive.read(forMonth);
+			const gDrivePlanning = await this.#planningGDrive.read(forMonth);
 			await this.#planningIdb.store(gDrivePlanning);
 			return gDrivePlanning;
 		}
@@ -72,15 +77,48 @@ export default class PlanningPersistence {
 			this.#planningIdb.store(pastPlanning);
 			return pastPlanning;
 		}
-
-		const defaultPlanning = await this.#readDefaultPlanningFromServer();
-		defaultPlanning.month = forMonth;
-		this.#planningIdb.store(defaultPlanning);
-		return defaultPlanning;
+		return undefined;
 	}
 
-	async #readDefaultPlanningFromServer() {
+	async readFromCacheOrDefault(forMonth) {
+		let planning = await this.readFromCache(forMonth);
+		if (!planning) {
+			planning = await this.readDefaultPlanningFromServer();
+			this.store(planning);
+		}
+		if (!planning) {
+			planning = new Planning(new Date(), this.#defaultYear, forMonth, []);
+			this.store(planning);
+		}
+		return planning;
+	}
+
+	async store(planning) {
+		await this.#planningIdb.store(planning);
+		if (this.#planningGDrive) {
+			const success = this.#planningGDrive.store(planning);
+			if (!success) this.#planningGDrive.markDirty(planning);
+		}
+	}
+
+	async delete(planning) {
+		// TODO add edited and deleted properties to planning class to mark them dirty
+		await this.#planningIdb.delete(planning.id);
+		if (this.#planningGDrive) {
+			await this.#planningGDrive.delete(planning);
+		}
+	}
+
+	async readDefaultPlanningFromServer() {
 		if (this.#defaultPlanning) return this.#defaultPlanning;
+		if (!this.#fetchingFromServer) {
+			this.#fetchingFromServer = true;
+		} else {
+			while (!this.#defaultPlanning) {
+				await Utils.sleep(10);
+			}
+			return this.#defaultPlanning;
+		}
 
 		const now = new Date();
 		let statements = [];
@@ -97,6 +135,7 @@ export default class PlanningPersistence {
 		};
 
 		this.#defaultPlanning = Planning.fromJavascriptObject(planning);
+		this.#fetchingFromServer = false;
 		return this.#defaultPlanning;
 	}
 
@@ -112,35 +151,19 @@ export default class PlanningPersistence {
 	}
 
 	/**
-	 * Reads the most recent planning from cache and Gdrive
-	 * @param {number | undefined} forMonth
-	 * @returns {Promise<Planning>}
-	 */
-	async #readPlanningIfExists(forMonth) {
-		const cachedPlanning = await this.#planningIdb.readForMonth(forMonth);
-		if (cachedPlanning) return cachedPlanning;
-
-		if (this.#planningGdrive) {
-			const gDrivePlanning = await this.#planningGdrive.read(forMonth);
-			if (gDrivePlanning) return gDrivePlanning;
-		}
-
-		return undefined;
-	}
-
-	/**
 	 * @returns {Promise<Array<String>>}
 	 */
 	async gDriveYears() {
-		if (this.#planningGdrive) return this.#planningGdrive.availableYears();
+		if (this.#planningGDrive) return this.#planningGDrive.availableYears();
 		return [];
 	}
 
+	// eslint-disable-next-line class-methods-use-this
 	async cachedYears() {
 		return PlanningCache.availableYears();
 	}
 
 	async cachedMonths() {
-		return (await this.#planningIdb.readAll()).map((planning) => `${planning.month}`);
+		return (await this.#planningIdb.readAll()).map((planning) => planning.month);
 	}
 }

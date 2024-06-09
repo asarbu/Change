@@ -23,6 +23,8 @@ export default class SpendingGDrive {
 	/** @type {boolean} */
 	#rememberLogin = false;
 
+	#initialized = false;
+
 	static async getAll() {
 		const gDrive = await GDrive.get(true);
 		await gDrive.init();
@@ -76,6 +78,7 @@ export default class SpendingGDrive {
 	 * @returns {Promise<Array<Spending>>}
 	 */
 	async readAll(forMonth) {
+		if (!this.#initialized) await this.init();
 		const localStorageFile = await this.#initializeLocalStorageFile(forMonth);
 		if (!localStorageFile.gDriveId) {
 			return undefined;
@@ -107,6 +110,7 @@ export default class SpendingGDrive {
 	}
 
 	async store(spending) {
+		if (!this.#initialized) await this.init();
 		const gdriveFile = await this.#initializeLocalStorageFile(spending.month);
 		this.#markDirty(gdriveFile);
 		const fileName = this.#buildFileName(spending.month);
@@ -120,7 +124,12 @@ export default class SpendingGDrive {
 		this.#markClean(gdriveFile);
 	}
 
+	/**
+	 * @param {Array<Spending>} spendings
+	 * @param {number} forMonth
+	 */
 	async storeSpendings(spendings, forMonth) {
+		if (!this.#initialized) await this.init();
 		const gdriveFile = await this.#initializeLocalStorageFile(forMonth);
 		this.#markDirty(gdriveFile);
 		const fileName = this.#buildFileName(forMonth);
@@ -136,6 +145,7 @@ export default class SpendingGDrive {
 	 * @param {number} forMonth
 	 */
 	async fileChanged(forMonth) {
+		if (!this.#initialized) await this.init();
 		const localStorageFile = await this.#initializeLocalStorageFile(forMonth);
 		const gDriveFileId = localStorageFile.gDriveId;
 		if (gDriveFileId) {
@@ -150,6 +160,7 @@ export default class SpendingGDrive {
 	}
 
 	async deleteFile(forMonth) {
+		if (!this.#initialized) await this.init();
 		const file = await this.#initializeLocalStorageFile(forMonth);
 		if (file.gDriveId) this.#gDrive.deleteFile(file.gDriveId);
 	}

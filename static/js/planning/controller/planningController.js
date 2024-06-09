@@ -2,8 +2,6 @@ import Alert from '../../common/gui/alert.js';
 import Utils from '../../common/utils/utils.js';
 import Settings from '../../settings/settings.js';
 import Planning, { Statement } from '../model/planningModel.js';
-import PlanningCache from '../persistence/planningCache.js';
-import PlanningGDrive from '../persistence/planningGdrive.js';
 import PlanningPersistence from '../persistence/planningPersistence.js';
 import PlanningScreen from '../view/planningScreen.js';
 
@@ -19,12 +17,6 @@ export default class PlanningController {
 
 	/** @type {string} */
 	#defaultStatement = undefined;
-
-	/** @type {PlanningCache} */
-	#cache = undefined;
-
-	/** @type {PlanningGDrive} */
-	#planningGDrive = undefined;
 
 	/** @type {PlanningPersistence} */
 	#planningPersistence = undefined;
@@ -66,14 +58,13 @@ export default class PlanningController {
 	 * @returns {Promise<PlanningScreen>}
 	 */
 	async init() {
-		this.#cache = await PlanningCache.get(this.#defaultYear);
-		const gDriveSettings = new Settings().gDriveSettings();
-		if (!gDriveSettings || !gDriveSettings.enabled);
-
 		this.#planningPersistence = new PlanningPersistence(this.#defaultYear);
 		let planning = await this.#planningPersistence.readFromCache(this.#defaultMonth);
 		if (!planning) {
+			// planning = await this.#planningPersistence.readDefaultPlanningFromServer();
+			// if (!planning)
 			planning = new Planning(0, this.#defaultYear, this.#defaultMonth, []);
+			// this.#planningPersistence.store(planning);
 		}
 		const screen = await this.initPlanningScreen(planning);
 
@@ -82,7 +73,9 @@ export default class PlanningController {
 		const cachedMonths = await this.#planningPersistence.cachedMonths();
 		cachedMonths.forEach((month) => screen.appendMonth(month));
 
-		if (!gDriveSettings.enabled) return screen;
+		const gDriveSettings = new Settings().gDriveSettings();
+		if (!gDriveSettings || !gDriveSettings.enabled) return screen;
+
 		Alert.show('Google Drive', 'Started synchronization with Google Drive...');
 		const gDrivePlanning = await this.#planningPersistence.readFromGDrive(this.#defaultMonth);
 		if (gDrivePlanning) screen.refresh(gDrivePlanning);
@@ -117,21 +110,14 @@ export default class PlanningController {
 	 * @param {Promise<Planning>} planning
 	 */
 	async onClickUpdate(planning) {
-		await this.#cache.storePlanning(planning);
-		if (this.#planningGDrive) {
-			const success = this.#planningGDrive.store(planning);
-			if (!success) this.#planningGDrive.markDirty(planning);
-		}
+		await this.#planningPersistence.store(planning);
 	}
 
 	/**
 	 * @param {Planning} planning
 	 */
 	async onClickedDeletePlanning(planning) {
-		await this.#cache.delete(planning.id);
-		if (this.#planningGDrive) {
-			this.#planningGDrive.delete(planning);
-		}
+		await this.#planningPersistence.delete(planning);
 	}
 
 	/**
@@ -139,16 +125,19 @@ export default class PlanningController {
 	 */
 	async onClickAddStatement(statement) {
 		const date = new Date(statement.id);
-		const planningCache = await PlanningCache.get(date.getFullYear());
-		if (planningCache) {
-			let planning = (await planningCache.readForMonth(date.getMonth()));
-			if (planning) {
-				planning.statements.push(statement);
-			} else {
-				planning = new Planning(date.getTime(), date.getFullYear(), date.getMonth(), [statement]);
-			}
-			await planningCache.storePlanning(planning);
-			this.navigateTo(date.getFullYear(), date.getMonth(), statement.name);
+		let planningPersistence = this.#planningPersistence;
+		if (date.getFullYear() !== this.#defaultYear) {
+			planningPersistence = new PlanningPersistence(date.getFullYear());
+		}
+		let planning = await planningPersistence.readFromCache(date.getMonth());
+		if (planning) {
+			planning.statements.push(statement);
+		} else {
+			planning = new Planning(date.getTime(), date.getFullYear(), date.getMonth(), [statement]);
+		}
+		await planningPersistence.storePlanning(planning);
+		if (date.getFullYear() === this.#defaultYear) {
+			this.naviglateTo(date.getFullYear(), date.getMonth(), statement.name);
 		}
 	}
 

@@ -8,11 +8,11 @@ export default class SpendingPersistence {
 	/** @type {number} */
 	#year = undefined;
 
-	/** @type {SpendingCache} */
-	#spendingCache = undefined;
-
 	/** @type {SpendingGDrive} */
 	#spendingGDrive = undefined;
+
+	/** @type {SpendingCache} */
+	#spendingCache = undefined;
 
 	constructor(forYear) {
 		this.#year = forYear;
@@ -117,15 +117,28 @@ export default class SpendingPersistence {
 	 * @param {SpendingReport} fromSpendingReport
 	 */
 	async deleteAll(fromSpendingReport) {
-		this.#spendingCache.deleteAll(fromSpendingReport.spendings());
+		await this.#spendingCache.deleteAll(fromSpendingReport.spendings());
 		return this.#spendingGDrive.deleteFile(fromSpendingReport.month());
+	}
+
+	/**
+	 * @param {SpendingReport} forReport
+	 */
+	async updateAll(forReport) {
+		const cachedSpendings = await this.#spendingCache.readAllForMonth(forReport.month);
+		await this.#spendingCache.deleteAll(cachedSpendings);
+		await this.#spendingCache.storeAll(forReport.spendings());
+
+		if (this.#spendingGDrive) {
+			await this.#spendingGDrive.deleteFile(forReport.month());
+			await this.#spendingGDrive.storeSpendings(forReport.spendings(), forReport.month());
+		}
 	}
 
 	/**
 	 * @returns {Promise<Array<string>>}
 	 */
-	// eslint-disable-next-line class-methods-use-this
 	async cachedYears() {
-		return SpendingCache.readYears();
+		return this.#spendingCache.readYears();
 	}
 }

@@ -51,9 +51,11 @@ export default class SpendingReport {
 	/**
 	 * Updates internal information about planning (e.g. after GDrive sync)
 	 * @param {Planning} planning
+	 * @returns {SpendingReport} This instance
 	 */
 	updatePlanning(planning) {
 		this.#planning = planning;
+		return this;
 	}
 
 	/**
@@ -119,12 +121,42 @@ export default class SpendingReport {
 		return [...this.#planning.readGoals(Statement.EXPENSE)];
 	}
 
+	plannedCategories() {
+		return [...this.#planning.readCategories(Statement.EXPENSE)];
+	}
+
 	/**
 	 * Returns a copy of the goal data in current report
 	 * @returns {Array<Goal>}
 	 */
 	spentGoals() {
 		return [...this.#spentGoals];
+	}
+
+	/**
+	 * Deletes the spendings marked as 'deleted' and removes 'edited' property from changed ones.
+	 * @returns {boolean} Any spending was edited or deleted
+	 */
+	applyChanges() {
+		const deletedSpendings = this.#spendings.filter((spending) => spending.deleted);
+		// Apply deletions first to avoid looking for changes in them later
+		if (deletedSpendings.length > 0) {
+			this.#spendings = this.#spendings.filter((spending) => !spending.deleted);
+		}
+
+		const changedSpendings = this.#spendings.filter((spending) => spending.edited);
+		if (changedSpendings.length > 0) {
+			changedSpendings.forEach((changedSpending) => {
+				for (let index = 0; index < this.changedSpendings.length; index += 1) {
+					const searchedSpending = this.#spendings[index];
+					if (changedSpending.id === searchedSpending.id) {
+						delete searchedSpending.edited;
+					}
+				}
+			});
+		}
+
+		return changedSpendings.length > 0 || deletedSpendings.length > 0;
 	}
 
 	/**

@@ -32,38 +32,48 @@ export default class SpendingScreen {
 	/** @type {Sidenav} */
 	#sidenav = undefined;
 
+	/** @type {number} */
+	#month = undefined;
+
+	/** @type {number} */
+	#year = undefined;
+
 	/**
 	 * @param {number} defaultYear
 	 * @param {number} defaultMonth
 	 * @param {Array<SpendingReport>} spendingReports
 	 */
 	constructor(defaultYear, defaultMonth, spendingReports) {
-		this.year = defaultYear;
-		this.month = defaultMonth;
+		this.#year = defaultYear;
+		this.#month = defaultMonth;
 		this.spendingReports = spendingReports;
 	}
 
 	init() {
+		const defaultReport = this.spendingReports[this.#month];
 		const eventHandlers = new SpendingNavbarEventHandlers();
 		eventHandlers.onClickAddSpending = this.onClickAddSpending.bind(this);
 		eventHandlers.onClickEdit = this.onClickEdit.bind(this);
 		eventHandlers.onClickSave = this.onClickSave.bind(this);
 		eventHandlers.onClickSummary = this.onClickedSummary.bind(this);
 		eventHandlers.onMonthChanged = this.slideToMonth.bind(this);
-		this.navbar = new SpendingNavbar(this.year, this.defaultSpendingReport, eventHandlers);
+
+		this.navbar = new SpendingNavbar(this.#year, defaultReport.month(), eventHandlers);
 		const main = document.getElementById('main');
+		// TODO move append children to the end of init
 		main.appendChild(this.navbar.toHtml());
-		this.navbar.selectMonth(this.defaultMonth);
-		this.navbar.selectYear(this.year);
+		this.navbar.selectMonth(this.#month);
+		this.navbar.selectYear(this.#year);
 
 		// TODO make this dynamic for each month
-		this.buildCategoryModal(this.spendingReports[this.defaultMonth].plannedGoals());
+		this.buildCategoryModal(defaultReport.plannedCategories());
 		this.buildAddSpendingModal();
 
-		const container = this.build(this.defaultSpendingReport);
+		const container = this.buildScreen(defaultReport);
 		this.gfx = new GraphicEffects();
 		this.gfx.init(container);
 
+		this.spendingReports.forEach((spendingReport) => this.refreshMonth(spendingReport));
 		this.#sidenav = new Sidenav(this.gfx);
 		document.body.appendChild(this.#sidenav.toHtml());
 	}
@@ -126,10 +136,9 @@ export default class SpendingScreen {
 	}
 
 	/**
-	 * @param {SpendingReport} spendingReport
 	 * @returns {HTMLElement}
 	 */
-	build(spendingReport) {
+	buildScreen() {
 		this.section = new Dom('div').id('spendings-section').cls('section');
 		this.screen = new Dom('div').cls('container').append(
 			this.section,
@@ -137,7 +146,7 @@ export default class SpendingScreen {
 
 		const main = document.getElementById('main');
 		main.appendChild(this.screen.toHtml());
-		main.appendChild(this.buildTable(spendingReport).toHtml());
+		// main.appendChild(this.buildTable(spendingReport).toHtml());
 
 		return this.screen.toHtml();
 	}
@@ -214,26 +223,34 @@ export default class SpendingScreen {
 	 * @returns {Dom}
 	 */
 	buildCategoryModal(forCategories) {
-		const onClickCategory = this.onClickCategory.bind(this);
-		const onClickCategoryHeader = this.onClickCategoryHeader.bind(this);
-		this.#categoryModal = new Modal('categories')
-			.header(
-				new Dom('h2').text('Insert Spending'),
-			).body(
-				new Dom('div').cls('accordion').append(
-					...forCategories.map((category) => new Dom('div').cls('accordion-item').onTransitionEnd(onClickCategoryHeader).append(
-						new Dom('input').id(category.id).cls('accordion-state').attr('type', 'checkbox'),
-						new Dom('label').cls('accordion-header').attr('for', category.id).append(
-							new Dom('span').text(category.name),
-						),
-						new Dom('div').cls('accordion-content').append(
-							...category.goals.map((goal) => new Dom('div').cls('accordion-secondary').text(goal.name).onClick(onClickCategory)),
-						),
-					)),
-				),
-			).scrollable()
-			.addCancelFooter();
-
+		if (!forCategories || forCategories.length === 0) {
+			this.#categoryModal = new Modal('categories')
+				.header(
+					new Dom('h2').text('Cannot Insert Spending'),
+				).body(
+					new Dom('div').cls('accordion').text('Plan your goals first!'),
+				).addCancelFooter();
+		} else {
+			const onClickCategory = this.onClickCategory.bind(this);
+			const onClickCategoryHeader = this.onClickCategoryHeader.bind(this);
+			this.#categoryModal = new Modal('categories')
+				.header(
+					new Dom('h2').text('Insert Spending'),
+				).body(
+					new Dom('div').cls('accordion').append(
+						...forCategories.map((category) => new Dom('div').cls('accordion-item').onTransitionEnd(onClickCategoryHeader).append(
+							new Dom('input').id(category.id).cls('accordion-state').attr('type', 'checkbox'),
+							new Dom('label').cls('accordion-header').attr('for', category.id).append(
+								new Dom('span').text(category.name),
+							),
+							new Dom('div').cls('accordion-content').append(
+								...category.goals.map((goal) => new Dom('div').cls('accordion-secondary').text(goal.name).onClick(onClickCategory)),
+							),
+						)),
+					),
+				).scrollable()
+				.addCancelFooter();
+		}
 		return this.#categoryModal;
 	}
 
@@ -389,14 +406,10 @@ export default class SpendingScreen {
 			/** @type {SpendingReport} */
 			const spendingReport = slice.toHtml().userData;
 			if (spendingReport) {
-				const changedSpendings = spendingReport.spendings()
-					.filter((spending) => spending.edited);
-				const deletedSpendings = spendingReport.spendings()
-					.filter((spending) => spending.deleted);
-				spendingReport.deleteAll(deletedSpendings);
-
-				if (this.onSaveReportCallback && changedSpendings?.length > 0) {
-					this.onSaveReportCallback(changedSpendings);
+				const reportChanged = spendingReport.applyChanges();
+				// Do not call the handler if the report did not change
+				if (this.onSaveReportCallback && reportChanged) {
+					this.onSaveReportCallback(spendingReport);
 				}
 			}
 		});

@@ -4,47 +4,12 @@ import Idb from '../../common/persistence/idb.js';
 export default class SpendingCache {
 	static DATABASE_NAME = 'Spendings';
 
-	/**
-	 * Avoid initializing IDBs multiple times so we can update versions
-	 * @type {Array<SpendingCache>}
-	 */
-	static #initializedCaches = [];
-
-	static async readYears() {
-		const idb = await Idb.of(
-			SpendingCache.DATABASE_NAME,
-			SpendingCache.upgradeSpendingsDb,
-		);
-		const objectStores = idb.getObjectStores();
-		return objectStores;
-	}
-
-	/**
-	 * Fetches or creates a Spending cache for the provided year
-	 * @param {number} forYear Year for which to retrieve the SpendingCache
-	 * @returns {Promise<SpendingCache>}
-	 */
-	static async get(forYear) {
-		const cache = SpendingCache.#initializedCaches.find((c) => c.year === forYear);
-		if (cache) return cache;
-
-		const idb = await Idb.of(
-			SpendingCache.DATABASE_NAME,
-			SpendingCache.upgradeSpendingsDb,
-		);
-		const objectStores = idb.getObjectStores();
-		if (!objectStores.find((objectStore) => objectStore === `${forYear}`)) {
-			await idb.createObjectStores([`${forYear}`]);
-		}
-		const spendingCache = new SpendingCache(forYear, idb);
-		SpendingCache.#initializedCaches.push(spendingCache);
-		return spendingCache;
-	}
+	#initialized = false;
 
 	/**
 	 * @type {Idb}
 	 */
-	idb = undefined;
+	#idb = undefined;
 
 	/**
 	 * @param {number} year Year for which to initialize current cache
@@ -53,7 +18,20 @@ export default class SpendingCache {
 	constructor(year, idb) {
 		this.year = +year;
 		this.storeName = `${this.year}`;
-		this.idb = idb;
+		this.#idb = idb;
+	}
+
+	async #init() {
+		const idb = await Idb.of(
+			SpendingCache.DATABASE_NAME,
+			SpendingCache.upgradeSpendingsDb,
+		);
+		const objectStores = idb.getObjectStores();
+		if (!objectStores.find((objectStore) => objectStore === `${this.year}`)) {
+			await idb.createObjectStores([`${this.year}`]);
+		}
+		this.#idb = idb;
+		this.#initialized = true;
 	}
 
 	/**
@@ -62,7 +40,8 @@ export default class SpendingCache {
 	 * @returns {Promise<Spending>}
 	 */
 	async read(key) {
-		return this.idb.get(this.storeName, key);
+		if (!this.#initialized) await this.#init();
+		return this.#idb.get(this.storeName, key);
 	}
 
 	/**
@@ -71,17 +50,19 @@ export default class SpendingCache {
 	 * @returns {Promise<Array<Spending>>}
 	 */
 	async readAllForMonth(month) {
+		if (!this.#initialized) await this.#init();
 		const fromDate = new Date(this.year, month, 1);
 		const toDate = new Date(this.year, month + 1, 1);
 		const keyRange = IDBKeyRange.bound(fromDate, toDate, false, true);
-		return this.idb.getAllByIndex(this.storeName, 'bySpentOn', keyRange);
+		return this.#idb.getAllByIndex(this.storeName, 'bySpentOn', keyRange);
 	}
 
 	/**
 	 * @returns {Promise<Array<Spending>>}
 	 */
 	async readAll() {
-		const objects = await this.idb.getAll(this.storeName);
+		if (!this.#initialized) await this.#init();
+		const objects = await this.#idb.getAll(this.storeName);
 		const spendings = [];
 		objects.forEach((object) => {
 			spendings.push(new Spending(
@@ -101,8 +82,9 @@ export default class SpendingCache {
 	 * @param {Spending} spending Spending to persist
 	 */
 	async store(spending) {
+		if (!this.#initialized) await this.#init();
 		const spendingToStore = spending;
-		await this.idb.insert(this.storeName, spendingToStore, spending.id);
+		await this.#idb.insert(this.storeName, spendingToStore, spending.id);
 	}
 
 	/**
@@ -110,7 +92,8 @@ export default class SpendingCache {
 	 * @returns {Promise<void>}
 	 */
 	async storeAll(spendings) {
-		return this.idb.putAll(this.storeName, spendings);
+		if (!this.#initialized) await this.#init();
+		return this.#idb.putAll(this.storeName, spendings);
 	}
 
 	/**
@@ -118,10 +101,11 @@ export default class SpendingCache {
 	 * @returns {Promise<void>}
 	 */
 	async deleteAll(spendings) {
+		if (!this.#initialized) await this.#init();
 		const deletePromises = [];
 		for (let index = 0; index < spendings.length; index += 1) {
 			const spending = spendings[index];
-			deletePromises.push(this.idb.delete(this.storeName, spending.id));
+			deletePromises.push(this.#idb.delete(this.storeName, spending.id));
 		}
 		return Promise.all(deletePromises);
 	}
@@ -131,11 +115,13 @@ export default class SpendingCache {
 	 * @param {Spending} spending Spending to delete
 	 */
 	async delete(spending) {
-		await this.idb.delete(this.storeName, spending.id);
+		if (!this.#initialized) await this.#init();
+		await this.#idb.delete(this.storeName, spending.id);
 	}
 
 	async clear() {
-		await this.idb.clear(this.storeName);
+		if (!this.#initialized) await this.#init();
+		await this.#idb.clear(this.storeName);
 	}
 
 	/**
@@ -158,5 +144,15 @@ export default class SpendingCache {
 				store.createIndex('byCategory', 'category', { unique: false });
 			});
 		}
+	}
+
+	// eslint-disable-next-line class-methods-use-this
+	async readYears() {
+		const idb = await Idb.of(
+			SpendingCache.DATABASE_NAME,
+			SpendingCache.upgradeSpendingsDb,
+		);
+		const objectStores = idb.getObjectStores();
+		return objectStores;
 	}
 }
