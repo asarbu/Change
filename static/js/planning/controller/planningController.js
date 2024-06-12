@@ -61,10 +61,8 @@ export default class PlanningController {
 		this.#planningPersistence = new PlanningPersistence(this.#defaultYear);
 		let planning = await this.#planningPersistence.readFromCache(this.#defaultMonth);
 		if (!planning) {
-			// planning = await this.#planningPersistence.readDefaultPlanningFromServer();
-			// if (!planning)
+			// TODO prompt user do create his own planning, fetch default or activate gDrive
 			planning = new Planning(0, this.#defaultYear, this.#defaultMonth, []);
-			// this.#planningPersistence.store(planning);
 		}
 		const screen = await this.initPlanningScreen(planning);
 
@@ -84,6 +82,13 @@ export default class PlanningController {
 		gDriveYears.forEach((year) => {
 			if (!cachedYears.find((cachedYear) => cachedYear === year)) {
 				screen.appendYear(year);
+			}
+		});
+
+		const gDriveMonths = await this.#planningPersistence.gDriveMonths();
+		gDriveMonths.forEach((month) => {
+			if (!cachedMonths.find((cachedMonth) => cachedMonth === month)) {
+				screen.appendMonth(month);
 			}
 		});
 

@@ -16,6 +16,7 @@ export default class GDriveFileInfo {
 
 	constructor(id, gDriveId, modified = 0, dirty = false) {
 		this.id = id;
+		this.fileName = id;
 		this.gDriveId = gDriveId;
 		this.dirty = dirty;
 		this.modified = modified;

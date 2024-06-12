@@ -81,9 +81,9 @@ export default class PlanningGDrive {
 	 */
 	async store(planning) {
 		if (!this.#initialized) await this.init();
-		const gdriveFile = await this.#initializeLocalStorageFile(planning.month);
+		const gdriveFile = await this.#initializeGDriveFile(planning.month);
 		this.#markDirty(gdriveFile);
-		const fileName = this.#buildFileName(planning.month);
+		const { fileName } = gdriveFile;
 		const fileId = await this.#gDrive.writeFile(this.#yearFolderId, fileName, planning, true);
 		const gDriveMetadata = await this.#gDrive.readFileMetadata(fileId, GDrive.MODIFIED_TIME_FIELD);
 		const modifiedTime = new Date(gDriveMetadata[GDrive.MODIFIED_TIME_FIELD]).getTime();
@@ -94,7 +94,7 @@ export default class PlanningGDrive {
 
 	async delete(planning) {
 		if (!this.#initialized) await this.init();
-		const localStorageFile = await this.#initializeLocalStorageFile(planning.month);
+		const localStorageFile = await this.#initializeGDriveFile(planning.month);
 		return this.#gDrive.delete(localStorageFile.gDriveId);
 	}
 
@@ -106,7 +106,7 @@ export default class PlanningGDrive {
 	 */
 	async read(forMonth) {
 		if (!this.#initialized) await this.init();
-		const localStorageFile = await this.#initializeLocalStorageFile(forMonth);
+		const localStorageFile = await this.#initializeGDriveFile(forMonth);
 		if (!localStorageFile.gDriveId) {
 			return undefined;
 		}
@@ -136,22 +136,34 @@ export default class PlanningGDrive {
 	 */
 	async fileChanged(forMonth) {
 		if (!this.#initialized) await this.init();
-		const localStorageFile = await this.#initializeLocalStorageFile(forMonth);
-		const gDriveFileId = localStorageFile.gDriveId;
-		if (gDriveFileId) {
-			const metadata = await this.#gDrive
-				.readFileMetadata(gDriveFileId, GDrive.MODIFIED_TIME_FIELD);
-			const modifiedTime = new Date(metadata[GDrive.MODIFIED_TIME_FIELD]).getTime();
-			if (localStorageFile.modified < modifiedTime) {
-				return true;
+		const localStorageFile = await this.#initializeGDriveFile(forMonth);
+		let { gDriveId } = localStorageFile;
+		if (!gDriveId) {
+			gDriveId = await this.#gDrive.findFile(localStorageFile.fileName, this.#yearFolderId);
+			if (gDriveId) {
+				localStorageFile.gDriveId = gDriveId;
+				this.#localStorage.store(localStorageFile);
 			}
+		}
+		if (!gDriveId) return false;
+
+		const metadata = await this.#gDrive.readFileMetadata(gDriveId, GDrive.MODIFIED_TIME_FIELD);
+		const modifiedTime = new Date(metadata[GDrive.MODIFIED_TIME_FIELD]).getTime();
+		if (localStorageFile.modified < modifiedTime) {
+			localStorageFile.modified = modifiedTime;
+			this.#localStorage.store(localStorageFile);
+			return true;
 		}
 		return false;
 	}
 
 	async fileExists(forMonth) {
 		if (!this.#initialized) await this.init();
-		const localStorageFile = await this.#initializeLocalStorageFile(forMonth);
+		const fileName = this.#buildFileName(forMonth);
+		const gDriveId = await this.#gDrive.findFile(fileName, this.#yearFolderId);
+		const localStorageFile = await this.#initializeGDriveFile(forMonth);
+		localStorageFile.gDriveId = gDriveId;
+		this.#localStorage.store(localStorageFile);
 		return localStorageFile.gDriveId !== undefined;
 	}
 
@@ -168,7 +180,8 @@ export default class PlanningGDrive {
 		if (!this.#yearFolderId) return [];
 		const monthFiles = await this.#gDrive.getChildren(this.#yearFolderId);
 		if (!monthFiles) return [];
-		return monthFiles.files.map((monthFile) => monthFile.name);
+		const regex = /.*_(.*).json/;
+		return monthFiles.files.map((monthFile) => Utils.monthForName(monthFile.name.match(regex)[1]));
 	}
 
 	// #region GDrive LocalStorage operations
@@ -189,19 +202,15 @@ export default class PlanningGDrive {
 	 * @param {number} forMonth
 	 * @returns {Promise<GDriveFileInfo>}
 	 */
-	async #initializeLocalStorageFile(forMonth) {
+	async #initializeGDriveFile(forMonth) {
+		// TODO merge together finding of file, reading modified date, and data.
+		// This will merge together multiple requests
 		if (!this.#initialized) await this.init();
 		const fileName = this.#buildFileName(forMonth);
 		let localStorageFile = this.#localStorage.readById(fileName);
-		if (!localStorageFile || !localStorageFile.gDriveId) {
-			const gDriveId = await this.#gDrive.findFile(fileName, this.#yearFolderId);
-			if (gDriveId) {
-				// Store 0 in modified time to force load
-				localStorageFile = new GDriveFileInfo(fileName, gDriveId, 0);
-				this.#localStorage.store(localStorageFile);
-			} else {
-				localStorageFile = new GDriveFileInfo(fileName, undefined, 0, true);
-			}
+		if (!localStorageFile) {
+			localStorageFile = new GDriveFileInfo(fileName, undefined, 0);
+			this.#localStorage.store(localStorageFile);
 		}
 		return localStorageFile;
 	}

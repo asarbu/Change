@@ -73,6 +73,7 @@ export default class PlanningPersistence {
 
 		const pastPlanning = await this.#fetchPastPlannigFromIdb(forMonth);
 		if (pastPlanning) {
+			pastPlanning.id = new Date().getTime();
 			pastPlanning.month = forMonth;
 			this.#planningIdb.store(pastPlanning);
 			return pastPlanning;
@@ -155,6 +156,14 @@ export default class PlanningPersistence {
 	 */
 	async gDriveYears() {
 		if (this.#planningGDrive) return this.#planningGDrive.availableYears();
+		return [];
+	}
+
+	/**
+	 * @returns {Promise<Array<String>>}
+	 */
+	async gDriveMonths() {
+		if (this.#planningGDrive) return this.#planningGDrive.availableMonths();
 		return [];
 	}
 

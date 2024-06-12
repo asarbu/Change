@@ -25,7 +25,7 @@ export default class SpendingController {
 	#screen = undefined;
 
 	/** @type { Array<SpendingReport> } */
-	#spendingReports = undefined;
+	#cachedReports = undefined;
 
 	constructor() {
 		const now = new Date();
@@ -40,36 +40,41 @@ export default class SpendingController {
 	}
 
 	async init() {
-		this.#spendingReports = await this.#spendingPersistence.readAllFromCache();
+		this.#cachedReports = await this.#spendingPersistence.readAllFromCache();
 		const cachedPlannings = await this.#planningPersistence.readAllFromCache();
-		if (this.#spendingReports.length === 0) {
-			this.#spendingReports[this.#defaultMonth] = new SpendingReport(
+		const defaultPlanning = new Planning(
+			new Date().getTime(),
+			this.#defaultYear,
+			this.#defaultMonth,
+		);
+
+		if (this.#cachedReports.length === 0) {
+			this.#cachedReports[this.#defaultMonth] = new SpendingReport(
 				this.#defaultYear,
 				this.#defaultMonth,
 			);
 		}
 
 		const updatedReports = [];
-		for (let month = 0; month < this.#spendingReports.length; month += 1) {
-			const report = this.#spendingReports[month];
+		for (let month = 0; month < this.#cachedReports.length; month += 1) {
+			const report = this.#cachedReports[month];
 			if (report) {
-				updatedReports[month] = this.#updateReportPlanning(report, cachedPlannings[month]);
+				const planning = cachedPlannings[month] || defaultPlanning;
+				report.updatePlanning(planning);
 			}
 		}
 		await Promise.all(updatedReports);
 
 		/** @type {SpendingScreen} */
-		this.#screen = new SpendingScreen(this.#defaultYear, this.#defaultMonth, this.#spendingReports);
+		this.#screen = new SpendingScreen(this.#defaultYear, this.#defaultMonth, this.#cachedReports);
 		this.#screen.init();
 		this.#screen.onCreateSpendingCallback = this.onCreatedSpending.bind(this);
 		this.#screen.onSaveReportCallback = this.onSavedReport.bind(this);
 		this.#screen.onDeleteReportCallback = this.onDeletedReport.bind(this);
 		this.#screen.jumpToMonth(this.#defaultMonth);
 
-		const availableCaches = await this.#spendingPersistence.cachedYears();
-		availableCaches.forEach((spendingCache) => {
-			this.#screen.updateYear(spendingCache.year);
-		});
+		const availableYears = await this.#spendingPersistence.cachedYears();
+		availableYears.forEach((spendingCache) => this.#screen.updateYear(spendingCache.year));
 
 		const gDriveSettings = new Settings().gDriveSettings();
 		if (!gDriveSettings || !gDriveSettings.enabled) return;
@@ -78,44 +83,21 @@ export default class SpendingController {
 		const gDrivePlannings = await this.#planningPersistence.readAllFromGDrive();
 		const gDriveReports = await this.#spendingPersistence.readAllFromGDrive();
 
-		const updatedGdriveReports = [];
-		for (let month = 0; month < 12; month += 1) {
-			let report = gDriveReports[month];
-			let planning = gDrivePlannings[month];
-
-			if (!planning && report) {
-				planning = cachedPlannings[month];
-			}
-			if (!report && planning) {
-				report = this.#spendingReports[month];
-			}
-			updatedGdriveReports[month] = this.#updateReportPlanning(report, planning);
-		}
-
-		(await Promise.all(updatedGdriveReports)).forEach((report) => {
-			if (report) this.#screen.refreshMonth(report);
+		gDriveReports.filter((item) => item).forEach((gDriveReport) => {
+			const month = gDriveReport.month();
+			const planning = gDrivePlannings[month] || cachedPlannings[month] || defaultPlanning;
+			gDriveReport.updatePlanning(planning);
+			this.#cachedReports[month] = gDriveReport;
+			this.#screen.refreshMonth(gDriveReport);
 		});
 		Alert.show('Google Drive', 'Finished synchronization with Google Drive');
-	}
-
-	async #updateReportPlanning(spendingReport, planning) {
-		if (spendingReport) {
-			let reportPlanning = planning;
-			if (!planning) {
-				// reportPlanning = await this.#planningPersistence.readDefaultPlanningFromServer();
-				// this.#planningPersistence.store(reportPlanning);
-				reportPlanning = new Planning(new Date().getTime(), this.#defaultYear, this.#defaultMonth);
-			}
-			spendingReport.updatePlanning(reportPlanning);
-		}
-		return spendingReport;
 	}
 
 	/**
 	 * @param {Promise<Spending>} spending
 	 */
 	async onCreatedSpending(spending) {
-		const report = this.#spendingReports.find(
+		const report = this.#cachedReports.find(
 			(spendingReport) =>	spendingReport.year === spending.spentOn.getFullYear()
 				&& spendingReport.month === spending.spentOn.getMonth(),
 		);
