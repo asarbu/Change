@@ -12,7 +12,7 @@ let defaultSpendingCache;
 
 describe('Spending cache', () => {
 	beforeAll(async () => {
-		defaultSpendingCache = await SpendingCache.get(new Date().getFullYear());
+		defaultSpendingCache = new SpendingCache(new Date().getFullYear());
 	});
 
 	it('is defined for current year', async () => {
@@ -22,22 +22,22 @@ describe('Spending cache', () => {
 	it('is defined for a past year (2000)', async () => {
 		jest.useFakeTimers().setSystemTime(new Date(2000, 0));
 		const now = new Date();
-		const spendingCache = await SpendingCache.get(now.getFullYear());
+		const spendingCache = new SpendingCache(now.getFullYear());
 		expect(spendingCache.year).toBe(now.getFullYear());
 	});
 
 	it('is initialized without providing IDB', async () => {
 		jest.useFakeTimers().setSystemTime(new Date(2001, 0));
 		const now = new Date();
-		const spendingCache = await SpendingCache.get(now.getFullYear());
+		const spendingCache = new SpendingCache(now.getFullYear());
 		const count = (await spendingCache.readAllForMonth(now.getMonth())).length;
 		expect(count).toBeGreaterThan(-1);
 	});
 
 	it('stores one empty Spending object', async () => {
-		jest.useFakeTimers().setSystemTime(new Date(2002, 0));
+		jest.useFakeTimers().setSystemTime(new Date(2002, 0, 2));
 		const now = new Date();
-		const spendingCache = await SpendingCache.get(now.getFullYear());
+		const spendingCache = new SpendingCache(now.getFullYear());
 		const countBeforeInsert = (await spendingCache.readAllForMonth(now.getMonth())).length;
 		await spendingCache.store(new Spending(now.getTime(), Statement.INCOME, now, 'Debt', 'description', 100.00));
 		const spendings = await spendingCache.readAllForMonth(now.getMonth());

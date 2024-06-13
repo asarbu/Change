@@ -32,7 +32,7 @@ describe('Planning controller', () => {
 			now.getFullYear(),
 			now.getMonth(),
 		);
-		await planningCache.storePlanning(emptyPlanning);
+		await planningCache.store(emptyPlanning);
 
 		// Initialize main element because we do not have an index.html
 		const main = document.createElement('main');
@@ -62,7 +62,7 @@ describe('Planning controller', () => {
 			date.getFullYear(),
 			date.getMonth(),
 		);
-		await planningCache.storePlanning(oldPlanning);
+		await planningCache.store(oldPlanning);
 		const newStatemenet = new Statement('Statement One', 'Statement Name', Statement.INCOME);
 		const newPlanning = new Planning(
 			date.getTime(),
@@ -86,7 +86,7 @@ describe('Planning controller', () => {
 			newPlanningTime.getFullYear(),
 			newPlanningTime.getMonth(),
 		);
-		await planningCache.storePlanning(oldPlanning);
+		await planningCache.store(oldPlanning);
 		// Check if planning was properly stored
 		const storedPlanning = await planningCache.read(oldPlanning.id);
 		expect(storedPlanning.id).toBe(oldPlanning.id);

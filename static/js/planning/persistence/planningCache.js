@@ -122,7 +122,7 @@ export default class PlanningCache {
 	async readForMonth(month) {
 		if (!this.#initialized) await this.init();
 		const keyRange = IDBKeyRange.only(month);
-		const objects = await this.#idb.getAllByIndex(this.#storeName, 'byMonth', keyRange);
+		const objects = await this.#idb.getAllByIndex(this.#storeName, 'byMonth', keyRange, false, true);
 		if (objects.length > 1) throw Error('More than one monthly planning encountered in cache');
 		if (objects.length === 0) return undefined;
 		return Planning.fromJavascriptObject(objects[0]);

@@ -140,9 +140,9 @@ export default class PlanningController {
 		} else {
 			planning = new Planning(date.getTime(), date.getFullYear(), date.getMonth(), [statement]);
 		}
-		await planningPersistence.storePlanning(planning);
+		await planningPersistence.store(planning);
 		if (date.getFullYear() === this.#defaultYear) {
-			this.naviglateTo(date.getFullYear(), date.getMonth(), statement.name);
+			this.navigateTo(date.getFullYear(), date.getMonth(), statement.name);
 		}
 	}
 
