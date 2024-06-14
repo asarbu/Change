@@ -77,7 +77,7 @@ export default class SpendingController {
 		availableYears.forEach((spendingCache) => this.#screen.updateYear(spendingCache.year));
 
 		const gDriveSettings = new Settings().gDriveSettings();
-		if (!gDriveSettings || !gDriveSettings.enabled) return;
+		if (!gDriveSettings || !gDriveSettings.enabled) return this.#screen;
 
 		Alert.show('Google Drive', 'Started synchronization with Google Drive...');
 		const gDrivePlannings = await this.#planningPersistence.readAllFromGDrive();
@@ -91,6 +91,7 @@ export default class SpendingController {
 			this.#screen.refreshMonth(gDriveReport);
 		});
 		Alert.show('Google Drive', 'Finished synchronization with Google Drive');
+		return this.#screen;
 	}
 
 	/**
