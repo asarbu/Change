@@ -51,11 +51,10 @@ export default class SpendingCache {
 	 */
 	async readAllForMonth(month) {
 		if (!this.#initialized) await this.#init();
-		/* const fromDate = new Date(this.year, month, 1);
+		const fromDate = new Date(this.year, month, 1);
 		const toDate = new Date(this.year, month + 1, 1);
-		const keyRange = IDBKeyRange.bound(fromDate, toDate, false, true); */
-		const keyRange = IDBKeyRange.only(month);
-		return this.#idb.getAllByIndex(this.storeName, 'byMonth', keyRange);
+		const keyRange = IDBKeyRange.bound(fromDate, toDate, false, true);
+		return this.#idb.getAllByIndex(this.storeName, 'bySpentOn', keyRange);
 	}
 
 	/**
@@ -84,9 +83,7 @@ export default class SpendingCache {
 	 */
 	async store(spending) {
 		if (!this.#initialized) await this.#init();
-		const spendingToStore = spending;
-		if (!spendingToStore.month) spendingToStore.month = spending.spentOn.getMonth();
-		await this.#idb.insert(this.storeName, spendingToStore, spending.id);
+		await this.#idb.insert(this.storeName, spending, spending.id);
 	}
 
 	/**
@@ -95,11 +92,7 @@ export default class SpendingCache {
 	 */
 	async storeAll(spendings) {
 		if (!this.#initialized) await this.#init();
-		const spendingsToStore = spendings.map((spending) => {
-			if (!spending.month) spending.month = spending.spentOn.getMonth();
-			return spending;
-		});
-		return this.#idb.putAll(this.storeName, spendingsToStore);
+		return this.#idb.putAll(this.storeName, spendings);
 	}
 
 	/**
@@ -125,11 +118,6 @@ export default class SpendingCache {
 		await this.#idb.delete(this.storeName, spending.id);
 	}
 
-	async clear() {
-		if (!this.#initialized) await this.#init();
-		await this.#idb.clear(this.storeName);
-	}
-
 	/**
 	 * Callback function to update a planning database
 	 * @param {IDBDatabase} db Database to upgrade
@@ -139,10 +127,6 @@ export default class SpendingCache {
 	 * @returns {undefined}
 	 */
 	static upgradeSpendingsDb(db, oldVersion, newVersion, objectStores) {
-		if (!newVersion) {
-			return;
-		}
-
 		if (oldVersion < newVersion) {
 			objectStores.forEach((objectStore) => {
 				const store = db.createObjectStore(objectStore, { autoIncrement: true });

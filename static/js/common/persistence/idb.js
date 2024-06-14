@@ -118,7 +118,7 @@ export default class Idb {
 			const store = this.getStoreTransaction(storeName, Idb.#READ_WRITE)[0];
 
 			let query;
-			if (key) {
+			if (key !== undefined) {
 				query = store.put(value, key);
 			} else {
 				query = store.put(value);
@@ -302,7 +302,7 @@ export default class Idb {
 			for (let i = 0; i < data.length; i += 1) {
 				const value = data[i];
 				const key = data[i].id;
-				if (key) {
+				if (key !== undefined) {
 					store.put(value, key);
 				} else {
 					store.put(value);
