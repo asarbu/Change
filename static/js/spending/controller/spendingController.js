@@ -98,7 +98,7 @@ export default class SpendingController {
 	 * @param {Promise<Spending>} spending
 	 */
 	async onCreatedSpending(spending) {
-		const report = this.#cachedReports.find(
+		const report = this.#cachedReports.filter((item) => item).find(
 			(spendingReport) =>	spendingReport.year === spending.spentOn.getFullYear()
 				&& spendingReport.month === spending.spentOn.getMonth(),
 		);

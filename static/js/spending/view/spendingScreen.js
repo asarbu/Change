@@ -11,6 +11,7 @@ import Sidenav from '../../common/gui/sidenav.js';
 import SpendingSummaryModal from './spendingSummaryModal.js';
 
 export default class SpendingScreen {
+	/** @type {(spending: Spending) => any} */
 	onCreateSpendingCallback = undefined;
 
 	onSaveReportCallback = undefined;

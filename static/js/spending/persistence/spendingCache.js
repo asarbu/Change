@@ -131,7 +131,6 @@ export default class SpendingCache {
 			objectStores.forEach((objectStore) => {
 				const store = db.createObjectStore(objectStore, { autoIncrement: true });
 				store.createIndex('bySpentOn', 'spentOn', { unique: false });
-				store.createIndex('byMonth', 'month', { unique: false });
 				store.createIndex('byCategory', 'category', { unique: false });
 			});
 		}
