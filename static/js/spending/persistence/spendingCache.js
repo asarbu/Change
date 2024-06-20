@@ -11,7 +11,7 @@ export default class SpendingCache {
 	#idb = undefined;
 
 	/** @type {Array<SpendingCache>} */
-	static #initializedCaches = [];
+	static #existingCaches = [];
 
 	/**
 	 * @param {number} year Year for which to initialize current cache
@@ -24,15 +24,15 @@ export default class SpendingCache {
 	}
 
 	/**
-	 * Factory method used to reuse pre-initialized caches.
+	 * Factory method used to reuse pre-created (potentially initialized) caches.
 	 * @param {number} year
 	 * @returns {SpendingCache}
 	 */
 	static for(year) {
-		if (!SpendingCache.#initializedCaches[year]) {
-			SpendingCache.#initializedCaches[year] = new SpendingCache(year);
+		if (!SpendingCache.#existingCaches[year]) {
+			SpendingCache.#existingCaches[year] = new SpendingCache(year);
 		}
-		return SpendingCache.#initializedCaches[year];
+		return SpendingCache.#existingCaches[year];
 	}
 
 	async #init() {
