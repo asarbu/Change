@@ -6,6 +6,7 @@ import Spending from '../../static/js/spending/model/spending.js';
 import { Statement } from '../../static/js/planning/model/planningModel.js';
 
 describe('Spending cache', () => {
+	// TODO replace constructor with factory methods
 	it('is defined for current year', async () => {
 		jest.useFakeTimers().setSystemTime(new Date(2000, 0));
 		const now = new Date();
