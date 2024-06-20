@@ -16,7 +16,7 @@ export default class SpendingPersistence {
 
 	constructor(forYear) {
 		this.#year = forYear;
-		this.#spendingCache = new SpendingCache(forYear);
+		this.#spendingCache = SpendingCache.for(forYear);
 
 		const settings = new Settings().gDriveSettings();
 		if (!settings || !settings.enabled) return;
@@ -103,7 +103,7 @@ export default class SpendingPersistence {
 			}
 		} else {
 			const year = spending.spentOn.getFullYear();
-			const spendingCache = new SpendingCache(year);
+			const spendingCache = SpendingCache.for(year);
 			await spendingCache.store(spending);
 			if (this.#spendingGDrive) {
 				const spendingGDrive = new SpendingGDrive(year);
@@ -117,18 +117,24 @@ export default class SpendingPersistence {
 	 * @param {SpendingReport} fromSpendingReport
 	 */
 	async deleteAll(fromSpendingReport) {
-		await this.#spendingCache.deleteAll(fromSpendingReport.spendings());
-		return this.#spendingGDrive.deleteFile(fromSpendingReport.month());
+		const cache = SpendingCache.for(fromSpendingReport.year());
+		await cache.deleteAll(fromSpendingReport.spendings());
+		// TOD replace below cache with factory method
+		if (this.#spendingGDrive) {
+			await this.#spendingGDrive.deleteFile(fromSpendingReport.month());
+		}
 	}
 
 	/**
 	 * @param {SpendingReport} forReport
 	 */
 	async updateAll(forReport) {
-		const cachedSpendings = await this.#spendingCache.readAllForMonth(forReport.month);
-		await this.#spendingCache.deleteAll(cachedSpendings);
-		await this.#spendingCache.storeAll(forReport.spendings());
+		const cache = SpendingCache.for(forReport.year());
+		const cachedSpendings = await cache.readAllForMonth(forReport.month());
+		await cache.deleteAll(cachedSpendings);
+		await cache.storeAll(forReport.spendings());
 
+		// TODO update below with factory method
 		if (this.#spendingGDrive) {
 			await this.#spendingGDrive.deleteFile(forReport.month());
 			await this.#spendingGDrive.storeSpendings(forReport.spendings(), forReport.month());

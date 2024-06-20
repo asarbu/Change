@@ -4,12 +4,14 @@ import Idb from '../../common/persistence/idb.js';
 export default class SpendingCache {
 	static DATABASE_NAME = 'Spendings';
 
+	/** @type {boolean} */
 	#initialized = false;
 
-	/**
-	 * @type {Idb}
-	 */
+	/** @type {Idb} */
 	#idb = undefined;
+
+	/** @type {Array<SpendingCache>} */
+	static #initializedCaches = [];
 
 	/**
 	 * @param {number} year Year for which to initialize current cache
@@ -19,6 +21,18 @@ export default class SpendingCache {
 		this.year = +year;
 		this.storeName = `${this.year}`;
 		this.#idb = idb;
+	}
+
+	/**
+	 * Factory method used to reuse pre-initialized caches.
+	 * @param {number} year
+	 * @returns {SpendingCache}
+	 */
+	static for(year) {
+		if (!SpendingCache.#initializedCaches[year]) {
+			SpendingCache.#initializedCaches[year] = new SpendingCache(year);
+		}
+		return SpendingCache.#initializedCaches[year];
 	}
 
 	async #init() {
