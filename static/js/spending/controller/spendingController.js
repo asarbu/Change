@@ -124,6 +124,6 @@ export default class SpendingController {
 	 * @param {SpendingReport} spendingReport
 	 */
 	async onSavedReport(spendingReport) {
-		this.#spendingPersistence.updateAll(spendingReport);
+		await this.#spendingPersistence.updateAll(spendingReport);
 	}
 }
