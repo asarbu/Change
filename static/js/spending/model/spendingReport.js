@@ -1,4 +1,4 @@
-import { Category, Goal } from '../../planning/model/planningModel.js';
+import Planning, { Goal, Statement } from '../../planning/model/planningModel.js';
 import Spending from './spending.js';
 
 export default class SpendingReport {
@@ -11,8 +11,11 @@ export default class SpendingReport {
 	/** @type {Array<Spending>} */
 	#spendings = undefined;
 
-	/** @type {Set<Category>} */
-	#goals = undefined;
+	/** @type {Set<Goal>} */
+	#spentGoals = undefined;
+
+	/** @type {Planning} */
+	#planning = undefined;
 
 	/** @type {number} */
 	#total = 0;
@@ -20,14 +23,17 @@ export default class SpendingReport {
 	static MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 	/**
+	 * TODO Pass optional spendings array to constructor
 	 * @param {number} month Month for which to build the report
 	 * @param {number} year Year for which to build the report
+	 * @param {Planning} planning
 	 */
-	constructor(year, month) {
+	constructor(year, month, planning) {
 		this.#month = month;
 		this.#year = year;
 		this.#spendings = [];
-		this.#goals = new Set();
+		this.#spentGoals = new Set();
+		this.#planning = planning;
 	}
 
 	/**
@@ -39,7 +45,25 @@ export default class SpendingReport {
 
 		this.#spendings.push(spending);
 		this.#total += spending.price;
-		this.#goals.add(spending.category);
+		this.#spentGoals.add(spending.category);
+	}
+
+	/**
+	 * Updates internal information about planning (e.g. after GDrive sync)
+	 * @param {Planning} planning
+	 * @returns {SpendingReport} This instance
+	 */
+	updatePlanning(planning) {
+		this.#planning = planning;
+		return this;
+	}
+
+	/**
+	 * Updates internal information about spendings (e.g. after GDrive sync)
+	 * @param {Array<Spending>} spendings
+	 */
+	updateAll(spendings) {
+		this.#spendings = spendings;
 	}
 
 	/**
@@ -65,7 +89,7 @@ export default class SpendingReport {
 	 * @returns {number}
 	 */
 	totalForGoal(goal) {
-		if (!this.#goals.has(goal)) return 0;
+		if (!this.#spentGoals.has(goal)) return 0;
 
 		return this.#spendings.reduce(
 			(accumulator, spending) => accumulator + (spending.category === goal ? spending.price : 0),
@@ -90,11 +114,49 @@ export default class SpendingReport {
 	}
 
 	/**
-	 * Returns a copy of the category data in current report
+	 * Returns a copy of the goal data in current report
 	 * @returns {Array<Goal>}
 	 */
-	goals() {
-		return [...this.#goals];
+	plannedGoals() {
+		return [...this.#planning.readGoals(Statement.EXPENSE)];
+	}
+
+	plannedCategories() {
+		return [...this.#planning.readCategories(Statement.EXPENSE)];
+	}
+
+	/**
+	 * Returns a copy of the goal data in current report
+	 * @returns {Array<Goal>}
+	 */
+	spentGoals() {
+		return [...this.#spentGoals];
+	}
+
+	/**
+	 * Deletes the spendings marked as 'deleted' and removes 'edited' property from changed ones.
+	 * @returns {boolean} Any spending was edited or deleted
+	 */
+	applyChanges() {
+		const deletedSpendings = this.#spendings.filter((spending) => spending.deleted);
+		// Apply deletions first to avoid looking for changes in them later
+		if (deletedSpendings.length > 0) {
+			this.#spendings = this.#spendings.filter((spending) => !spending.deleted);
+		}
+
+		const changedSpendings = this.#spendings.filter((spending) => spending.edited);
+		if (changedSpendings.length > 0) {
+			changedSpendings.forEach((changedSpending) => {
+				for (let index = 0; index < this.changedSpendings.length; index += 1) {
+					const searchedSpending = this.#spendings[index];
+					if (changedSpending.id === searchedSpending.id) {
+						delete searchedSpending.edited;
+					}
+				}
+			});
+		}
+
+		return changedSpendings.length > 0 || deletedSpendings.length > 0;
 	}
 
 	/**

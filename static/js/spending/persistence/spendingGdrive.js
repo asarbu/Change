@@ -4,15 +4,8 @@ import LocalStorage from '../../common/persistence/localStorage.js';
 import { Statement } from '../../planning/model/planningModel.js';
 import Utils from '../../common/utils/utils.js';
 import Spending from '../model/spending.js';
-import SpendingCache from './spendingCache.js';
 
 export default class SpendingGDrive {
-	/**
-	 * Used for quick access of local data.
-	 * @type {SpendingCache}
-	 */
-	#spendingsCache = undefined;
-
 	/**
 	 * @type {GDrive}
 	 */
@@ -29,6 +22,8 @@ export default class SpendingGDrive {
 
 	/** @type {boolean} */
 	#rememberLogin = false;
+
+	#initialized = false;
 
 	static async getAll() {
 		const gDrive = await GDrive.get(true);
@@ -83,6 +78,7 @@ export default class SpendingGDrive {
 	 * @returns {Promise<Array<Spending>>}
 	 */
 	async readAll(forMonth) {
+		if (!this.#initialized) await this.init();
 		const localStorageFile = await this.#initializeLocalStorageFile(forMonth);
 		if (!localStorageFile.gDriveId) {
 			return undefined;
@@ -113,11 +109,16 @@ export default class SpendingGDrive {
 		return spendings;
 	}
 
-	async storeSpending(spending) {
-		const gdriveFile = await this.#initializeLocalStorageFile(spending.month);
+	/**
+	 * @param {Spending} spending
+	 */
+	async store(spending) {
+		if (!this.#initialized) await this.init();
+		const month = spending.spentOn.getMonth();
+		const gdriveFile = await this.#initializeLocalStorageFile(month);
 		this.#markDirty(gdriveFile);
-		const fileName = this.#buildFileName(spending.month);
-		const spendings = await this.readAll(spending.month);
+		const fileName = this.#buildFileName(month);
+		const spendings = await this.readAll(month);
 		spendings.push(spending);
 		const fileId = await this.#gDrive.writeFile(this.#gDriveFolderId, fileName, spendings, true);
 		const gDriveMetadata = await this.#gDrive.readFileMetadata(fileId, GDrive.MODIFIED_TIME_FIELD);
@@ -127,7 +128,12 @@ export default class SpendingGDrive {
 		this.#markClean(gdriveFile);
 	}
 
+	/**
+	 * @param {Array<Spending>} spendings
+	 * @param {number} forMonth
+	 */
 	async storeSpendings(spendings, forMonth) {
+		if (!this.#initialized) await this.init();
 		const gdriveFile = await this.#initializeLocalStorageFile(forMonth);
 		this.#markDirty(gdriveFile);
 		const fileName = this.#buildFileName(forMonth);
@@ -143,6 +149,7 @@ export default class SpendingGDrive {
 	 * @param {number} forMonth
 	 */
 	async fileChanged(forMonth) {
+		if (!this.#initialized) await this.init();
 		const localStorageFile = await this.#initializeLocalStorageFile(forMonth);
 		const gDriveFileId = localStorageFile.gDriveId;
 		if (gDriveFileId) {
@@ -154,6 +161,12 @@ export default class SpendingGDrive {
 			}
 		}
 		return undefined;
+	}
+
+	async deleteFile(forMonth) {
+		if (!this.#initialized) await this.init();
+		const file = await this.#initializeLocalStorageFile(forMonth);
+		if (file.gDriveId) this.#gDrive.deleteFile(file.gDriveId);
 	}
 
 	/**
@@ -204,5 +217,9 @@ export default class SpendingGDrive {
 
 	#buildFileName(forMonth) {
 		return `Spending_${this.#year}_${Utils.nameForMonth(forMonth)}.json`;
+	}
+
+	year() {
+		return this.#year;
 	}
 }

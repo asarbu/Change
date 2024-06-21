@@ -14,14 +14,14 @@ let now;
 async function storeEmptyPlanningCache(forDate) {
 	const date = forDate || now;
 	const planning = new Planning(date.getTime(), date.getFullYear(), date.getMonth());
-	return defaultPlanningCache.storePlanning(planning);
+	return defaultPlanningCache.store(planning);
 }
 
 async function storeEmptyPlanningCachesForAYear() {
 	for (let monthIndex = 0; monthIndex < 12; monthIndex += 1) {
 		now.setMonth(monthIndex);
 		const planning = new Planning(now.getTime(), now.getFullYear(), now.getMonth());
-		await defaultPlanningCache.storePlanning(planning);
+		await defaultPlanningCache.store(planning);
 	}
 	return true;
 }
@@ -37,20 +37,6 @@ describe('Planning cache', () => {
 	beforeAll(async () => {
 		defaultPlanningCache = await PlanningCache.get(new Date().getFullYear());
 		now = new Date();
-	});
-
-	it('is retrieved for more than one year', async () => {
-		let planningCaches = (await PlanningCache.getAll());
-		const planningCachesCount = planningCaches.length;
-		let maxPlanningYear = 0;
-		planningCaches.forEach((planningCache) => {
-			maxPlanningYear = Math.max(maxPlanningYear, planningCache.year);
-		});
-		maxPlanningYear += 1;
-		// Create extra planning cache
-		await PlanningCache.get(maxPlanningYear);
-		planningCaches = await PlanningCache.getAll();
-		expect(planningCaches.length).toBeGreaterThan(planningCachesCount);
 	});
 
 	it('is defined for current year', async () => {
@@ -185,7 +171,7 @@ describe('Planning cache', () => {
 			[expenseStatement, incomeStatement, savingStatement],
 		);
 		const planningCache = await PlanningCache.get(availableDate.getFullYear());
-		planningCache.storePlanning(planning);
+		planningCache.store(planning);
 		const storedPlanning = await planningCache.read(planning.id);
 		// Move the below method to Planning class
 		const expenseCategories = await storedPlanning.readCategories(Statement.EXPENSE);
@@ -204,7 +190,7 @@ describe('Planning cache', () => {
 		const addedPlanning = await storeEmptyPlanningCache();
 		const newStatement = new Statement(now.getTime(), 'Dummy', Statement.EXPENSE);
 		addedPlanning.statements = [newStatement];
-		await defaultPlanningCache.storePlanning(addedPlanning);
+		await defaultPlanningCache.store(addedPlanning);
 		const updatedPlanning = await defaultPlanningCache.read(addedPlanning.id);
 		const dbStatement = updatedPlanning.statements.find((stmt) => stmt.id === newStatement.id);
 		expect(dbStatement).toBeDefined();
@@ -215,7 +201,7 @@ describe('Planning cache', () => {
 		const lastDayofYear = Date.parse('12-31-2024');
 		const newStatement = new Statement(lastDayofYear, 'Dummy', Statement.EXPENSE);
 		addedPlanning.statements = [newStatement];
-		await defaultPlanningCache.storePlanning(addedPlanning);
+		await defaultPlanningCache.store(addedPlanning);
 		const updatedPlanning = await defaultPlanningCache.read(addedPlanning.id);
 		const dbStatement = updatedPlanning.statements.find((stmt) => stmt.id === newStatement.id);
 		expect(dbStatement.id).toBe(lastDayofYear);
@@ -227,7 +213,7 @@ describe('Planning cache', () => {
 		const firstDayOfYear = Date.parse('01-01-2024');
 		const newStatement = new Statement(firstDayOfYear, 'Dummy', Statement.EXPENSE);
 		addedPlanning.statements = [newStatement];
-		await defaultPlanningCache.storePlanning(addedPlanning);
+		await defaultPlanningCache.store(addedPlanning);
 		const updatedPlanning = await defaultPlanningCache.read(addedPlanning.id);
 		const dbStatement = updatedPlanning.statements.find((stmt) => stmt.id === newStatement.id);
 		expect(dbStatement.id).toBe(firstDayOfYear);

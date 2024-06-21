@@ -80,6 +80,10 @@ export default class GraphicEffects {
 		return this.#currentIndex;
 	}
 
+	selectedSlice() {
+		return this.#slices[this.#currentIndex];
+	}
+
 	onClickSetSlice(e) {
 		const sliceIndex = e.target.getAttribute('data-slice-index');
 		this.slideTo(sliceIndex);

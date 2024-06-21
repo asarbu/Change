@@ -49,6 +49,7 @@ export default class LocalStorage {
 		if (!object) return undefined;
 		// put the ID back because we removed it to save space
 		object.id = objectId;
+		object.fileName = objectId;
 		return object;
 	}
 

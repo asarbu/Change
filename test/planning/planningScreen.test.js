@@ -29,7 +29,7 @@ describe('Planning screen', () => {
 
 		const now = new Date();
 		const planning = new Planning(now.getTime(), now.getFullYear(), now.getMonth());
-		(await PlanningCache.get(now.getFullYear())).storePlanning(planning);
+		(await PlanningCache.get(now.getFullYear())).store(planning);
 		defaultPlanningScreen = await (new PlanningController().init());
 	});
 
@@ -127,8 +127,7 @@ describe('Planning screen', () => {
 		const builtCategories = defaultPlanningScreen.buildCategories([category]);
 		/** @type {HTMLTableElement} */
 		const buildCategory = builtCategories[0].toHtml();
-		const tBodyChildren = buildCategory.tBodies[0].children;
-		const totalRow = tBodyChildren[tBodyChildren.length - 1];
+		const totalRow = buildCategory.tFoot.children[0];
 		expect(totalRow.children[0].textContent).toBe('Total');
 		expect(totalRow.children[1].textContent).toBe('20');
 		expect(totalRow.children[2].textContent).toBe('60');
@@ -151,8 +150,7 @@ describe('Planning screen', () => {
 		// Recompute new total and extract it
 		/** @type {HTMLTableElement} */
 		defaultPlanningScreen.recomputeCategoryTotal(category);
-		const tBodyChildren = buildCategory.tBodies[0].children;
-		const totalRow = tBodyChildren[tBodyChildren.length - 1];
+		const totalRow = buildCategory.tFoot.children[0];
 		expect(totalRow.children[0].textContent).toBe('Total');
 		expect(totalRow.children[1].textContent).toBe('30');
 		expect(totalRow.children[2].textContent).toBe('90');
@@ -168,7 +166,7 @@ describe('Planning screen', () => {
 		const now = new Date();
 		const planning = new Planning(now.getTime(), now.getFullYear(), now.getMonth());
 		const cache = await PlanningCache.get(planning.year);
-		cache.storePlanning(planning);
+		cache.store(planning);
 		expect(cache.read(planning.id)).resolves.toEqual(planning);
 
 		const planningController = new PlanningController(planning.year, planning.month, '');
@@ -184,7 +182,7 @@ describe('Planning screen', () => {
 		const now = new Date();
 		const planning = new Planning(now.getTime(), now.getFullYear(), now.getMonth());
 		const cache = await PlanningCache.get(planning.year);
-		await cache.storePlanning(planning);
+		await cache.store(planning);
 		const storedPlanning = await cache.read(planning.id);
 		expect(storedPlanning.statements.length).toBe(0);
 
@@ -207,7 +205,7 @@ describe('Planning screen', () => {
 		const cache = await PlanningCache.get(now.getFullYear());
 		const newStatement = new Statement(now.getTime(), 'New Statement', Statement.EXPENSE);
 		planning.statements.push(newStatement);
-		await cache.storePlanning(planning);
+		await cache.store(planning);
 		const storedPlanning = await cache.read(planning.id);
 		expect(storedPlanning.statements.length).toBeGreaterThan(0);
 
@@ -228,7 +226,7 @@ describe('Planning screen', () => {
 		const cache = await PlanningCache.get(now.getFullYear());
 		const newStatement = new Statement(now.getTime(), 'New Statement', Statement.EXPENSE);
 		planning.statements.push(newStatement);
-		await cache.storePlanning(planning);
+		await cache.store(planning);
 		const storedPlanning = await cache.read(planning.id);
 		expect(storedPlanning.statements[0].type).toBe(Statement.EXPENSE);
 
@@ -247,7 +245,7 @@ describe('Planning screen', () => {
 		const now = new Date();
 		const planning = buildFullPlanning();
 		const cache = await PlanningCache.get(now.getFullYear());
-		await cache.storePlanning(planning);
+		await cache.store(planning);
 		const storedPlanning = await cache.read(planning.id);
 		const storedCategoriesCount = storedPlanning.statements[0].categories.length;
 
@@ -267,7 +265,7 @@ describe('Planning screen', () => {
 		const now = new Date();
 		const cache = await PlanningCache.get(now.getFullYear());
 
-		await cache.storePlanning(planning);
+		await cache.store(planning);
 		const storedPlanning = await cache.read(planning.id);
 		const category = storedPlanning.statements[0].categories[0];
 		expect(category.name).toBe('Category One');
@@ -292,7 +290,7 @@ describe('Planning screen', () => {
 		const now = new Date();
 		const cache = await PlanningCache.get(now.getFullYear());
 
-		await cache.storePlanning(planning);
+		await cache.store(planning);
 		const storedPlanning = await cache.read(planning.id);
 		const storedCategory = storedPlanning.statements[0].categories[0];
 		expect(storedCategory.name).toBe('Category One');
@@ -320,7 +318,7 @@ describe('Planning screen', () => {
 		const now = new Date();
 		const cache = await PlanningCache.get(now.getFullYear());
 
-		await cache.storePlanning(planning);
+		await cache.store(planning);
 		const storedPlanning = await cache.read(planning.id);
 		const category = storedPlanning.statements[0].categories[0];
 		expect(category.name).toBe('Category One');
@@ -341,7 +339,7 @@ describe('Planning screen', () => {
 		const now = new Date();
 		const planning = buildFullPlanning();
 		const cache = await PlanningCache.get(now.getFullYear());
-		await cache.storePlanning(planning);
+		await cache.store(planning);
 		const storedPlanning = await cache.read(planning.id);
 		const storedGoalsCount = storedPlanning.statements[0].categories[0].goals.length;
 
@@ -366,7 +364,7 @@ describe('Planning screen', () => {
 		const now = new Date();
 		const planning = buildFullPlanning();
 		const cache = await PlanningCache.get(now.getFullYear());
-		await cache.storePlanning(planning);
+		await cache.store(planning);
 		const storedPlanning = await cache.read(planning.id);
 		const storedGoalsCount = storedPlanning.statements[0].categories[0].goals.length;
 
@@ -391,7 +389,7 @@ describe('Planning screen', () => {
 		const now = new Date();
 		const planning = buildFullPlanning();
 		const cache = await PlanningCache.get(now.getFullYear());
-		await cache.storePlanning(planning);
+		await cache.store(planning);
 
 		const planningController = new PlanningController(planning.year, planning.month, '');
 		const screen = await planningController.init();
@@ -416,7 +414,7 @@ describe('Planning screen', () => {
 		const now = new Date();
 		const planning = buildFullPlanning();
 		const cache = await PlanningCache.get(now.getFullYear());
-		await cache.storePlanning(planning);
+		await cache.store(planning);
 
 		const planningController = new PlanningController(planning.year, planning.month, '');
 		const screen = await planningController.init();
@@ -441,7 +439,7 @@ describe('Planning screen', () => {
 		const now = new Date();
 		const planning = buildFullPlanning();
 		const cache = await PlanningCache.get(now.getFullYear());
-		await cache.storePlanning(planning);
+		await cache.store(planning);
 
 		const planningController = new PlanningController(planning.year, planning.month, '');
 		const screen = await planningController.init();
@@ -466,7 +464,7 @@ describe('Planning screen', () => {
 		const now = new Date();
 		const planning = buildFullPlanning();
 		const cache = await PlanningCache.get(now.getFullYear());
-		await cache.storePlanning(planning);
+		await cache.store(planning);
 
 		const planningController = new PlanningController(planning.year, planning.month, '');
 		const screen = await planningController.init();
@@ -491,7 +489,7 @@ describe('Planning screen', () => {
 		const now = new Date();
 		const planning = buildFullPlanning();
 		const cache = await PlanningCache.get(now.getFullYear());
-		await cache.storePlanning(planning);
+		await cache.store(planning);
 
 		const planningController = new PlanningController(planning.year, planning.month, '');
 		const screen = await planningController.init();

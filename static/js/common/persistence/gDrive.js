@@ -391,7 +391,7 @@ export default class GDrive {
 
 	/**
 	 * @param {string} folderId
-	 * @returns {Promise<Object>}
+	 * @returns {Promise<Array<Object>>}
 	 */
 	async getChildren(folderId) {
 		const token = await this.#getAccessToken();

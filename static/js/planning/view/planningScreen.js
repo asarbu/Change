@@ -236,9 +236,9 @@ export default class PlanningScreen {
 
 		const categoryDom = this.#categoryDoms.get(category.id);
 		/** @type {HTMLTableSectionElement} */
-		const tBody = categoryDom.toHtml().tBodies[0];
-		tBody.children[tBody.children.length - 1].remove();
-		tBody.appendChild(this.buildTotalRow(category).toHtml());
+		const { tFoot } = categoryDom.toHtml();
+		tFoot.children[0].remove();
+		tFoot.appendChild(this.buildTotalRow(category).toHtml());
 	}
 	// #endregion
 

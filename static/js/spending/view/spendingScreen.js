@@ -8,9 +8,10 @@ import Modal from '../../common/gui/modal.js';
 import SpendingNavbar from './spendingNavbar.js';
 import SpendingNavbarEventHandlers from './spendingNavbarHandlers.js';
 import Sidenav from '../../common/gui/sidenav.js';
-import Alert from '../../common/gui/alert.js';
+import SpendingSummaryModal from './spendingSummaryModal.js';
 
 export default class SpendingScreen {
+	/** @type {(spending: Spending) => any} */
 	onCreateSpendingCallback = undefined;
 
 	onSaveReportCallback = undefined;
@@ -32,38 +33,48 @@ export default class SpendingScreen {
 	/** @type {Sidenav} */
 	#sidenav = undefined;
 
+	/** @type {number} */
+	#month = undefined;
+
+	/** @type {number} */
+	#year = undefined;
+
 	/**
-	 * @param {number} year
-	 * @param {SpendingReport} defaultSpendingReport
-	 * @param {Array<Category>} categories
+	 * @param {number} defaultYear
+	 * @param {number} defaultMonth
+	 * @param {Array<SpendingReport>} spendingReports
 	 */
-	constructor(year, defaultSpendingReport, categories) {
-		this.year = year;
-		this.defaultSpendingReport = defaultSpendingReport;
-		this.categories = categories;
+	constructor(defaultYear, defaultMonth, spendingReports) {
+		this.#year = defaultYear;
+		this.#month = defaultMonth;
+		this.spendingReports = spendingReports;
 	}
 
 	init() {
+		const defaultReport = this.spendingReports[this.#month];
 		const eventHandlers = new SpendingNavbarEventHandlers();
 		eventHandlers.onClickAddSpending = this.onClickAddSpending.bind(this);
 		eventHandlers.onClickEdit = this.onClickEdit.bind(this);
 		eventHandlers.onClickSave = this.onClickSave.bind(this);
-		eventHandlers.onClickSummary = this.onClickSummary.bind(this);
+		eventHandlers.onClickSummary = this.onClickedSummary.bind(this);
 		eventHandlers.onMonthChanged = this.slideToMonth.bind(this);
-		this.navbar = new SpendingNavbar(this.year, this.defaultSpendingReport, eventHandlers);
+
+		this.navbar = new SpendingNavbar(this.#year, defaultReport.month(), eventHandlers);
 		const main = document.getElementById('main');
+		// TODO move append children to the end of init
 		main.appendChild(this.navbar.toHtml());
-		this.navbar.selectMonth(this.defaultSpendingReport.month());
-		this.navbar.selectYear(this.year);
+		this.navbar.selectMonth(this.#month);
+		this.navbar.selectYear(this.#year);
 
-		this.buildCategoryModal(this.categories);
+		// TODO make this dynamic for each month
+		this.buildCategoryModal(defaultReport.plannedCategories());
 		this.buildAddSpendingModal();
-		this.buildSpendingSummaryModal(this.defaultSpendingReport);
 
-		const container = this.build(this.defaultSpendingReport);
+		const container = this.buildScreen(defaultReport);
 		this.gfx = new GraphicEffects();
 		this.gfx.init(container);
 
+		this.spendingReports.forEach((spendingReport) => this.refreshMonth(spendingReport));
 		this.#sidenav = new Sidenav(this.gfx);
 		document.body.appendChild(this.#sidenav.toHtml());
 	}
@@ -126,10 +137,9 @@ export default class SpendingScreen {
 	}
 
 	/**
-	 * @param {SpendingReport} spendingReport
 	 * @returns {HTMLElement}
 	 */
-	build(spendingReport) {
+	buildScreen() {
 		this.section = new Dom('div').id('spendings-section').cls('section');
 		this.screen = new Dom('div').cls('container').append(
 			this.section,
@@ -137,7 +147,7 @@ export default class SpendingScreen {
 
 		const main = document.getElementById('main');
 		main.appendChild(this.screen.toHtml());
-		main.appendChild(this.buildTable(spendingReport).toHtml());
+		// main.appendChild(this.buildTable(spendingReport).toHtml());
 
 		return this.screen.toHtml();
 	}
@@ -173,64 +183,6 @@ export default class SpendingScreen {
 		this.spendingsHtml = spendingsDom.toHtml();
 
 		return spendingsDom;
-	}
-
-	/**
-	 * @param {SpendingReport} spendingReport
-	 * @returns {HTMLElement}
-	 */
-	buildSpendingSummaryModal(spendingReport) {
-		// TODO. Build summary modal according to currently clicked month
-		const spentGoals = spendingReport.goals();
-		const goals = this.categories
-			.map((category) => category.goals)
-			.flat()
-			.filter((goal) => spentGoals.filter((spentGoal) => spentGoal === goal.name).length > 0);
-		const budgetTotal = goals.reduce((accumulator, current) => accumulator + current.monthly, 0);
-		const spendingTotal = spendingReport.total();
-
-		this.summaryModal = new Modal('summary').header(
-			new Dom('h2').text('Expenses summary'),
-		).body(
-			new Dom('table').id(`summary-table-${spendingReport}`).append(
-				new Dom('thead').append(
-					new Dom('tr').append(
-						new Dom('th').text('Category'),
-						new Dom('th').cls('normal-col').text('Spending'),
-						new Dom('th').cls('normal-col').text('Budget'),
-						new Dom('th').cls('normal-col').text('Percent'),
-					),
-				),
-				new Dom('tbody').append(
-					...spentGoals.map((goal) => {
-						const spentForGoal = spendingReport.totalForGoal(goal).toFixed(2);
-						const foundGoal = goals.find((plannedGoal) => plannedGoal.name === goal);
-						let budgetForGoal = 1;
-						if (!foundGoal) {
-							Alert.show('Planning error', `Goal not found in planning: ${goal}`);
-						} else {
-							budgetForGoal = foundGoal.monthly;
-						}
-						return new Dom('tr').append(
-							new Dom('td').text(goal),
-							new Dom('td').text(spentForGoal),
-							new Dom('td').text(budgetForGoal),
-							new Dom('td').text(((100 * spentForGoal) / budgetForGoal).toFixed(2)),
-						);
-					}),
-				),
-				new Dom('tfoot').append(
-					new Dom('tr').append(
-						new Dom('td').text('Total'),
-						new Dom('td').text(spendingTotal),
-						new Dom('td').text(budgetTotal),
-						new Dom('td').text(((100 * spendingTotal) / budgetTotal).toFixed(2)),
-					),
-				),
-			),
-		).addCancelFooter();
-
-		return this.summaryModal;
 	}
 
 	buildAddSpendingModal() {
@@ -272,26 +224,34 @@ export default class SpendingScreen {
 	 * @returns {Dom}
 	 */
 	buildCategoryModal(forCategories) {
-		const onClickCategory = this.onClickCategory.bind(this);
-		const onClickCategoryHeader = this.onClickCategoryHeader.bind(this);
-		this.#categoryModal = new Modal('categories')
-			.header(
-				new Dom('h2').text('Insert Spending'),
-			).body(
-				new Dom('div').cls('accordion').append(
-					...forCategories.map((category) => new Dom('div').cls('accordion-item').onTransitionEnd(onClickCategoryHeader).append(
-						new Dom('input').id(category.id).cls('accordion-state').attr('type', 'checkbox'),
-						new Dom('label').cls('accordion-header').attr('for', category.id).append(
-							new Dom('span').text(category.name),
-						),
-						new Dom('div').cls('accordion-content').append(
-							...category.goals.map((goal) => new Dom('div').cls('accordion-secondary').text(goal.name).onClick(onClickCategory)),
-						),
-					)),
-				),
-			).scrollable()
-			.addCancelFooter();
-
+		if (!forCategories || forCategories.length === 0) {
+			this.#categoryModal = new Modal('categories')
+				.header(
+					new Dom('h2').text('Cannot Insert Spending'),
+				).body(
+					new Dom('div').cls('accordion').text('Plan your goals first!'),
+				).addCancelFooter();
+		} else {
+			const onClickCategory = this.onClickCategory.bind(this);
+			const onClickCategoryHeader = this.onClickCategoryHeader.bind(this);
+			this.#categoryModal = new Modal('categories')
+				.header(
+					new Dom('h2').text('Insert Spending'),
+				).body(
+					new Dom('div').cls('accordion').append(
+						...forCategories.map((category) => new Dom('div').cls('accordion-item').onTransitionEnd(onClickCategoryHeader).append(
+							new Dom('input').id(category.id).cls('accordion-state').attr('type', 'checkbox'),
+							new Dom('label').cls('accordion-header').attr('for', category.id).append(
+								new Dom('span').text(category.name),
+							),
+							new Dom('div').cls('accordion-content').append(
+								...category.goals.map((goal) => new Dom('div').cls('accordion-secondary').text(goal.name).onClick(onClickCategory)),
+							),
+						)),
+					),
+				).scrollable()
+				.addCancelFooter();
+		}
 		return this.#categoryModal;
 	}
 
@@ -356,6 +316,8 @@ export default class SpendingScreen {
 		if (this.onCreateSpendingCallback) {
 			this.onCreateSpendingCallback(newSpending);
 		}
+
+		// TODO add here the item in the interface, similar to how we remove/edit items at delete/edit
 
 		this.#addSpendingModal.close();
 	}
@@ -442,20 +404,22 @@ export default class SpendingScreen {
 		this.editMode = false;
 
 		this.#drawnSlices.forEach((slice) => {
+			/** @type {SpendingReport} */
 			const spendingReport = slice.toHtml().userData;
 			if (spendingReport) {
-				const changedSpendings = spendingReport.spendings()
-					.filter((spending) => spending.deleted || spending.edited);
-
-				if (this.onSaveReportCallback && changedSpendings?.length > 0) {
-					this.onSaveReportCallback(changedSpendings);
+				const reportChanged = spendingReport.applyChanges();
+				// Do not call the handler if the report did not change
+				if (this.onSaveReportCallback && reportChanged) {
+					this.onSaveReportCallback(spendingReport);
 				}
 			}
 		});
 	}
 
-	onClickSummary() {
-		this.summaryModal.open();
+	onClickedSummary() {
+		const selectedSlice = this.gfx.selectedSlice();
+		new SpendingSummaryModal(selectedSlice.userData).open();
+		// this.summaryModal.open();
 	}
 
 	onClickAddSpending() {
@@ -481,8 +445,10 @@ export default class SpendingScreen {
 		this.#addSpendingModal.open();
 		const categoryInput = document.getElementById('category-input-field');
 		const descriptionInput = document.getElementById('description-input-field');
+		const priceInput = document.getElementById('price-input-field');
 		categoryInput.value = event.target.textContent;
-		descriptionInput.value = event.target.textContent;
+		descriptionInput.value = '';
+		priceInput.value = '';
 		this.focusInputField('price-input-field');
 	}
 

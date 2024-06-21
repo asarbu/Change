@@ -2,14 +2,10 @@ import Alert from '../../common/gui/alert.js';
 import Utils from '../../common/utils/utils.js';
 import Settings from '../../settings/settings.js';
 import Planning, { Statement } from '../model/planningModel.js';
-import PlanningCache from '../persistence/planningCache.js';
-import PlanningGDrive from '../persistence/planningGdrive.js';
+import PlanningPersistence from '../persistence/planningPersistence.js';
 import PlanningScreen from '../view/planningScreen.js';
 
 export default class PlanningController {
-	/** @type {Array<PlanningCache>} */
-	#caches = undefined;
-
 	/** @type {PlanningScreen} */
 	#defaultScreen = undefined;
 
@@ -22,11 +18,8 @@ export default class PlanningController {
 	/** @type {string} */
 	#defaultStatement = undefined;
 
-	/** @type {PlanningCache} */
-	#cache = undefined;
-
-	/** @type {PlanningGDrive} */
-	#planningGDrive = undefined;
+	/** @type {PlanningPersistence} */
+	#planningPersistence = undefined;
 
 	constructor(forYear = undefined, forMonth = undefined, forStatement = undefined) {
 		const queryString = window.location.search;
@@ -64,62 +57,43 @@ export default class PlanningController {
 	 * @param {boolean} fetchDefaultPlanning
 	 * @returns {Promise<PlanningScreen>}
 	 */
-	async init(fetchDefaultPlanning = false) {
-		this.#caches = await PlanningCache.getAll();
-		this.#cache = await PlanningCache.get(this.#defaultYear);
-		// TODO ask user if he wants to fetch defaults from server
-		if (fetchDefaultPlanning) {
-			const emptyCache = (await this.#cache.count()) === 0;
-			if (emptyCache) {
-				const response = await fetch(PlanningCache.PLANNING_TEMPLATE_URI);
-				if (response.ok) {
-					const planning = await response.json();
-					const now = new Date();
-					const time = now.getTime();
-					const year = now.getFullYear();
-					const month = now.getMonth();
-					await this.#cache.storePlanning(new Planning(time, year, month, planning), time);
-				}
-			}
+	async init() {
+		this.#planningPersistence = new PlanningPersistence(this.#defaultYear);
+		let planning = await this.#planningPersistence.readFromCache(this.#defaultMonth);
+		if (!planning) {
+			// TODO prompt user do create his own planning, fetch default or activate gDrive
+			planning = new Planning(0, this.#defaultYear, this.#defaultMonth, []);
 		}
-		const planning = (await this.#cache.readForMonth(this.#defaultMonth));
 		const screen = await this.initPlanningScreen(planning);
 
-		this.#caches.forEach((cache) => {
-			screen.appendYear(cache.year);
-		});
-		const planningsPerMonths = await this.#cache.readAll();
-		planningsPerMonths.forEach((plan) => {
-			screen.appendMonth(plan.month);
-		});
+		const cachedYears = await this.#planningPersistence.cachedYears();
+		cachedYears.forEach((year) => screen.appendYear(year));
+		const cachedMonths = await this.#planningPersistence.cachedMonths();
+		cachedMonths.forEach((month) => screen.appendMonth(month));
 
 		const gDriveSettings = new Settings().gDriveSettings();
 		if (!gDriveSettings || !gDriveSettings.enabled) return screen;
-		this.#planningGDrive = await PlanningGDrive.get(
-			this.#defaultYear,
-			gDriveSettings.rememberLogin,
-		);
-		this.fetchFromGDrive(this.#planningGDrive);
 
-		return screen;
-	}
+		Alert.show('Google Drive', 'Started synchronization with Google Drive...');
+		const gDrivePlanning = await this.#planningPersistence.readFromGDrive(this.#defaultMonth);
+		if (gDrivePlanning) screen.refresh(gDrivePlanning);
 
-	/**
-	 * @param {PlanningGDrive} planningGDrive
-	 */
-	async fetchFromGDrive(planningGDrive) {
-		if (await planningGDrive.fileChanged(this.#defaultMonth)) {
-			Alert.show('Google Drive', 'Started synchronization with Google Drive...');
-			const planning = (await this.#cache.readForMonth(this.#defaultMonth));
-			if (planning) {
-				await this.#cache.delete(planning.id);
+		const gDriveYears = await this.#planningPersistence.gDriveYears();
+		gDriveYears.forEach((year) => {
+			if (!cachedYears.find((cachedYear) => cachedYear === year)) {
+				screen.appendYear(year);
 			}
+		});
 
-			const gDrivePlanning = await this.#planningGDrive.read(this.#defaultMonth);
-			await this.#cache.storePlanning(gDrivePlanning);
-			this.#defaultScreen.refresh(gDrivePlanning);
-			Alert.show('Google Drive', 'Finished synchronization with Google Drive');
-		}
+		const gDriveMonths = await this.#planningPersistence.gDriveMonths();
+		gDriveMonths.forEach((month) => {
+			if (!cachedMonths.find((cachedMonth) => cachedMonth === month)) {
+				screen.appendMonth(month);
+			}
+		});
+
+		Alert.show('Google Drive', 'Finished synchronization with Google Drive');
+		return screen;
 	}
 
 	/**
@@ -141,21 +115,14 @@ export default class PlanningController {
 	 * @param {Promise<Planning>} planning
 	 */
 	async onClickUpdate(planning) {
-		await this.#cache.storePlanning(planning);
-		if (this.#planningGDrive) {
-			const success = this.#planningGDrive.store(planning);
-			if (!success) this.#planningGDrive.markDirty(planning);
-		}
+		await this.#planningPersistence.store(planning);
 	}
 
 	/**
 	 * @param {Planning} planning
 	 */
 	async onClickedDeletePlanning(planning) {
-		await this.#cache.delete(planning.id);
-		if (this.#planningGDrive) {
-			this.#planningGDrive.delete(planning);
-		}
+		await this.#planningPersistence.delete(planning);
 	}
 
 	/**
@@ -163,15 +130,18 @@ export default class PlanningController {
 	 */
 	async onClickAddStatement(statement) {
 		const date = new Date(statement.id);
-		const planningCache = await PlanningCache.get(date.getFullYear());
-		if (planningCache) {
-			let planning = (await planningCache.readForMonth(date.getMonth()));
-			if (planning) {
-				planning.statements.push(statement);
-			} else {
-				planning = new Planning(date.getTime(), date.getFullYear(), date.getMonth(), [statement]);
-			}
-			await planningCache.storePlanning(planning);
+		let planningPersistence = this.#planningPersistence;
+		if (date.getFullYear() !== this.#defaultYear) {
+			planningPersistence = new PlanningPersistence(date.getFullYear());
+		}
+		let planning = await planningPersistence.readFromCache(date.getMonth());
+		if (planning) {
+			planning.statements.push(statement);
+		} else {
+			planning = new Planning(date.getTime(), date.getFullYear(), date.getMonth(), [statement]);
+		}
+		await planningPersistence.store(planning);
+		if (date.getFullYear() === this.#defaultYear) {
 			this.navigateTo(date.getFullYear(), date.getMonth(), statement.name);
 		}
 	}
