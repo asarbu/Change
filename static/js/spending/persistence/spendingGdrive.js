@@ -109,12 +109,16 @@ export default class SpendingGDrive {
 		return spendings;
 	}
 
+	/**
+	 * @param {Spending} spending
+	 */
 	async store(spending) {
 		if (!this.#initialized) await this.init();
-		const gdriveFile = await this.#initializeLocalStorageFile(spending.month);
+		const month = spending.spentOn.getMonth();
+		const gdriveFile = await this.#initializeLocalStorageFile(month);
 		this.#markDirty(gdriveFile);
-		const fileName = this.#buildFileName(spending.month);
-		const spendings = await this.readAll(spending.month);
+		const fileName = this.#buildFileName(month);
+		const spendings = await this.readAll(month);
 		spendings.push(spending);
 		const fileId = await this.#gDrive.writeFile(this.#gDriveFolderId, fileName, spendings, true);
 		const gDriveMetadata = await this.#gDrive.readFileMetadata(fileId, GDrive.MODIFIED_TIME_FIELD);
