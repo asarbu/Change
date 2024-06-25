@@ -58,6 +58,8 @@ export default class SpendingPersistence {
 	 */
 	async readAllFromGDrive() {
 		const spendingReports = [];
+		// Force initialization beforehand to avoid race conditions in init.
+		await this.#spendingGDrive.init();
 		for (let month = 0; month < 12; month += 1) {
 			spendingReports[month] = this.readFromGDrive(month);
 		}

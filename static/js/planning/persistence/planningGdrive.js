@@ -50,7 +50,7 @@ export default class PlanningGDrive {
 		this.#gDrive = await GDrive.get(this.#rememberLogin);
 		this.#localStorage = new LocalStorage(LocalStorage.GDRIVE_FILES_KEY);
 
-		const changeAppFolder = await this.#initializeGdriveFileByName(GDrive.APP_FOLDER);
+		const changeAppFolder = await this.#initializeGdriveFileById(GDrive.APP_FOLDER);
 		if (!changeAppFolder.gDriveId) {
 			changeAppFolder.gDriveId = await this.#gDrive.findChangeAppFolder();
 			if (!changeAppFolder.gDriveId) {
@@ -60,7 +60,7 @@ export default class PlanningGDrive {
 			this.#localStorage.store(changeAppFolder);
 		}
 
-		const planningFolder = await this.#initializeGdriveFileByName('Planning');
+		const planningFolder = await this.#initializeGdriveFileById('Planning');
 		if (!planningFolder.gDriveId) {
 			planningFolder.gDriveId = await this.#gDrive.findFolder('Planning', changeAppFolder.gDriveId);
 			if (!planningFolder.gDriveId) {
@@ -71,13 +71,18 @@ export default class PlanningGDrive {
 		}
 		this.#planningFolderId = planningFolder.gDriveId;
 
-		let yearFolderId = await this.#gDrive.findFolder(`${this.#year}`, planningFolder.gDriveId);
-		if (!yearFolderId) {
-			yearFolderId = await this.#gDrive.createFolder(`${this.#year}`, planningFolder.gDriveId);
+		const yearLocalStorageId = `Planning_${this.#year}`;
+		const yearFolder = await this.#initializeGdriveFileById(yearLocalStorageId);
+		if (!yearFolder.gDriveId) {
+			yearFolder.gDriveId = await this.#gDrive.findFolder(`${this.#year}`, planningFolder.gDriveId);
+			if (!yearFolder.gDriveId) {
+				yearFolder.gDriveId = await this.#gDrive.createFolder(`${this.#year}`, planningFolder.gDriveId);
+			}
+			if (!yearFolder.gDriveId) throw Error(`Could not create Planning folder for ${this.#year} in GDrive`);
+			this.#localStorage.store(yearFolder);
 		}
-		if (!yearFolderId) throw Error(`Could not create Planning folder ${this.#year} in GDrive`);
 
-		this.#yearFolderId = yearFolderId;
+		this.#yearFolderId = yearFolder.gDriveId;
 		this.#initialized = true;
 
 		// TODO sync dirty plannings
@@ -215,14 +220,14 @@ export default class PlanningGDrive {
 		// This will merge together multiple requests
 		if (!this.#initialized) await this.init();
 		const fileName = this.#buildFileName(forMonth);
-		return this.#initializeGdriveFileByName(fileName);
+		return this.#initializeGdriveFileById(fileName);
 	}
 
 	/**
 	 * @param {string} fileName
 	 * @returns {Promise<GDriveFileInfo>}
 	 */
-	async #initializeGdriveFileByName(fileName) {
+	async #initializeGdriveFileById(fileName) {
 		let localStorageFile = this.#localStorage.readById(fileName);
 		if (!localStorageFile) {
 			localStorageFile = new GDriveFileInfo(fileName, undefined, 0);

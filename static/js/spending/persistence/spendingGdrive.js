@@ -48,30 +48,64 @@ export default class SpendingGDrive {
 		this.#rememberLogin = rememberLogin;
 	}
 
-	async init() {
+	/**
+	 * @param {boolean} forceInit Forces a reinitialization of the object
+	 */
+	async init(forceInit) {
+		if (!forceInit && this.#initialized) return true;
+
 		this.#gDrive = await GDrive.get(this.#rememberLogin);
 		this.#localStorage = new LocalStorage(LocalStorage.GDRIVE_FILES_KEY);
 
-		let changeAppFolderId = await this.#gDrive.findChangeAppFolder();
-		if (!changeAppFolderId) {
-			changeAppFolderId = await this.#gDrive.createFolder(GDrive.APP_FOLDER);
+		const changeAppFolder = await this.#initializeGdriveFileById(GDrive.APP_FOLDER);
+		if (!changeAppFolder.gDriveId) {
+			changeAppFolder.gDriveId = await this.#gDrive.findChangeAppFolder();
+			if (!changeAppFolder.gDriveId) {
+				changeAppFolder.gDriveId = await this.#gDrive.createFolder(GDrive.APP_FOLDER);
+			}
+			if (!changeAppFolder.gDriveId) throw Error('Could not create "Change" folder in GDrive');
+			this.#localStorage.store(changeAppFolder);
 		}
-		if (!changeAppFolderId) throw Error('Could not create "Change" folder in GDrive');
 
-		let spendingFolderId = await this.#gDrive.findFolder('Spending', changeAppFolderId);
-		if (!spendingFolderId) {
-			spendingFolderId = await this.#gDrive.createFolder('Spending', changeAppFolderId);
+		const spendingFolder = await this.#initializeGdriveFileById('Spending');
+		if (!spendingFolder.gDriveId) {
+			spendingFolder.gDriveId = await this.#gDrive.findFolder('Spending', changeAppFolder.gDriveId);
+			if (!spendingFolder.gDriveId) {
+				spendingFolder.gDriveId = await this.#gDrive.createFolder('Spending', changeAppFolder.gDriveId);
+			}
+			if (!spendingFolder.gDriveId) throw Error('Could not create "Spending" folder in GDrive');
+			this.#localStorage.store(spendingFolder);
 		}
-		if (!spendingFolderId) throw Error('Could not create "Spending" folder in GDrive');
 
-		let yearFolderId = await this.#gDrive.findFolder(`${this.#year}`, spendingFolderId);
-		if (!yearFolderId) {
-			yearFolderId = await this.#gDrive.createFolder(`${this.#year}`, spendingFolderId);
+		const yearLocalStorageId = `Spending_${this.#year}`;
+		const yearFolder = await this.#initializeGdriveFileById(yearLocalStorageId);
+		if (!yearFolder.gDriveId) {
+			yearFolder.gDriveId = await this.#gDrive.findFolder(`${this.#year}`, spendingFolder.gDriveId);
+			if (!yearFolder.gDriveId) {
+				yearFolder.gDriveId = await this.#gDrive.createFolder(`${this.#year}`, spendingFolder.gDriveId);
+			}
+			if (!yearFolder.gDriveId) throw Error(`Could not create Spending folder for ${this.#year} in GDrive`);
+			this.#localStorage.store(yearFolder);
 		}
-		if (!yearFolderId) throw Error(`Could not create Spending folder ${this.#year} in GDrive`);
 
-		this.#gDriveFolderId = yearFolderId;
+		this.#gDriveFolderId = yearFolder.gDriveId;
+		this.#initialized = true;
+		return true;
 	}
+
+	/**
+	 * @param {string} id
+	 * @returns {Promise<GDriveFileInfo>}
+	 */
+	async #initializeGdriveFileById(id) {
+		let localStorageFile = this.#localStorage.readById(id);
+		if (!localStorageFile) {
+			localStorageFile = new GDriveFileInfo(id, undefined, 0);
+			this.#localStorage.store(localStorageFile);
+		}
+		return localStorageFile;
+	}
+
 
 	/**
 	 * @param {number} forMonth
