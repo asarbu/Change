@@ -13,12 +13,6 @@ export default class Sidenav {
 	/** @type {Dom} */
 	#sideNavDom = undefined;
 
-	/** @type {HTMLDivElement} */
-	#sideNavLeft = undefined;
-
-	/** @type {HTMLDivElement} */
-	#sideNavRight = undefined;
-
 	/** @type {HTMLElement} */
 	#main = undefined;
 
@@ -28,9 +22,6 @@ export default class Sidenav {
 	/** @type {GraphicEffects} */
 	#gfx = undefined;
 
-	/** @type {HTMLElement} */
-	#fragment = undefined;
-
 	constructor(gfx) {
 		this.#sideNavDom = new Dom('div').id('sidenav').cls('sidenav').append(
 			new Dom('a').cls('view-link').attr('href', Sidenav.PLANNING_SUFFIX).text('Plannings'),
@@ -39,13 +30,7 @@ export default class Sidenav {
 			new Dom('a').cls('view-link').attr('href', Sidenav.SETTINGS_SUFFIX).text('Settings'),
 		);
 
-		this.#fragment = new DocumentFragment();
-		this.#sideNavLeft = this.#sideNavDom.toHtml();
-		this.#sideNavRight = this.#sideNavLeft.cloneNode(true);
-		this.#sideNavLeft.classList.add('sidenav-left');
-		this.#sideNavRight.classList.add('sidenav-right');
-		this.#fragment.appendChild(this.#sideNavLeft);
-		this.#fragment.appendChild(this.#sideNavRight);
+		this.#sideNavDom.toHtml().classList.add('sidenav-right');
 		this.#main = document.getElementById('main');
 
 		// TODO Remove this and add event listener individually to each dom element
@@ -55,37 +40,20 @@ export default class Sidenav {
 	}
 
 	toHtml() {
-		return this.#fragment;
+		return this.#sideNavDom.toHtml();
 	}
 
 	/* Nav panel */
-	open(ev) {
-		const { side } = ev.currentTarget.dataset;
-		if (side === 'left') {
-			if (this.#navOpenSide === 'left') {
-				this.close();
-				return;
-			}
-
-			this.#sideNavRight.classList.remove('sidenav-open');
-			this.#sideNavLeft.classList.add('sidenav-open');
-			this.#main.classList.remove('main-shift-right');
-			this.#main.classList.add('main-shift-left');
-
-			this.#navOpenSide = 'left';
-		} else if (side === 'right') {
-			if (this.#navOpenSide === 'right') {
-				this.close();
-				return;
-			}
-
-			this.#sideNavLeft.classList.remove('sidenav-open');
-			this.#sideNavRight.classList.add('sidenav-open');
-			this.#main.classList.remove('main-shift-left');
-			this.#main.classList.add('main-shift-right');
-
-			this.#navOpenSide = 'right';
+	open() {
+		if (this.#navOpenSide === 'right') {
+			this.close();
+			return;
 		}
+
+		this.#sideNavDom.toHtml().classList.add('sidenav-open');
+		this.#main.classList.add('main-shift-right');
+
+		this.#navOpenSide = 'right';
 
 		this.#main.addEventListener('transitionend', function transitioned() {
 			this.#main.removeEventListener('transitionend', transitioned);
@@ -93,9 +61,7 @@ export default class Sidenav {
 	}
 
 	close() {
-		this.#sideNavLeft.classList.remove('sidenav-open');
-		this.#sideNavRight.classList.remove('sidenav-open');
-		this.#main.classList.remove('main-shift-left');
+		this.#sideNavDom.toHtml().classList.remove('sidenav-open');
 		this.#main.classList.remove('main-shift-right');
 
 		this.#navOpenSide = undefined;

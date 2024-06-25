@@ -28,6 +28,7 @@ body {
 	-webkit-user-select: none;
 	overflow: hidden;
 	user-select: none;
+	font-size: 100%;
 }
 
 main {
@@ -171,7 +172,7 @@ nav {
 	height: 100%;
 	border: none;
 	background: transparent;
-	font-size: 1rem;
+	font: inherit;
 	color: white;
 	position: relative;
 }
@@ -223,10 +224,10 @@ table td {
 	padding-bottom: 0.5rem;
 	padding-right: 0.25rem;
 	padding-left: 0.25rem;
-	font-size: 1em;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	max-width: 6rem;
+	font: inherit;
 }
 
 th:first-child,
@@ -370,9 +371,9 @@ h3:hover {
 	left: 0;
 	transform: translateY(-50%);
 	color: #fff;
-	font-size: 16px;
 	pointer-events: none;
 	transition: 0.15s ease;
+	font: inherit;
 }
 
 .input-field input {
@@ -381,8 +382,8 @@ h3:hover {
 	background: transparent;
 	border: none;
 	outline: none;
-	font-size: 16px;
 	color: #fff;
+	font: inherit;
 }
 
 .input-field input:focus~label,
@@ -528,18 +529,9 @@ label {
 		right: 0px;
 	}
 
-	.sidenav-left {
-		left: 0px;
-	}
-
 	.sidenav-open {
 		width: 33vw;
 		transition: width .2s;
-	}
-
-	.main-shift-left {
-		transform: translateX(33vw);
-		transition: transform .2s;
 	}
 
 	.main-shift-right {

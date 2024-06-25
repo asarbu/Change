@@ -73,9 +73,6 @@ export default class SpendingNavbar {
 				),
 			),
 			new Dom('div').cls('nav-footer').append(
-				new Dom('button').cls('nav-item', 'nav-trigger').attr('data-side', 'left').append(
-					new Dom('img').cls('white-fill').text('Menu').attr('alt', 'Menu').attr('src', icons.menu),
-				),
 				new Dom('button').id('dropup-left').cls('nav-item').onClick(onClickYearDropup).append(
 					new Dom('span').id('dropup-left-text').text(`${year} `),
 					new Dom('span').id('dropup-left-caret').cls('white-50').text(''),
@@ -84,7 +81,7 @@ export default class SpendingNavbar {
 					new Dom('span').id('dropup-right-text').text(`${SpendingNavbar.#MONTH_NAMES[month]} `),
 					new Dom('span').id('dropup-right-caret').cls('white-50').text(''),
 				),
-				new Dom('button').cls('nav-item', 'nav-trigger').attr('data-side', 'right').append(
+				new Dom('button').cls('nav-item', 'nav-trigger').append(
 					new Dom('img').cls('white-fill').text('Menu').attr('alt', 'Menu').attr('src', icons.menu),
 				),
 			),

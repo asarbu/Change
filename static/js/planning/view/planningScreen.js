@@ -284,7 +284,8 @@ export default class PlanningScreen {
 
 	onClickedChangeStatementType(e) {
 		const newStatementType = e.currentTarget.textContent;
-		const statement = this.#defaultPlanning.statements[this.gfx.selectedIndex()];
+		const statement = this.#defaultPlanning.statements[this.gfx.selectedIndex()]
+			|| new Statement(new Date().getTime(), 'New Statement', Statement.EXPENSE, []);
 		statement.type = newStatementType;
 		this.refreshStatement(statement);
 	}

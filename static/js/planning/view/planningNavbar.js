@@ -82,9 +82,6 @@ export default class PlanningNavbar {
 		this.#navbar = new Dom('nav').append(
 			this.buildNavbarHeader(),
 			new Dom('div').cls('nav-footer').append(
-				new Dom('button').cls('nav-item', 'nav-trigger').attr('data-side', 'left').append(
-					new Dom('img').cls('white-fill').text('Menu').attr('alt', 'Menu').attr('src', icons.menu),
-				),
 				new Dom('button').cls('nav-item').onClick(onClickYearDropup).append(
 					new Dom('span').id('planning-year-text').text(`${this.#selectedYear} `),
 					new Dom('span').id('planning-year-caret').cls('white-50').text(''),
@@ -97,7 +94,7 @@ export default class PlanningNavbar {
 					new Dom('span').id('planning-stmt-text').text(`${this.#selectedStatement} `),
 					new Dom('span').id('planning-stmt-caret').cls('white-50').text(''),
 				),
-				new Dom('button').cls('nav-item', 'nav-trigger').attr('data-side', 'right').append(
+				new Dom('button').cls('nav-item', 'nav-trigger').append(
 					new Dom('img').cls('white-fill').text('Menu').attr('alt', 'Menu').attr('src', icons.menu),
 				),
 			),
