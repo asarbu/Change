@@ -115,7 +115,7 @@ export default class SpendingGDrive {
 		if (!this.#initialized) await this.init();
 		const localStorageFile = await this.#initializeLocalStorageFile(forMonth);
 		if (!localStorageFile.gDriveId) {
-			return undefined;
+			return [];
 		}
 		this.#updateLocalStorageModifiedField(localStorageFile.id);
 		/** @type {Array} */

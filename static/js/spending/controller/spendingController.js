@@ -99,8 +99,8 @@ export default class SpendingController {
 	 */
 	async onCreatedSpending(spending) {
 		const report = this.#cachedReports.filter((item) => item).find(
-			(spendingReport) =>	spendingReport.year === spending.spentOn.getFullYear()
-				&& spendingReport.month === spending.spentOn.getMonth(),
+			(spendingReport) =>	spendingReport.year() === spending.spentOn.getFullYear()
+				&& spendingReport.month() === spending.spentOn.getMonth(),
 		);
 
 		if (report) {
