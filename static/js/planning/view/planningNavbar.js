@@ -88,7 +88,7 @@ export default class PlanningNavbar {
 		this.#navbar = new Dom('nav').append(
 			this.buildNavbarHeader(),
 			new Dom('div').cls('nav-footer').append(
-				new Dom('button').cls('nav-item').onClick(onClickOpenSidenav).append(
+				new Dom('button').cls('nav-item', 'nav-trigger').onClick(onClickOpenSidenav).append(
 					new Dom('img').cls('white-fill').text('Menu').attr('alt', 'Menu').attr('src', icons.menu),
 				),
 				new Dom('button').cls('nav-item').onClick(onClickYearDropup).append(

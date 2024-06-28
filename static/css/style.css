@@ -48,7 +48,7 @@ main {
 
 h1 {
 	padding: 5vh;
-	padding-bottom: 10vh;
+	padding-bottom: 5vh;
 	text-align: center;
 }
 
@@ -225,6 +225,7 @@ table {
 	overflow: hidden;
 	-webkit-border-radius: 0.5rem;
 	border-radius: 0.5rem;
+	margin-top: 2vh;
 }
 
 thead tr {
@@ -573,6 +574,10 @@ label {
 
 	.nav-item {
 		width: 100%;
+	}
+
+	.nav-trigger {
+		display: none;
 	}
 
 	.container {

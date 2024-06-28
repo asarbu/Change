@@ -18,12 +18,18 @@ export default class Sidenav {
 	/** @type {boolean} */
 	#isOpen = undefined;
 
+	/** @type {Dom} */
 	#overlay = undefined;
 
-	/** Store reference to avoid multiple registration of the same handler */
-	#removeSidenav = undefined;
+	#onCloseSidenav = undefined;
+
+	/** Allow only one instance of sidenav in the app */
+	static #instance = undefined;
 
 	constructor() {
+		if (Sidenav.#instance) return Sidenav.#instance;
+
+		Sidenav.#instance = this;
 		this.#sideNavDom = new Dom('div').id('sidenav').cls('sidenav').append(
 			new Dom('a').cls('view-link').attr('href', Sidenav.PLANNING_SUFFIX).text('Plannings'),
 			new Dom('a').cls('view-link').attr('href', Sidenav.SPENDING_SUFFIX).text('Spendings'),
@@ -33,7 +39,8 @@ export default class Sidenav {
 
 		this.#overlay = new Dom('div').cls('sidenav-overlay').onClick(this.close.bind(this));
 		this.#main = document.getElementById('main');
-		this.#removeSidenav = this.#onRemoveSidenav.bind(this);
+		this.#onCloseSidenav = this.#onClosedSidenav.bind(this);
+		document.body.appendChild(this.#sideNavDom.toHtml());
 	}
 
 	toHtml() {
@@ -43,7 +50,6 @@ export default class Sidenav {
 	open() {
 		if (this.#isOpen) return;
 
-		document.body.appendChild(this.#sideNavDom.toHtml());
 		document.body.appendChild(this.#overlay.toHtml());
 
 		requestAnimationFrame(() => {
@@ -60,15 +66,14 @@ export default class Sidenav {
 			this.#overlay.toHtml().classList.remove('show-sidenav-overlay');
 			this.#main.classList.remove('main-shift-left');
 			this.#sideNavDom.toHtml().classList.remove('sidenav-open');
-			this.#sideNavDom.onTransitionEnd(this.#removeSidenav);
+			this.#isOpen = false;
+			this.#sideNavDom.onTransitionEnd(this.#onCloseSidenav);
 		});
 		return this;
 	}
 
-	#onRemoveSidenav() {
-		this.#sideNavDom.toHtml().removeEventListener('transitionend', this.#removeSidenav);
+	#onClosedSidenav() {
+		this.#sideNavDom.toHtml().removeEventListener('transitionend', this.#onCloseSidenav);
 		document.body.removeChild(this.#overlay.toHtml());
-		document.body.removeChild(this.#sideNavDom.toHtml());
-		this.#isOpen = false;
 	}
 }
