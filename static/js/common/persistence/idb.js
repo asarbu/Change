@@ -83,30 +83,6 @@ export default class Idb {
 	}
 
 	/**
-	 * @param {string} storeName Database object store name
-	 * @returns {Promise<Array<Object>>}
-	 */
-	openCursor(storeName) {
-		return new Promise((resolve) => {
-			const st = this.getStoreTransaction(storeName, Idb.#READ_ONLY);
-			const store = st[0];
-			const txn = st[1];
-
-			const values = [];
-			store.openCursor().onsuccess = (event) => {
-				const cursor = event.target.result;
-				if (cursor) {
-					values.push(cursor.value);
-					cursor.continue();
-				}
-			};
-			txn.oncomplete = () => {
-				resolve(values);
-			};
-		});
-	}
-
-	/**
 	 * Insert in an object store a value. The key is optional, so leave it last
 	 * @param {string} storeName Object store to create the object in
 	 * @param {Object} value Value to store
@@ -307,27 +283,6 @@ export default class Idb {
 				} else {
 					store.put(value);
 				}
-			}
-
-			transaction.oncomplete = (event) => {
-				resolve([event.target.result]);
-			};
-		});
-	}
-
-	/**
-	 * Update all of the values in the object store.
-	 * @param {string} storeName Object store to look up
-	 * @param {Array<Object>} data Items to update in store.
-	 * @returns
-	 */
-	async updateAll(storeName, data) {
-		// console.log("IDB put all:", storeName, data);
-		return new Promise((resolve) => {
-			const [store, transaction] = this.getStoreTransaction(storeName, Idb.#READ_WRITE);
-			for (let i = 0; i < data.length; i += 1) {
-				const item = data[i];
-				store.put(item.value, item.key);
 			}
 
 			transaction.oncomplete = (event) => {

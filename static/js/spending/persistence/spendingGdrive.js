@@ -106,7 +106,6 @@ export default class SpendingGDrive {
 		return localStorageFile;
 	}
 
-
 	/**
 	 * @param {number} forMonth
 	 * @returns {Promise<Array<Spending>>}
