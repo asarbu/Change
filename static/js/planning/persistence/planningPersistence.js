@@ -35,6 +35,8 @@ export default class PlanningPersistence {
 	 */
 	async readAllFromGDrive() {
 		const plannings = [];
+		// Force initialization beforehand to avoid race conditions in init.
+		await this.#planningGDrive.init();
 		for (let month = 0; month < 12; month += 1) {
 			plannings[month] = this.readFromGDrive(month);
 		}

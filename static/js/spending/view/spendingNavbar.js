@@ -2,11 +2,15 @@
 import Dom from '../../common/gui/dom.js';
 import icons from '../../common/gui/icons.js';
 import Modal from '../../common/gui/modal.js';
+import Sidenav from '../../common/gui/sidenav.js';
 import SpendingNavbarEventHandlers from './spendingNavbarHandlers.js';
 
 export default class SpendingNavbar {
 	/** @type {Dom} */
 	#navbar = undefined;
+
+	/** @type {Sidenav} */
+	#sidenav = undefined;
 
 	/** @type {Map<number, Dom} */
 	#monthsInDropup = undefined;
@@ -43,18 +47,20 @@ export default class SpendingNavbar {
 		this.#monthsInDropup = new Map();
 		this.#yearsInDropup = new Map();
 		this.#eventHandlers = eventHandlers;
+		this.#sidenav = new Sidenav();
 
 		this.buildMonthModal();
 		this.buildYearModal();
 
 		const onClickEdit = this.onClickEdit.bind(this);
 		const onClickSave = this.onClickSave.bind(this);
+		const onClickMonthDropup = this.onClickMonthDropup.bind(this);
+		const onClickYearDropup = this.onClickYearDropup.bind(this);
+		const onClickOpenSidenav = this.#onClickedOpenSidenav.bind(this);
 		const onClickSummary = eventHandlers.onClickSummary ? eventHandlers.onClickSummary : () => {};
 		const onClickAdd = eventHandlers.onClickAddSpending
 			? eventHandlers.onClickAddSpending
 			: () => {};
-		const onClickMonthDropup = this.onClickMonthDropup.bind(this);
-		const onClickYearDropup = this.onClickYearDropup.bind(this);
 
 		this.#navbar = new Dom('nav').append(
 			new Dom('div').cls('nav-header').append(
@@ -73,7 +79,7 @@ export default class SpendingNavbar {
 				),
 			),
 			new Dom('div').cls('nav-footer').append(
-				new Dom('button').cls('nav-item', 'nav-trigger').attr('data-side', 'left').append(
+				new Dom('button').cls('nav-item', 'nav-trigger').onClick(onClickOpenSidenav).append(
 					new Dom('img').cls('white-fill').text('Menu').attr('alt', 'Menu').attr('src', icons.menu),
 				),
 				new Dom('button').id('dropup-left').cls('nav-item').onClick(onClickYearDropup).append(
@@ -83,9 +89,6 @@ export default class SpendingNavbar {
 				new Dom('button').id('dropup-right').cls('nav-item').onClick(onClickMonthDropup).append(
 					new Dom('span').id('dropup-right-text').text(`${SpendingNavbar.#MONTH_NAMES[month]} `),
 					new Dom('span').id('dropup-right-caret').cls('white-50').text(''),
-				),
-				new Dom('button').cls('nav-item', 'nav-trigger').attr('data-side', 'right').append(
-					new Dom('img').cls('white-fill').text('Menu').attr('alt', 'Menu').attr('src', icons.menu),
 				),
 			),
 			new Dom('div').cls('dropup-content', 'top-round').hide(),
@@ -230,6 +233,10 @@ export default class SpendingNavbar {
 		if (this.#eventHandlers.onClickSave) {
 			this.#eventHandlers.onClickSave();
 		}
+	}
+
+	#onClickedOpenSidenav() {
+		this.#sidenav.open();
 	}
 
 	// #endregion

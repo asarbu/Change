@@ -1,5 +1,4 @@
 import Dom from './dom.js';
-import GraphicEffects from './effects.js';
 
 export default class Sidenav {
 	static PLANNING_SUFFIX = '/planning';
@@ -13,25 +12,24 @@ export default class Sidenav {
 	/** @type {Dom} */
 	#sideNavDom = undefined;
 
-	/** @type {HTMLDivElement} */
-	#sideNavLeft = undefined;
-
-	/** @type {HTMLDivElement} */
-	#sideNavRight = undefined;
-
 	/** @type {HTMLElement} */
 	#main = undefined;
 
-	/** @type {'left' | 'right'} */
-	#navOpenSide = undefined;
+	/** @type {boolean} */
+	#isOpen = undefined;
 
-	/** @type {GraphicEffects} */
-	#gfx = undefined;
+	/** @type {Dom} */
+	#overlay = undefined;
 
-	/** @type {HTMLElement} */
-	#fragment = undefined;
+	#onCloseSidenav = undefined;
 
-	constructor(gfx) {
+	/** Allow only one instance of sidenav in the app */
+	static #instance = undefined;
+
+	constructor() {
+		if (Sidenav.#instance) return Sidenav.#instance;
+
+		Sidenav.#instance = this;
 		this.#sideNavDom = new Dom('div').id('sidenav').cls('sidenav').append(
 			new Dom('a').cls('view-link').attr('href', Sidenav.PLANNING_SUFFIX).text('Plannings'),
 			new Dom('a').cls('view-link').attr('href', Sidenav.SPENDING_SUFFIX).text('Spendings'),
@@ -39,70 +37,43 @@ export default class Sidenav {
 			new Dom('a').cls('view-link').attr('href', Sidenav.SETTINGS_SUFFIX).text('Settings'),
 		);
 
-		this.#fragment = new DocumentFragment();
-		this.#sideNavLeft = this.#sideNavDom.toHtml();
-		this.#sideNavRight = this.#sideNavLeft.cloneNode(true);
-		this.#sideNavLeft.classList.add('sidenav-left');
-		this.#sideNavRight.classList.add('sidenav-right');
-		this.#fragment.appendChild(this.#sideNavLeft);
-		this.#fragment.appendChild(this.#sideNavRight);
+		this.#overlay = new Dom('div').cls('sidenav-overlay').onClick(this.close.bind(this));
 		this.#main = document.getElementById('main');
-
-		// TODO Remove this and add event listener individually to each dom element
-		document.querySelectorAll('.nav-trigger').forEach((el) => el.addEventListener('click', this.open.bind(this)));
-
-		this.#gfx = gfx;
+		this.#onCloseSidenav = this.#onClosedSidenav.bind(this);
+		document.body.appendChild(this.#sideNavDom.toHtml());
 	}
 
 	toHtml() {
-		return this.#fragment;
+		return this.#sideNavDom.toHtml();
 	}
 
-	/* Nav panel */
-	open(ev) {
-		const { side } = ev.currentTarget.dataset;
-		if (side === 'left') {
-			if (this.#navOpenSide === 'left') {
-				this.close();
-				return;
-			}
+	open() {
+		if (this.#isOpen) return;
 
-			this.#sideNavRight.classList.remove('sidenav-open');
-			this.#sideNavLeft.classList.add('sidenav-open');
-			this.#main.classList.remove('main-shift-right');
+		document.body.appendChild(this.#overlay.toHtml());
+
+		requestAnimationFrame(() => {
+			this.#overlay.toHtml().classList.add('show-sidenav-overlay');
+			this.#sideNavDom.toHtml().classList.add('sidenav-open');
 			this.#main.classList.add('main-shift-left');
+		});
 
-			this.#navOpenSide = 'left';
-		} else if (side === 'right') {
-			if (this.#navOpenSide === 'right') {
-				this.close();
-				return;
-			}
-
-			this.#sideNavLeft.classList.remove('sidenav-open');
-			this.#sideNavRight.classList.add('sidenav-open');
-			this.#main.classList.remove('main-shift-left');
-			this.#main.classList.add('main-shift-right');
-
-			this.#navOpenSide = 'right';
-		}
-
-		this.#main.addEventListener('transitionend', function transitioned() {
-			this.#main.removeEventListener('transitionend', transitioned);
-		}.bind(this));
+		this.#isOpen = true;
 	}
 
 	close() {
-		this.#sideNavLeft.classList.remove('sidenav-open');
-		this.#sideNavRight.classList.remove('sidenav-open');
-		this.#main.classList.remove('main-shift-left');
-		this.#main.classList.remove('main-shift-right');
+		requestAnimationFrame(() => {
+			this.#overlay.toHtml().classList.remove('show-sidenav-overlay');
+			this.#main.classList.remove('main-shift-left');
+			this.#sideNavDom.toHtml().classList.remove('sidenav-open');
+			this.#isOpen = false;
+			this.#sideNavDom.onTransitionEnd(this.#onCloseSidenav);
+		});
+		return this;
+	}
 
-		this.#navOpenSide = undefined;
-		// TODO check if this registers the tranisioned multiple times
-		this.#main.addEventListener('transitionend', function transitioned() {
-			this.#main.removeEventListener('transitionend', transitioned);
-			this.#gfx.refresh();
-		}.bind(this));
+	#onClosedSidenav() {
+		this.#sideNavDom.toHtml().removeEventListener('transitionend', this.#onCloseSidenav);
+		document.body.removeChild(this.#overlay.toHtml());
 	}
 }

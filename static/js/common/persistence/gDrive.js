@@ -170,6 +170,7 @@ export default class GDrive {
 	async login() {
 		if (this.#rememberLogin) {
 			this.#oauth2OfflineSignIn();
+			// Stop the application from creating additional requests
 			throw new Error('Login required');
 		}
 

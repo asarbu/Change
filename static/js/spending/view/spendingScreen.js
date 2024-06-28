@@ -7,7 +7,6 @@ import GraphicEffects from '../../common/gui/effects.js';
 import Modal from '../../common/gui/modal.js';
 import SpendingNavbar from './spendingNavbar.js';
 import SpendingNavbarEventHandlers from './spendingNavbarHandlers.js';
-import Sidenav from '../../common/gui/sidenav.js';
 import SpendingSummaryModal from './spendingSummaryModal.js';
 
 export default class SpendingScreen {
@@ -29,9 +28,6 @@ export default class SpendingScreen {
 
 	/** @type {Modal} */
 	#categoryModal = undefined;
-
-	/** @type {Sidenav} */
-	#sidenav = undefined;
 
 	/** @type {number} */
 	#month = undefined;
@@ -75,8 +71,6 @@ export default class SpendingScreen {
 		this.gfx.init(container);
 
 		this.spendingReports.forEach((spendingReport) => this.refreshMonth(spendingReport));
-		this.#sidenav = new Sidenav(this.gfx);
-		document.body.appendChild(this.#sidenav.toHtml());
 	}
 
 	/**

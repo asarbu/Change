@@ -52,12 +52,6 @@ export default class Modal {
 		return this;
 	}
 
-	clearBody() {
-		this.content.toHtml().removeChild(this.bodyDom.toHtml());
-		this.bodyDom = undefined;
-		return this;
-	}
-
 	footer(...domElements) {
 		this.content.append(
 			new Dom('div').cls('modal-footer').append(
@@ -135,10 +129,6 @@ export default class Modal {
 		const main = document.getElementById('main');
 		main.removeChild(this.modalHtml);
 		this.#isOpen = false;
-	}
-
-	#triggeredCancelEvent(event) {
-		return event.target === this.cancelButtonHtml || event.target === this.modalBackdropHtml;
 	}
 
 	scrollable() {

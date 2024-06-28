@@ -58,6 +58,8 @@ export default class SpendingPersistence {
 	 */
 	async readAllFromGDrive() {
 		const spendingReports = [];
+		// Force initialization beforehand to avoid race conditions in init.
+		await this.#spendingGDrive.init();
 		for (let month = 0; month < 12; month += 1) {
 			spendingReports[month] = this.readFromGDrive(month);
 		}
@@ -98,6 +100,7 @@ export default class SpendingPersistence {
 	async store(spending) {
 		if (spending.spentOn.getFullYear() === this.#year) {
 			await this.#spendingCache.store(spending);
+			// If user disables GDrive, creates spending and re-enables GDrive, we miss one spending
 			if (this.#spendingGDrive) {
 				await this.#spendingGDrive.store(spending);
 			}
