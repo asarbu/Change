@@ -100,6 +100,7 @@ export default class SpendingPersistence {
 	async store(spending) {
 		if (spending.spentOn.getFullYear() === this.#year) {
 			await this.#spendingCache.store(spending);
+			// If user disables GDrive, creates spending and re-enables GDrive, we miss one spending
 			if (this.#spendingGDrive) {
 				await this.#spendingGDrive.store(spending);
 			}
