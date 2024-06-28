@@ -1,6 +1,5 @@
 /* eslint-disable class-methods-use-this */
 import GraphicEffects from '../../common/gui/effects.js';
-import Sidenav from '../../common/gui/sidenav.js';
 import Dom from '../../common/gui/dom.js';
 import Planning, { Statement, Category, Goal } from '../model/planningModel.js';
 import icons from '../../common/gui/icons.js';
@@ -13,9 +12,6 @@ export default class PlanningScreen {
 	onStatementAdded = undefined;
 
 	#onClickedDeletePlanning = undefined;
-
-	/** @type {Sidenav} */
-	#sidenav = undefined;
 
 	/** @type {Map<string, Dom>} */
 	#categoryDoms = new Map();
@@ -59,8 +55,6 @@ export default class PlanningScreen {
 		mainElement.appendChild(this.containerHtml);
 		this.gfx = new GraphicEffects();
 		this.gfx.init(this.containerHtml);
-		this.#sidenav = new Sidenav(this.gfx);
-		document.body.appendChild(this.#sidenav.toHtml());
 	}
 
 	// #region DOM update

@@ -2,6 +2,7 @@
 import Dom from '../../common/gui/dom.js';
 import icons from '../../common/gui/icons.js';
 import Modal from '../../common/gui/modal.js';
+import Sidenav from '../../common/gui/sidenav.js';
 import Utils from '../../common/utils/utils.js';
 import Planning, { Statement } from '../model/planningModel.js';
 import PlanningNavbarEventListeners from './planningNavbarEventListeners.js';
@@ -52,6 +53,9 @@ export default class PlanningNavbar {
 	/** @type {boolean} */
 	#addSpendingPending = false;
 
+	/** @type {Sidenav} */
+	#sidenav = undefined;
+
 	/**
 	 * Constructs an instance of Planning Navbar
 	 * @param {Planning} planning default year to select in navbar
@@ -61,6 +65,7 @@ export default class PlanningNavbar {
 		this.#monthsInDropup = new Map();
 		this.#statementsInDropup = new Map();
 		this.#eventListeners = new PlanningNavbarEventListeners();
+		this.#sidenav = new Sidenav();
 
 		this.#planning = planning;
 		this.#selectedYear = planning.year;
@@ -78,10 +83,14 @@ export default class PlanningNavbar {
 		const onClickYearDropup = this.onClickedYearDropup.bind(this);
 		const onClickMonthDropup = this.onClickedMonthDropup.bind(this);
 		const onClickStatementDropup = this.onClickedStatementDropup.bind(this);
+		const onClickOpenSidenav = this.#onClickedOpenSidenav.bind(this);
 
 		this.#navbar = new Dom('nav').append(
 			this.buildNavbarHeader(),
 			new Dom('div').cls('nav-footer').append(
+				new Dom('button').cls('nav-item').onClick(onClickOpenSidenav).append(
+					new Dom('img').cls('white-fill').text('Menu').attr('alt', 'Menu').attr('src', icons.menu),
+				),
 				new Dom('button').cls('nav-item').onClick(onClickYearDropup).append(
 					new Dom('span').id('planning-year-text').text(`${this.#selectedYear} `),
 					new Dom('span').id('planning-year-caret').cls('white-50').text(''),
@@ -93,9 +102,6 @@ export default class PlanningNavbar {
 				new Dom('button').cls('nav-item').onClick(onClickStatementDropup).append(
 					new Dom('span').id('planning-stmt-text').text(`${this.#selectedStatement} `),
 					new Dom('span').id('planning-stmt-caret').cls('white-50').text(''),
-				),
-				new Dom('button').cls('nav-item', 'nav-trigger').append(
-					new Dom('img').cls('white-fill').text('Menu').attr('alt', 'Menu').attr('src', icons.menu),
 				),
 			),
 			new Dom('div').cls('dropup-content', 'top-round').hide(),
@@ -194,6 +200,10 @@ export default class PlanningNavbar {
 		if (this.#eventListeners.onClickedSave) {
 			this.#eventListeners.onClickedSave();
 		}
+	}
+
+	#onClickedOpenSidenav() {
+		this.#sidenav.open();
 	}
 
 	// #region Year modal

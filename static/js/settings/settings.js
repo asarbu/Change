@@ -1,5 +1,4 @@
 import Dom from '../common/gui/dom.js';
-import GraphicEffects from '../common/gui/effects.js';
 import icons from '../common/gui/icons.js';
 import Sidenav from '../common/gui/sidenav.js';
 import Modal from '../common/gui/modal.js';
@@ -17,10 +16,14 @@ export default class Settings {
 	/** @type {LocalStorage} */
 	#localStorage = undefined;
 
+	/** @type {Sidenav} */
+	#sidenav = undefined;
+
 	static #SYNC_GDRIVE = 'sync_gdrive';
 
 	constructor() {
 		this.#localStorage = new LocalStorage(LocalStorage.SETTINGS_KEY);
+		this.#sidenav = new Sidenav();
 	}
 
 	init() {
@@ -30,10 +33,6 @@ export default class Settings {
 		const main = document.getElementById('main');
 		main.appendChild(settingsScreen.toHtml());
 		main.appendChild(navbar.toHtml());
-
-		const gfx = new GraphicEffects(settingsScreen.toHtml());
-		const sidenav = new Sidenav(gfx);
-		document.body.appendChild(sidenav.toHtml());
 	}
 
 	buildSettingsScreen() {
@@ -76,6 +75,8 @@ export default class Settings {
 	buildNavBar() {
 		const onDeleteDatabase = Settings.#onClickedDeleteDatabase.bind(this);
 		const onDeleteLocalStorage = Settings.#onClickedDeleteLocalStorage.bind(this);
+		const onClickOpenSidenav = this.#onClickedOpenSidenav.bind(this);
+
 		this.#navbar = new Dom('nav').append(
 			new Dom('div').cls('nav-header').append(
 				new Dom('button').id('setting-del-databses').cls('nav-item').onClick(onDeleteLocalStorage)
@@ -88,7 +89,7 @@ export default class Settings {
 					),
 			),
 			new Dom('div').cls('nav-footer').append(
-				new Dom('button').cls('nav-item', 'nav-trigger').append(
+				new Dom('button').cls('nav-item').onClick(onClickOpenSidenav).append(
 					new Dom('img').cls('white-fill').text('Menu').attr('alt', 'Menu').attr('src', icons.menu),
 				),
 			),
@@ -116,6 +117,10 @@ export default class Settings {
 			() => localStorage.clear(),
 		);
 		areYouSureModal.open();
+	}
+
+	#onClickedOpenSidenav() {
+		this.#sidenav.open();
 	}
 
 	onClickedSyncGdrive(event) {
