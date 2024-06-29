@@ -11,7 +11,9 @@ export default class GDrive {
 
 	static #ROOT_DIRECTORY_NAME = 'root';
 
-	static #GDRIVE_MIME_TYPE_FOLDER = 'application/vnd.google-apps.folder';
+	static GDRIVE_MIME_TYPE_FOLDER = 'application/vnd.google-apps.folder';
+
+	static GDRIVE_MIME_TYPE_SHORTCUT = 'application/vnd.google-apps.shortcut';
 
 	static #FILES_API = 'https://www.googleapis.com/drive/v3/files';
 
@@ -347,19 +349,17 @@ export default class GDrive {
 			url.searchParams.append('q', q);
 
 			// TODO do proper error handling
-			const id = await fetch(url, {
+			const response = await fetch(url, {
 				method: 'GET',
 				headers: header,
-			})
-				.then((response) => response.json())
-				.then((json) => {
-					if (json && json.files && json.files.length > 0) {
-						return json.files[0].id;
-					}
-					return undefined;
-				});
+			});
 
-			return id;
+			if (!response.ok) return undefined;
+
+			const json = await response.json();
+			if (json && json.files && json.files.length > 0) {
+				return json.files[0].id;
+			}
 		}
 		return undefined;
 	}
@@ -372,10 +372,10 @@ export default class GDrive {
 		if (!fileId) return undefined;
 
 		const fileType = await this.readFileMetadata(fileId, 'shortcutDetails, mimeType');
-		if (fileType.mimeType === GDrive.#GDRIVE_MIME_TYPE_FOLDER) {
+		if (fileType.mimeType === GDrive.GDRIVE_MIME_TYPE_FOLDER) {
 			return fileId;
-		} if (fileType.mimeType === 'application/vnd.google-apps.shortcut') {
-			if (fileType.shortcutDetails?.targetMimeType === GDrive.#GDRIVE_MIME_TYPE_FOLDER) {
+		} if (fileType.mimeType === GDrive.GDRIVE_MIME_TYPE_SHORTCUT) {
+			if (fileType.shortcutDetails?.targetMimeType === GDrive.GDRIVE_MIME_TYPE_FOLDER) {
 				return fileType.shortcutDetails.targetId;
 			}
 		}
@@ -383,7 +383,7 @@ export default class GDrive {
 	}
 
 	async findFolder(name, parent) {
-		return this.find(name, parent, GDrive.#GDRIVE_MIME_TYPE_FOLDER);
+		return this.find(name, parent, GDrive.GDRIVE_MIME_TYPE_FOLDER);
 	}
 
 	async findFile(name, parent) {
@@ -405,18 +405,18 @@ export default class GDrive {
 			const url = new URL(GDrive.#FILES_API);
 			url.searchParams.append('q', q);
 
-			const children = await fetch(url, {
+			const response = await fetch(url, {
 				method: 'GET',
 				headers: header,
-			})
-				.then((response) => response.json())
-				.then((json) => {
-					if (json && json.files && json.files.length > 0) {
-						return json;
-					}
-					return undefined;
-				});
-			return children;
+			});
+
+			if (!response.ok) return [];
+
+			const json = await response.json();
+			if (json && json.files && json.files.length > 0) {
+				return json;
+			}
+			return [];
 		}
 		return undefined;
 	}
@@ -432,20 +432,22 @@ export default class GDrive {
 		if (token) {
 			const metadata = {
 				name: name,
-				mimeType: 'application/vnd.google-apps.folder',
+				mimeType: GDrive.GDRIVE_MIME_TYPE_FOLDER,
 				parents: [parent || GDrive.#ROOT_DIRECTORY_NAME],
 			};
 
 			const headers = await this.#getHeader();
 			const url = new URL(GDrive.#FILES_API);
 
-			const id = await fetch(url, {
+			const response = await fetch(url, {
 				method: 'POST',
 				headers: headers,
 				body: JSON.stringify(metadata),
-			}).then((res) => res.json()).then((json) => json.id);
+			});
 
-			return id;
+			if (!response.ok) return undefined;
+			const json = await response.json();
+			if (json) return json.id;
 		}
 		return undefined;
 	}
@@ -468,13 +470,15 @@ export default class GDrive {
 			const form = new FormData();
 			form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
 			form.append('file', file);
-			const updatedFileId = await fetch(url, {
+			const response = await fetch(url, {
 				method: 'PATCH',
 				headers: header,
 				body: form,
-			}).then((res) => res.json()).then((json) => json.id);
+			});
+			if (!response.ok) return undefined;
 
-			return updatedFileId;
+			const json = await response.json();
+			if (json) return json.id;
 		}
 		return undefined;
 	}
@@ -500,12 +504,15 @@ export default class GDrive {
 			form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
 			form.append('file', file);
 
-			const fileId = fetch(url, {
+			const response = await fetch(url, {
 				method: 'POST',
 				headers: header,
 				body: form,
-			}).then((res) => res.json()).then((json) => json.id);
-			return fileId;
+			});
+
+			if (!response.ok) return undefined;
+			const json = await response.json();
+			if (json) return json.id;
 		}
 		return undefined;
 	}

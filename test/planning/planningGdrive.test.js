@@ -1,31 +1,135 @@
 /**
  * @jest-environment jsdom
  */
-// TODO remove jsdom environment and send redirect URI directly to gDrive constructor
 import {
-	beforeAll, describe, expect, it,
+	beforeEach, describe, expect, it,
 } from '@jest/globals';
 import PlanningGDrive from '../../static/js/planning/persistence/planningGdrive.js';
+import GDriveBackendMock from '../common/fetchMock.js';
+import GDrive from '../../static/js/common/persistence/gDrive.js';
+import Planning, { Statement } from '../../static/js/planning/model/planningModel.js';
 
 describe('Planning gDrive', () => {
+	/** @type {Date} */
+	let now;
 	/** @type {PlanningGDrive} */
-	let planningGdrive;
+	let	planningGdrive;
 
-	beforeAll(async () => {
-		planningGdrive = new PlanningGDrive(2100, true);
+	beforeEach(() => {
+		now = new Date();
+		localStorage.clear();
+		planningGdrive = new PlanningGDrive(now.getFullYear(), true);
 	});
 
-	it('throws error without login', async () => {
+	function emptyGDriveJson() {
+		return {
+			id: 'root',
+			name: 'root',
+			mimeType: GDrive.GDRIVE_MIME_TYPE_FOLDER,
+			files: [],
+		};
+	}
+
+	function defaultGDriveStructureJson() {
+		return {
+			id: 'root',
+			name: 'root',
+			mimeType: GDrive.GDRIVE_MIME_TYPE_FOLDER,
+			files: [{
+				id: '1',
+				name: 'Change!',
+				mimeType: GDrive.GDRIVE_MIME_TYPE_FOLDER,
+				files: [{
+					id: '2',
+					name: 'Planning',
+					mimeType: GDrive.GDRIVE_MIME_TYPE_FOLDER,
+					files: [{
+						id: '3', name: `${now.getFullYear()}`, mimeType: GDrive.GDRIVE_MIME_TYPE_FOLDER, files: [],
+					}],
+				}, {
+					id: '4',
+					name: 'Spending',
+					mimeType: 'application/vnd.google-apps.folder',
+					files: [{
+						id: '5', name: `${now.getFullYear()}`, mimeType: GDrive.GDRIVE_MIME_TYPE_FOLDER, files: [],
+					}],
+				},
+				],
+			}],
+		};
+	}
+
+	function validGDriveOAuthToken() {
+		const endOfYear = new Date(now.getFullYear(), now.getMonth, now.getDate(), 23, 59, 59);
+		return {
+			access_token: '1234',
+			expires_in: 3599,
+			scope: 'https://www.googleapis.com/auth/drive',
+			token_type: 'Bearer',
+			refreshed_at: now.getTime(),
+			expires_at: `${endOfYear.getTime()}`,
+		};
+	}
+
+	/* it('throws error without login', () => {
 		expect(planningGdrive.readAll()).rejects.toThrowError();
 	});
-
-/* it('stores one empty Planning object', async () => {
-		const countBeforeInsert = (await defaultPlanningCache.count());
-		await storeEmptyPlanningCache();
-		const countAfterInsert = (await defaultPlanningCache.count());
-		expect(countAfterInsert - countBeforeInsert).toBe(1);
+*/
+	it('init from default GDrive structure', async () => {
+		const gDriveBackend = new GDriveBackendMock(defaultGDriveStructureJson());
+		window.fetch = gDriveBackend.fetch.bind(gDriveBackend);
+		localStorage.setItem('oauth2_token', JSON.stringify(validGDriveOAuthToken()));
+		expect(planningGdrive.init()).resolves.not.toThrow();
 	});
 
+	it('init empty GDrive', async () => {
+		const gDriveBackend = new GDriveBackendMock(emptyGDriveJson());
+		window.fetch = gDriveBackend.fetch.bind(gDriveBackend);
+		localStorage.setItem('oauth2_token', JSON.stringify(validGDriveOAuthToken()));
+		expect(planningGdrive.init()).resolves.not.toThrow();
+	});
+
+	it('reads from empty GDrive', async () => {
+		const gDriveBackend = new GDriveBackendMock(emptyGDriveJson());
+		window.fetch = gDriveBackend.fetch.bind(gDriveBackend);
+		localStorage.setItem('oauth2_token', JSON.stringify(validGDriveOAuthToken()));
+		const allPlannings = await planningGdrive.readAll();
+		expect(allPlannings).toBeDefined();
+		expect(allPlannings.length).toBe(0);
+	});
+
+	it('reads from default GDrive structure', async () => {
+		const gDriveBackend = new GDriveBackendMock(defaultGDriveStructureJson());
+		window.fetch = gDriveBackend.fetch.bind(gDriveBackend);
+		localStorage.setItem('oauth2_token', JSON.stringify(validGDriveOAuthToken()));
+		const allPlannings = await planningGdrive.readAll();
+		expect(allPlannings).toBeDefined();
+		expect(allPlannings.length).toBe(0);
+	});
+
+	it('stores one empty Planning object', async () => {
+		const gDriveBackend = new GDriveBackendMock(defaultGDriveStructureJson());
+		window.fetch = gDriveBackend.fetch.bind(gDriveBackend);
+		localStorage.setItem('oauth2_token', JSON.stringify(validGDriveOAuthToken()));
+		const planning = new Planning(1, now.getFullYear(), now.getMonth(), []);
+		await planningGdrive.store(planning);
+		const storedPlanning = await planningGdrive.read(planning.month);
+		expect(storedPlanning).toEqual(planning);
+	});
+
+	it('updates one Planning object', async () => {
+		const gDriveBackend = new GDriveBackendMock(defaultGDriveStructureJson());
+		window.fetch = gDriveBackend.fetch.bind(gDriveBackend);
+		localStorage.setItem('oauth2_token', JSON.stringify(validGDriveOAuthToken()));
+		const planning = new Planning(1, now.getFullYear(), now.getMonth(), []);
+		await planningGdrive.store(planning);
+		planning.statements.push(new Statement(2, 'Statement', Statement.EXPENSE, []));
+		await planningGdrive.store(planning);
+		const storedPlanning = await planningGdrive.read(planning.month);
+		expect(storedPlanning).toEqual(planning);
+	});
+
+/*
 	it('reads already existing cache', async () => {
 		const availableDate = nextAvailablePlanningDate();
 		const planningCache = await PlanningCache.get(availableDate.getFullYear());
