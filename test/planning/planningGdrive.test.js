@@ -3,11 +3,14 @@
  */
 import {
 	beforeEach, describe, expect, it,
+	jest,
 } from '@jest/globals';
 import PlanningGDrive from '../../static/js/planning/persistence/planningGdrive.js';
-import GDriveBackendMock from '../common/fetchMock.js';
+import GDriveBackendMock from '../common/gDriveBackendMock.js';
 import GDrive from '../../static/js/common/persistence/gDrive.js';
 import Planning, { Statement } from '../../static/js/planning/model/planningModel.js';
+import GDriveAuth from '../../static/js/common/persistence/gDriveAuth.js';
+import LocalStorage from '../../static/js/common/persistence/localStorage.js';
 
 describe('Planning gDrive', () => {
 	/** @type {Date} */
@@ -19,6 +22,7 @@ describe('Planning gDrive', () => {
 		now = new Date();
 		localStorage.clear();
 		planningGdrive = new PlanningGDrive(now.getFullYear(), true);
+		jest.restoreAllMocks();
 	});
 
 	function emptyGDriveJson() {
@@ -30,7 +34,10 @@ describe('Planning gDrive', () => {
 		};
 	}
 
-	function defaultGDriveStructureJson() {
+	/**
+	 * @returns {JSON} Initial GDrive folder state of a working application
+	 */
+	function defaultGDriveStructure() {
 		return {
 			id: 'root',
 			name: 'root',
@@ -71,12 +78,18 @@ describe('Planning gDrive', () => {
 		};
 	}
 
+	function preInitPlanningGDrive() {
+		new LocalStorage(LocalStorage.GDRIVE_FILES_KEY).store({ id: GDrive.APP_FOLDER, gDriveId: '1' });
+		new LocalStorage(LocalStorage.GDRIVE_FILES_KEY).store({ id: 'Planning', gDriveId: '2' });
+		new LocalStorage(LocalStorage.GDRIVE_FILES_KEY).store({ id: `Planning_${now.getFullYear()}`, gDriveId: '3' });
+	}
+
 	/* it('throws error without login', () => {
 		expect(planningGdrive.readAll()).rejects.toThrowError();
 	});
 */
 	it('init from default GDrive structure', async () => {
-		const gDriveBackend = new GDriveBackendMock(defaultGDriveStructureJson());
+		const gDriveBackend = new GDriveBackendMock(defaultGDriveStructure());
 		window.fetch = gDriveBackend.fetch.bind(gDriveBackend);
 		localStorage.setItem('oauth2_token', JSON.stringify(validGDriveOAuthToken()));
 		expect(planningGdrive.init()).resolves.not.toThrow();
@@ -98,8 +111,19 @@ describe('Planning gDrive', () => {
 		expect(allPlannings.length).toBe(0);
 	});
 
-	it('reads from default GDrive structure', async () => {
-		const gDriveBackend = new GDriveBackendMock(defaultGDriveStructureJson());
+	it('reads from empty GDrive that has a shortcut do Change! folder', async () => {
+		const gDriveBackend = new GDriveBackendMock({
+			id: 'root',
+			name: 'root',
+			mimeType: GDrive.GDRIVE_MIME_TYPE_FOLDER,
+			files: [{
+				id: '1',
+				name: 'Change!',
+				mimeType: GDrive.GDRIVE_MIME_TYPE_SHORTCUT,
+				shortcutDetails: { targetMimeType: GDrive.GDRIVE_MIME_TYPE_FOLDER },
+				files: [],
+			}],
+		});
 		window.fetch = gDriveBackend.fetch.bind(gDriveBackend);
 		localStorage.setItem('oauth2_token', JSON.stringify(validGDriveOAuthToken()));
 		const allPlannings = await planningGdrive.readAll();
@@ -107,8 +131,52 @@ describe('Planning gDrive', () => {
 		expect(allPlannings.length).toBe(0);
 	});
 
+	it('reads from empty GDrive that has a file named Change!', async () => {
+		const gDriveBackend = new GDriveBackendMock({
+			id: 'root',
+			name: 'root',
+			mimeType: GDrive.GDRIVE_MIME_TYPE_FOLDER,
+			files: [{
+				id: '1',
+				name: 'Change!',
+				data: {},
+			}],
+		});
+		window.fetch = gDriveBackend.fetch.bind(gDriveBackend);
+		localStorage.setItem('oauth2_token', JSON.stringify(validGDriveOAuthToken()));
+		const allPlannings = await planningGdrive.readAll();
+		expect(allPlannings).toBeDefined();
+		expect(allPlannings.length).toBe(0);
+	});
+
+	it('reads from default GDrive structure', async () => {
+		const gDriveBackend = new GDriveBackendMock(defaultGDriveStructure());
+		window.fetch = gDriveBackend.fetch.bind(gDriveBackend);
+		localStorage.setItem('oauth2_token', JSON.stringify(validGDriveOAuthToken()));
+		const allPlannings = await planningGdrive.readAll();
+		expect(allPlannings).toBeDefined();
+		expect(allPlannings.length).toBe(0);
+	});
+
+	it('reads unexisting file from GDrive', async () => {
+		jest.spyOn(GDriveAuth.prototype, 'init').mockImplementation(() => undefined);
+		localStorage.setItem('oauth2_token', JSON.stringify(validGDriveOAuthToken()));
+		const gDrive = await GDrive.get();
+		expect(gDrive.readFile(undefined)).rejects.toThrow();
+	});
+
+	it('reads one file from default GDrive structure', async () => {
+		const gDriveBackend = new GDriveBackendMock(defaultGDriveStructure());
+		gDriveBackend.writeFile(`Planning_${now.getFullYear()}_Jan.json`, '3');
+		window.fetch = gDriveBackend.fetch.bind(gDriveBackend);
+		localStorage.setItem('oauth2_token', JSON.stringify(validGDriveOAuthToken()));
+		const allPlannings = await planningGdrive.readAll();
+		expect(allPlannings).toBeDefined();
+		expect(allPlannings.files.length).toBe(1);
+	});
+
 	it('stores one empty Planning object', async () => {
-		const gDriveBackend = new GDriveBackendMock(defaultGDriveStructureJson());
+		const gDriveBackend = new GDriveBackendMock(defaultGDriveStructure());
 		window.fetch = gDriveBackend.fetch.bind(gDriveBackend);
 		localStorage.setItem('oauth2_token', JSON.stringify(validGDriveOAuthToken()));
 		const planning = new Planning(1, now.getFullYear(), now.getMonth(), []);
@@ -118,7 +186,7 @@ describe('Planning gDrive', () => {
 	});
 
 	it('updates one Planning object', async () => {
-		const gDriveBackend = new GDriveBackendMock(defaultGDriveStructureJson());
+		const gDriveBackend = new GDriveBackendMock(defaultGDriveStructure());
 		window.fetch = gDriveBackend.fetch.bind(gDriveBackend);
 		localStorage.setItem('oauth2_token', JSON.stringify(validGDriveOAuthToken()));
 		const planning = new Planning(1, now.getFullYear(), now.getMonth(), []);
@@ -129,174 +197,226 @@ describe('Planning gDrive', () => {
 		expect(storedPlanning).toEqual(planning);
 	});
 
-/*
-	it('reads already existing cache', async () => {
-		const availableDate = nextAvailablePlanningDate();
-		const planningCache = await PlanningCache.get(availableDate.getFullYear());
-		const secondPlanningCache = await PlanningCache.get(availableDate.getFullYear());
-		expect(planningCache).toBe(secondPlanningCache);
+	it('reads planning for inexistent month from GDrive', async () => {
+		const gDriveBackend = new GDriveBackendMock(defaultGDriveStructure());
+		window.fetch = gDriveBackend.fetch.bind(gDriveBackend);
+		localStorage.setItem('oauth2_token', JSON.stringify(validGDriveOAuthToken()));
+		const planning = await planningGdrive.read(0);
+		expect(planning).not.toBeDefined();
 	});
 
-	it('reads one added planning object', async () => {
-		const storedPlanning = await storeEmptyPlanningCache();
-		const readPlanning = await defaultPlanningCache.read(storedPlanning.id);
-		expect(storedPlanning).toEqual(readPlanning);
+	it('init empty GDrive without auth token', async () => {
+		jest.spyOn(GDriveAuth.prototype, 'init').mockImplementation(() => undefined);
+		jest.spyOn(GDriveAuth.prototype, 'getAccessToken').mockImplementation(() => undefined);
+		const gDriveBackend = new GDriveBackendMock(emptyGDriveJson());
+		window.fetch = gDriveBackend.fetch.bind(gDriveBackend);
+		expect(planningGdrive.init()).rejects.toThrow();
 	});
 
-	it('reads non existing planning object', async () => {
-		expect(defaultPlanningCache.read(1)).rejects.toThrowError();
+	it('stores one empty Planning object without auth token', async () => {
+		jest.spyOn(GDriveAuth.prototype, 'init').mockImplementation(() => undefined);
+		jest.spyOn(GDriveAuth.prototype, 'getAccessToken').mockImplementation(() => undefined);
+		preInitPlanningGDrive(now);
+		const gDriveBackend = new GDriveBackendMock(defaultGDriveStructure());
+		window.fetch = gDriveBackend.fetch.bind(gDriveBackend);
+		const planning = new Planning(1, now.getFullYear(), now.getMonth(), []);
+		expect(planningGdrive.store(planning)).resolves.not.toBeDefined();
 	});
 
-	it('reads all (2) planning items from cache', async () => {
-		const countBeforeInsert = (await defaultPlanningCache.count());
-		const firstPlanning = await storeEmptyPlanningCache(nextAvailablePlanningDate(0));
-		// Wait for 10ms to pass so we do not have an ID conflict (ID is date.now)
-		const secondPlanning = await storeEmptyPlanningCache(nextAvailablePlanningDate(1));
-		const plannings = await defaultPlanningCache.readAll();
-		expect(plannings.length).toBe(countBeforeInsert + 2);
-		const foundFirstPlanning = plannings.find((planning) => planning.id === firstPlanning.id);
-		const foundSecondPlanning = plannings.find((planning) => planning.id === secondPlanning.id);
-		expect(foundFirstPlanning).toBeDefined();
-		expect(foundSecondPlanning).toBeDefined();
+	it('reads from empty GDrive without auth token', async () => {
+		jest.spyOn(GDriveAuth.prototype, 'init').mockImplementation(() => undefined);
+		jest.spyOn(GDriveAuth.prototype, 'getAccessToken').mockImplementation(() => undefined);
+		preInitPlanningGDrive(now);
+		const gDriveBackend = new GDriveBackendMock(emptyGDriveJson());
+		window.fetch = gDriveBackend.fetch.bind(gDriveBackend);
+		const allPlannings = await planningGdrive.readAll();
+		expect(allPlannings).toBeDefined();
+		expect(allPlannings.length).toBe(0);
 	});
 
-	it('read all plannings for a month', async () => {
-		await storeEmptyPlanningCachesForAYear();
-		const currentMonth = now.getMonth();
-		const planningForCurrentMonth = await defaultPlanningCache.readForMonth(currentMonth);
-		expect(planningForCurrentMonth.month).toBe(currentMonth);
+	it('reads planning from GDrive without auth token', async () => {
+		jest.spyOn(GDriveAuth.prototype, 'init').mockImplementation(() => undefined);
+		jest.spyOn(GDriveAuth.prototype, 'getAccessToken').mockImplementation(() => undefined);
+		jest.spyOn(GDrive.prototype, 'readFileMetadata').mockImplementation(() => ({ [GDrive.MODIFIED_TIME_FIELD]: now.getTime() }));
+		preInitPlanningGDrive(now);
+		const gDriveBackend = new GDriveBackendMock(defaultGDriveStructure());
+		const planningFileName = `Planning_${now.getFullYear()}_Jan.json`;
+		const gDriveId = gDriveBackend.writeFile(planningFileName, '3');
+		new LocalStorage(LocalStorage.GDRIVE_FILES_KEY)
+			.store({ id: planningFileName, gDriveId: gDriveId });
+		window.fetch = gDriveBackend.fetch.bind(gDriveBackend);
+		const planning = await planningGdrive.read(0);
+		expect(planning).not.toBeDefined();
 	});
 
-	it('reads all expense categories for a planning object', async () => {
-		const availableDate = nextAvailablePlanningDate();
-		const expenseGoalOne = new Goal('expenseGoalOne', 10, 300, 3650);
-		const expenseGoalTwo = new Goal('expenseGoalTwo', 10, 300, 3650);
-		const expenseCategoryOne =
-			new Category(1, 'expenseCategoryOne', [expenseGoalOne, expenseGoalTwo]);
-		const expenseGoalThree = new Goal('expenseGoalThree', 10, 300, 3650);
-		const expenseGoalFour = new Goal('expenseGoalFour', 10, 300, 3650);
-		const expenseCategoryTwo =
-			new Category(2, 'expenseCategoryTwo', [expenseGoalThree, expenseGoalFour]);
-		const expenseStatement = new Statement(
-			1,
-			'Statement1',
-			Statement.EXPENSE,
-			[expenseCategoryOne, expenseCategoryTwo],
+	it('reads reads file medatadata for innexistent file', async () => {
+		jest.spyOn(GDriveAuth.prototype, 'init').mockImplementation(() => undefined);
+		localStorage.setItem('oauth2_token', JSON.stringify(validGDriveOAuthToken()));
+		const gDrive = await GDrive.get();
+		expect(gDrive.readFileMetadata(undefined)).rejects.toThrow();
+	});
+
+	it('reads planning from GDrive fails', async () => {
+		jest.spyOn(GDriveAuth.prototype, 'init').mockImplementation(() => undefined);
+		jest.spyOn(GDrive.prototype, 'readFileMetadata').mockImplementation(() => ({ [GDrive.MODIFIED_TIME_FIELD]: now.getTime() }));
+		localStorage.setItem('oauth2_token', JSON.stringify(validGDriveOAuthToken()));
+		preInitPlanningGDrive(now);
+		const gDriveBackend = new GDriveBackendMock(defaultGDriveStructure(), { failAltMedia: true });
+		const planningFileName = `Planning_${now.getFullYear()}_Jan.json`;
+		new LocalStorage(LocalStorage.GDRIVE_FILES_KEY).store({ id: planningFileName, gDriveId: '123' });
+		window.fetch = gDriveBackend.fetch.bind(gDriveBackend);
+		expect(planningGdrive.read(0)).rejects.toThrow();
+	});
+
+	it('fails to read file metadata due to no auth token', async () => {
+		jest.spyOn(GDriveAuth.prototype, 'init').mockImplementation(() => undefined);
+		jest.spyOn(GDrive.prototype, 'writeFile').mockImplementation(() => '123');
+		jest.spyOn(GDriveAuth.prototype, 'getAccessToken').mockImplementation(() => undefined);
+		preInitPlanningGDrive(now);
+		const gDriveBackend = new GDriveBackendMock(defaultGDriveStructure(), { failFields: true });
+		window.fetch = gDriveBackend.fetch.bind(gDriveBackend);
+		const planning = new Planning(1, now.getFullYear(), now.getMonth(), []);
+		expect(planningGdrive.store(planning)).rejects.toThrow();
+	});
+
+	it('updates one Planning object without auth', async () => {
+		jest.spyOn(GDriveAuth.prototype, 'init').mockImplementation(() => undefined);
+		jest.spyOn(GDriveAuth.prototype, 'getAccessToken').mockImplementation(() => undefined);
+		jest.spyOn(GDrive.prototype, 'init').mockImplementation(() => undefined);
+		const gDriveBackend = new GDriveBackendMock(
+			defaultGDriveStructure(),
+			{ failUploadPatch: true },
 		);
-
-		const incomeGoalOne = new Goal('incomeGoalOne', 10, 300, 3650);
-		const incomeGoalTwo = new Goal('incomeGoalTwo', 10, 300, 3650);
-		const incomeCategoryOne = new Category(
-			1,
-			'incomeCategoryOne',
-			[incomeGoalOne, incomeGoalTwo],
-		);
-		const incomeCategoryTwo = new Category(2, 'incomeCategoryTwo');
-		const incomeStatement = new Statement(
-			1,
-			'Statement1',
-			Statement.INCOME,
-			[incomeCategoryOne, incomeCategoryTwo],
-		);
-
-		const savingGoalOne = new Goal('savingGoalOne', 10, 300, 3650);
-		const savingGoalTwo = new Goal('savingGoalTwo', 10, 300, 3650);
-		const savingGoalThree = new Goal('savingGoalThree', 10, 300, 3650);
-		const savingGoalFour = new Goal('savingGoalFour', 10, 300, 3650);
-		const savingCategoryOne = new Category(
-			1,
-			'savingCategoryOne',
-			[savingGoalOne, savingGoalTwo],
-		);
-		const savingCategoryTwo = new Category(
-			2,
-			'savingCategoryTwo',
-			[savingGoalThree, savingGoalFour],
-		);
-		const savingStatement = new Statement(
-			1,
-			'Statement1',
-			Statement.SAVING,
-			[savingCategoryOne, savingCategoryTwo],
-		);
-
-		const planning = new Planning(
-			1,
-			availableDate.getFullYear(),
-			availableDate.getMonth(),
-			[expenseStatement, incomeStatement, savingStatement],
-		);
-		const planningCache = await PlanningCache.get(availableDate.getFullYear());
-		planningCache.store(planning);
-		const storedPlanning = await planningCache.read(planning.id);
-		// Move the below method to Planning class
-		const expenseCategories = await storedPlanning.readCategories(Statement.EXPENSE);
-		expect(expenseCategories).toEqual([expenseCategoryOne, expenseCategoryTwo]);
+		preInitPlanningGDrive(now);
+		window.fetch = gDriveBackend.fetch.bind(gDriveBackend);
+		const planning = new Planning(1, now.getFullYear(), 0, []);
+		const planningFileName = `Planning_${now.getFullYear()}_Jan.json`;
+		const gDriveId = gDriveBackend.writeFile(planningFileName, '3');
+		jest.spyOn(GDrive.prototype, 'findFile').mockImplementation(() => gDriveId);
+		new LocalStorage(LocalStorage.GDRIVE_FILES_KEY)
+			.store({ id: planningFileName, gDriveId: gDriveId });
+		expect(planningGdrive.store(planning)).resolves.not.toBeDefined();
 	});
 
-	it('deletes one empty Planning object', async () => {
-		const countBeforeInsert = (await defaultPlanningCache.count());
-		const addedPlanning = await storeEmptyPlanningCache(nextAvailablePlanningDate());
-		defaultPlanningCache.delete(addedPlanning.id);
-		const countAfterInsert = (await defaultPlanningCache.count());
-		expect(countAfterInsert).toBe(countBeforeInsert);
+	it('fails to read file metadata due to error', async () => {
+		jest.spyOn(GDriveAuth.prototype, 'init').mockImplementation(() => undefined);
+		jest.spyOn(GDrive.prototype, 'init').mockImplementation(() => undefined);
+		localStorage.setItem('oauth2_token', JSON.stringify(validGDriveOAuthToken()));
+		const gDriveBackend = new GDriveBackendMock(
+			defaultGDriveStructure(),
+			{ failFields: true },
+		);
+		preInitPlanningGDrive(now);
+		window.fetch = gDriveBackend.fetch.bind(gDriveBackend);
+		const planning = new Planning(1, now.getFullYear(), 0, []);
+		const planningFileName = `Planning_${now.getFullYear()}_Jan.json`;
+		const gDriveId = gDriveBackend.writeFile(planningFileName, '3');
+		jest.spyOn(GDrive.prototype, 'writeFile').mockImplementation(() => gDriveId);
+		jest.spyOn(GDrive.prototype, 'findFile').mockImplementation(() => gDriveId);
+		new LocalStorage(LocalStorage.GDRIVE_FILES_KEY)
+			.store({ id: planningFileName, gDriveId: gDriveId });
+		expect(planningGdrive.store(planning)).rejects.toThrow();
 	});
 
-	it('stores one empty Statement in a Planning', async () => {
-		const addedPlanning = await storeEmptyPlanningCache();
-		const newStatement = new Statement(now.getTime(), 'Dummy', Statement.EXPENSE);
-		addedPlanning.statements = [newStatement];
-		await defaultPlanningCache.store(addedPlanning);
-		const updatedPlanning = await defaultPlanningCache.read(addedPlanning.id);
-		const dbStatement = updatedPlanning.statements.find((stmt) => stmt.id === newStatement.id);
-		expect(dbStatement).toBeDefined();
+	it('updates fails for one Planning object', async () => {
+		const gDriveBackend = new GDriveBackendMock(defaultGDriveStructure());
+		window.fetch = gDriveBackend.fetch.bind(gDriveBackend);
+		localStorage.setItem('oauth2_token', JSON.stringify(validGDriveOAuthToken()));
+		const planning = new Planning(1, now.getFullYear(), now.getMonth(), []);
+		await planningGdrive.store(planning);
+		planning.statements.push(new Statement(2, 'Statement', Statement.EXPENSE, []));
+		jest.spyOn(GDrive.prototype, 'update').mockImplementation(() => undefined);
+		await planningGdrive.store(planning);
+		const storedPlanning = await planningGdrive.read(planning.month);
+		expect(storedPlanning).not.toEqual(planning);
 	});
 
-	it('stores statement created in last day of the year', async () => {
-		const addedPlanning = await storeEmptyPlanningCache();
-		const lastDayofYear = Date.parse('12-31-2024');
-		const newStatement = new Statement(lastDayofYear, 'Dummy', Statement.EXPENSE);
-		addedPlanning.statements = [newStatement];
-		await defaultPlanningCache.store(addedPlanning);
-		const updatedPlanning = await defaultPlanningCache.read(addedPlanning.id);
-		const dbStatement = updatedPlanning.statements.find((stmt) => stmt.id === newStatement.id);
-		expect(dbStatement.id).toBe(lastDayofYear);
-		expect(dbStatement).toBeDefined();
+	it('checks if file changed once', async () => {
+		const gDriveBackend = new GDriveBackendMock(defaultGDriveStructure());
+		window.fetch = gDriveBackend.fetch.bind(gDriveBackend);
+		localStorage.setItem('oauth2_token', JSON.stringify(validGDriveOAuthToken()));
+		gDriveBackend.writeFile(`Planning_${now.getFullYear()}_Jan.json`, '3');
+		const fileChanged = await planningGdrive.fileChanged(0);
+		expect(fileChanged).toBe(true);
 	});
 
-	it('stores statement created in first day of the year', async () => {
-		const addedPlanning = await storeEmptyPlanningCache();
-		const firstDayOfYear = Date.parse('01-01-2024');
-		const newStatement = new Statement(firstDayOfYear, 'Dummy', Statement.EXPENSE);
-		addedPlanning.statements = [newStatement];
-		await defaultPlanningCache.store(addedPlanning);
-		const updatedPlanning = await defaultPlanningCache.read(addedPlanning.id);
-		const dbStatement = updatedPlanning.statements.find((stmt) => stmt.id === newStatement.id);
-		expect(dbStatement.id).toBe(firstDayOfYear);
-		expect(dbStatement).toBeDefined();
+	it('checks if file changed twice', async () => {
+		const gDriveBackend = new GDriveBackendMock(defaultGDriveStructure());
+		window.fetch = gDriveBackend.fetch.bind(gDriveBackend);
+		localStorage.setItem('oauth2_token', JSON.stringify(validGDriveOAuthToken()));
+		gDriveBackend.writeFile(`Planning_${now.getFullYear()}_Jan.json`, '3');
+		let fileChanged = await planningGdrive.fileChanged(0);
+		expect(fileChanged).toBe(true);
+		fileChanged = await planningGdrive.fileChanged(0);
+		expect(fileChanged).toBe(false);
 	});
 
-	it('update all (2) planning items from cache', async () => {
-		const firstPlanning = await storeEmptyPlanningCache();
-		// Wait for 10ms to pass so we do not have an ID conflict (ID is date.now)
-		await new Promise((r) => { setTimeout(r, 10); });
-		const secondPlanning = await storeEmptyPlanningCache();
-
-		firstPlanning.month = (firstPlanning.month + 1) % 12;
-		secondPlanning.month = (secondPlanning.month + 1) % 12;
-		await defaultPlanningCache.updateAll([firstPlanning, secondPlanning]);
-
-		const plannings = await defaultPlanningCache.readAll();
-		const foundFirstPlanning = plannings.find((planning) => planning.id === firstPlanning.id);
-		const foundSecondPlanning = plannings.find((planning) => planning.id === secondPlanning.id);
-		expect(foundFirstPlanning.month).toBe(firstPlanning.month);
-		expect(foundSecondPlanning.month).toBe(secondPlanning.month);
+	it('checks if file exists when it exists', async () => {
+		const gDriveBackend = new GDriveBackendMock(defaultGDriveStructure());
+		window.fetch = gDriveBackend.fetch.bind(gDriveBackend);
+		localStorage.setItem('oauth2_token', JSON.stringify(validGDriveOAuthToken()));
+		gDriveBackend.writeFile(`Planning_${now.getFullYear()}_Jan.json`, '3');
+		const fileExists = await planningGdrive.fileExists(0);
+		expect(fileExists).toBe(true);
 	});
 
-	it('returns a Planning class instance', async () => {
-		const planings = await defaultPlanningCache.readAll();
-		planings.forEach((planning) => {
-			expect(planning instanceof Planning).toBeTruthy();
+	it('checks if file exists when it does not exist', async () => {
+		const gDriveBackend = new GDriveBackendMock(defaultGDriveStructure());
+		window.fetch = gDriveBackend.fetch.bind(gDriveBackend);
+		localStorage.setItem('oauth2_token', JSON.stringify(validGDriveOAuthToken()));
+		const fileExists = await planningGdrive.fileExists(0);
+		expect(fileExists).toBe(false);
+	});
+
+	it('returns current year by default when no file is added', async () => {
+		const gDriveBackend = new GDriveBackendMock(emptyGDriveJson());
+		window.fetch = gDriveBackend.fetch.bind(gDriveBackend);
+		localStorage.setItem('oauth2_token', JSON.stringify(validGDriveOAuthToken()));
+		const availableYears = await planningGdrive.availableYears();
+		expect(availableYears.length).toBe(1);
+		expect(availableYears[0]).toBe(`${now.getFullYear()}`);
+	});
+
+	it('returns past year if present', async () => {
+		const gDriveBackend = new GDriveBackendMock({
+			id: 'root',
+			name: 'root',
+			mimeType: GDrive.GDRIVE_MIME_TYPE_FOLDER,
+			files: [{
+				id: '1',
+				name: 'Change!',
+				mimeType: GDrive.GDRIVE_MIME_TYPE_FOLDER,
+				files: [{
+					id: '2',
+					name: 'Planning',
+					mimeType: GDrive.GDRIVE_MIME_TYPE_FOLDER,
+					files: [{
+						id: '3', name: `${now.getFullYear() - 1}`, mimeType: GDrive.GDRIVE_MIME_TYPE_FOLDER, files: [],
+					}],
+				}],
+			}],
 		});
-	}); */
+		window.fetch = gDriveBackend.fetch.bind(gDriveBackend);
+		localStorage.setItem('oauth2_token', JSON.stringify(validGDriveOAuthToken()));
+		const availableYears = await planningGdrive.availableYears();
+		expect(availableYears.length).toBe(2);
+		expect(availableYears[0]).toBe(`${now.getFullYear() - 1}`);
+	});
+
+	it('returns no month by default when no file is added', async () => {
+		const gDriveBackend = new GDriveBackendMock(emptyGDriveJson());
+		window.fetch = gDriveBackend.fetch.bind(gDriveBackend);
+		localStorage.setItem('oauth2_token', JSON.stringify(validGDriveOAuthToken()));
+		const availableMonths = await planningGdrive.availableMonths();
+		expect(availableMonths.length).toBe(0);
+	});
+
+	it('returns one month by default when a file is added', async () => {
+		const gDriveBackend = new GDriveBackendMock(defaultGDriveStructure());
+		window.fetch = gDriveBackend.fetch.bind(gDriveBackend);
+		localStorage.setItem('oauth2_token', JSON.stringify(validGDriveOAuthToken()));
+		gDriveBackend.writeFile(`Planning_${now.getFullYear()}_${now.getMonth()}.json`, '3');
+		const availableMonths = await planningGdrive.availableMonths();
+		expect(availableMonths.length).toBe(1);
+	});
 });

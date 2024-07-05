@@ -41,6 +41,9 @@
       "fake-indexeddb/auto"
     ],
     "collectCoverage": true,
+    "coveragePathIgnorePatterns" : [
+      "<rootDir>/static/js/common/persistence/gDriveAuth.js"
+    ],
     "moduleFileExtensions": [
       "js",
       "json"
