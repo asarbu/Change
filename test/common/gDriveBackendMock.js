@@ -34,6 +34,16 @@ export default class GDriveBackendMock {
 	}
 
 	fetch(url, config) {
+		if (url.startsWith('/planning.json')) {
+			return new Promise((resolve) => {
+				resolve({
+					ok: true,
+					status: 200,
+					json: async () => ([]),
+				});
+			});
+		}
+
 		if (url.pathname.startsWith('/drive/v3/files')) {
 			switch (config.method) {
 			case 'GET':
