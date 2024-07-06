@@ -13,7 +13,7 @@ export default class PlanningCache {
 	static #initializedCaches = [];
 
 	/**
-	 * Fetches or creates a Planning cache for the provided year
+	 * Fetches or creates an initialized Planning cache for the provided year
 	 * @param {number} forYear Year for which to retrieve the Planning Cache
 	 * @returns {Promise<PlanningCache>}
 	 */
@@ -21,15 +21,7 @@ export default class PlanningCache {
 		const cache = PlanningCache.#initializedCaches.find((c) => c.year === forYear);
 		if (cache) return cache;
 
-		const idb = await Idb.of(
-			PlanningCache.DATABASE_NAME,
-			PlanningCache.upgradePlanningDatabase,
-		);
-		const objectStores = idb.getObjectStores();
-		if (!objectStores.find((objectStore) => objectStore === `${forYear}`)) {
-			await idb.createObjectStores([`${forYear}`]);
-		}
-		const planningCache = new PlanningCache(forYear, idb);
+		const planningCache = new PlanningCache(forYear);
 		await planningCache.init();
 		PlanningCache.#initializedCaches.push(planningCache);
 		return planningCache;
@@ -85,11 +77,16 @@ export default class PlanningCache {
 	 * @returns {Promise<PlanningCache>} initialized planning cache.
 	 */
 	async init() {
-		if (!this.#idb) {
+		if (!this.#initialized) {
 			this.#idb = await Idb.of(
 				PlanningCache.DATABASE_NAME,
 				PlanningCache.upgradePlanningDatabase,
 			);
+
+			const objectStores = this.#idb.getObjectStores();
+			if (!objectStores.find((objectStore) => objectStore === `${this.year}`)) {
+				await this.#idb.createObjectStores([`${this.year}`]);
+			}
 		}
 		this.#initialized = true;
 		return this;
