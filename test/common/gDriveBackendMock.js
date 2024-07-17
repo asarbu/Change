@@ -34,7 +34,7 @@ export default class GDriveBackendMock {
 	}
 
 	fetch(url, config) {
-		if (url.startsWith('/planning.json')) {
+		if (url.startsWith && url.startsWith('/planning.json')) {
 			return new Promise((resolve) => {
 				resolve({
 					ok: true,
