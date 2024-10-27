@@ -145,7 +145,7 @@ h2 {
 
 /*The bottom navigation menu*/
 nav {
-	position: absolute;
+	position: fixed;
 	bottom: 0;
 	height: 20%;
 	width: 100%;
