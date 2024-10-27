@@ -7,9 +7,9 @@ import PlanningNavbar from './planningNavbar.js';
 import Modal from '../../common/gui/modal.js';
 
 export default class PlanningScreen {
-	onClickUpdate = undefined;
+	#onClickSavePlanning = undefined;
 
-	onStatementAdded = undefined;
+	#onClickedSaveStatement = undefined;
 
 	#onClickedDeletePlanning = undefined;
 
@@ -40,7 +40,7 @@ export default class PlanningScreen {
 	init() {
 		this.navbar = new PlanningNavbar(this.#defaultPlanning);
 
-		this.navbar.onClickSave(this.onClickedSave.bind(this));
+		this.navbar.onClickSavePlanning(this.onClickedSavePlanning.bind(this));
 		this.navbar.onClickEdit(this.onClickedEdit.bind(this));
 		this.navbar.onChangeStatementType(this.onClickedChangeStatementType.bind(this));
 		this.navbar.onClickSaveStatement(this.onClickedSaveStatement.bind(this));
@@ -163,6 +163,7 @@ export default class PlanningScreen {
 		if (!goal) return undefined;
 		const onClickDeleteGoal = this.onClickedDeleteGoal.bind(this);
 		const onKeyUpGoal = this.onKeyUpGoal.bind(this);
+
 		return new Dom('tr').id(`Goal_${goal.id}`).userData(goal).append(
 			new Dom('td').text(goal.name).editable().contentEditable(this.#editMode).onKeyUp(onKeyUpGoal),
 			new Dom('td').cls('large-screen-only').text(goal.daily).editable().contentEditable(this.#editMode).onKeyUp(onKeyUpGoal),
@@ -255,17 +256,25 @@ export default class PlanningScreen {
 		}
 		return undefined;
 	}
+
+	onClickSavePlanning(handler) {
+		this.#onClickSavePlanning = handler;
+	}
 	// #endregion
 
 	// #region statement event handlers
+	onClickSaveStatement(handler) {
+		this.#onClickedSaveStatement = handler;
+	}
+
 	onClickedDeleteStatement() {
 		this.#defaultPlanning.statements.splice(this.gfx.selectedIndex(), 1);
 		this.refresh(this.#defaultPlanning);
 	}
 
 	onClickedSaveStatement(statement) {
-		if (this.onStatementAdded) {
-			return this.onStatementAdded(statement);
+		if (this.#onClickedSaveStatement) {
+			return this.#onClickedSaveStatement(statement);
 		}
 		return undefined;
 	}
@@ -301,7 +310,7 @@ export default class PlanningScreen {
 	/**
 	 * @param {Planning} forPlanning
 	 */
-	onClickedSave(forPlanning) {
+	onClickedSavePlanning(forPlanning) {
 		const editableElmts = document.querySelectorAll('[editable="true"]');
 		for (let i = 0; i < editableElmts.length; i += 1) {
 			editableElmts[i].contentEditable = 'false';
@@ -314,9 +323,9 @@ export default class PlanningScreen {
 
 		this.#editMode = false;
 
-		if (this.onClickUpdate) {
+		if (this.#onClickSavePlanning) {
 			const planning = forPlanning || this.#defaultPlanning;
-			return this.onClickUpdate(planning);
+			return this.#onClickSavePlanning(planning);
 		}
 		return undefined;
 	}

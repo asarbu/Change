@@ -42,16 +42,14 @@ export default class SpendingController {
 	async init() {
 		this.#cachedReports = await this.#spendingPersistence.readAllFromCache();
 		const cachedPlannings = await this.#planningPersistence.readAllFromCache();
-		const defaultPlanning = new Planning(
-			new Date().getTime(),
-			this.#defaultYear,
-			this.#defaultMonth,
-		);
+		// TODO what happens if there are no plannings in cache? Read default?
+		const defaultPlanning = await this.#planningPersistence.readFromCache(this.#defaultMonth);
 
-		if (this.#cachedReports.length === 0) {
+		if (this.#cachedReports.length === 0 || !this.#cachedReports[this.#defaultMonth]) {
 			this.#cachedReports[this.#defaultMonth] = new SpendingReport(
 				this.#defaultYear,
 				this.#defaultMonth,
+				defaultPlanning,
 			);
 		}
 

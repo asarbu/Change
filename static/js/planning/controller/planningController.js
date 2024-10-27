@@ -79,18 +79,10 @@ export default class PlanningController {
 		if (gDrivePlanning) screen.refresh(gDrivePlanning);
 
 		const gDriveYears = await this.#planningPersistence.gDriveYears();
-		gDriveYears.forEach((year) => {
-			if (!cachedYears.find((cachedYear) => cachedYear === year)) {
-				screen.appendYear(year);
-			}
-		});
+		gDriveYears.forEach((year) => {	screen.appendYear(year); });
 
 		const gDriveMonths = await this.#planningPersistence.gDriveMonths();
-		gDriveMonths.forEach((month) => {
-			if (!cachedMonths.find((cachedMonth) => cachedMonth === month)) {
-				screen.appendMonth(month);
-			}
-		});
+		gDriveMonths.forEach((month) => { screen.appendMonth(month); });
 
 		Alert.show('Google Drive', 'Finished synchronization with Google Drive');
 		return screen;
@@ -103,8 +95,8 @@ export default class PlanningController {
 	async initPlanningScreen(planning) {
 		this.#defaultScreen = new PlanningScreen(planning);
 		// TODO replace this with methods
-		this.#defaultScreen.onClickUpdate = this.onClickUpdate.bind(this);
-		this.#defaultScreen.onStatementAdded = this.onClickAddStatement.bind(this);
+		this.#defaultScreen.onClickSavePlanning(this.onClickSavePlanning.bind(this));
+		this.#defaultScreen.onClickSaveStatement(this.onClickedSaveStatement.bind(this));
 		this.#defaultScreen.onClickDeletePlanning(this.onClickedDeletePlanning.bind(this));
 		this.#defaultScreen.onClickedShowStatement(this.#defaultStatement);
 		this.#defaultScreen.init();
@@ -114,7 +106,7 @@ export default class PlanningController {
 	/**
 	 * @param {Promise<Planning>} planning
 	 */
-	async onClickUpdate(planning) {
+	async onClickSavePlanning(planning) {
 		await this.#planningPersistence.store(planning);
 	}
 
@@ -128,7 +120,7 @@ export default class PlanningController {
 	/**
 	 * @param {Statement} statement
 	 */
-	async onClickAddStatement(statement) {
+	async onClickedSaveStatement(statement) {
 		const date = new Date(statement.id);
 		let planningPersistence = this.#planningPersistence;
 		if (date.getFullYear() !== this.#defaultYear) {

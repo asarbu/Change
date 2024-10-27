@@ -1,6 +1,6 @@
 import Spending from '../model/spending.js';
 import SpendingReport from '../model/spendingReport.js';
-import { Category } from '../../planning/model/planningModel.js';
+import Planning, { Category } from '../../planning/model/planningModel.js';
 import Dom from '../../common/gui/dom.js';
 import icons from '../../common/gui/icons.js';
 import GraphicEffects from '../../common/gui/effects.js';
@@ -47,7 +47,15 @@ export default class SpendingScreen {
 	}
 
 	init() {
-		const defaultReport = this.spendingReports[this.#month];
+		let defaultReport = this.spendingReports[this.#month];
+		if (!defaultReport) {
+			defaultReport = new SpendingReport(
+				this.#year,
+				this.#month,
+				new Planning(this.#year, this.#month, []),
+			);
+			this.spendingReports.push(defaultReport);
+		}
 		const eventHandlers = new SpendingNavbarEventHandlers();
 		eventHandlers.onClickAddSpending = this.onClickAddSpending.bind(this);
 		eventHandlers.onClickEdit = this.onClickEdit.bind(this);

@@ -26,7 +26,7 @@ module.exports = {
 		'newline-per-chained-call': [
 			'error',
 			{
-				ignoreChainWithDepth: 5,
+				ignoreChainWithDepth: 6,
 			},
 		],
 	},

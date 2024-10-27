@@ -213,7 +213,7 @@ describe('Planning screen', () => {
 		const screen = await planningController.init();
 
 		screen.onClickedDeleteStatement(newStatement);
-		await screen.onClickedSave();
+		await screen.onClickedSavePlanning();
 
 		const updatePlanning = await cache.read(planning.id);
 		expect(updatePlanning.statements.length).toBe(0);
@@ -234,7 +234,7 @@ describe('Planning screen', () => {
 		const screen = await planningController.init();
 
 		screen.onClickedChangeStatementType({ currentTarget: { textContent: Statement.INCOME } });
-		await screen.onClickedSave();
+		await screen.onClickedSavePlanning();
 
 		const updatePlanning = await cache.read(planning.id);
 		expect(updatePlanning.statements[0].type).toBe(Statement.INCOME);
@@ -253,7 +253,7 @@ describe('Planning screen', () => {
 		const screen = await planningController.init();
 
 		screen.onClickedAddCategory({ currentTarget: { textContent: Statement.INCOME } });
-		await screen.onClickedSave();
+		await screen.onClickedSavePlanning();
 
 		const updatePlanning = await cache.read(planning.id);
 		expect(updatePlanning.statements[0].categories.length).toBe(1 + storedCategoriesCount);
@@ -278,7 +278,7 @@ describe('Planning screen', () => {
 		const categoryTd = categoryHtml.tHead.childNodes[0].childNodes[0];
 		categoryTd.textContent = 'New Category';
 		planningScreen.onKeyUpCategoryName({ currentTarget: categoryTd });
-		await planningScreen.onClickedSave();
+		await planningScreen.onClickedSavePlanning();
 
 		const updatePlanning = await cache.read(planning.id);
 		expect(updatePlanning.statements[0].categories[0].name).toBe('New Category');
@@ -303,7 +303,7 @@ describe('Planning screen', () => {
 		const categoryTr = categoryHtml.tHead.childNodes[0];
 		const categoryTd = categoryTr.childNodes[categoryTr.childNodes.length - 1];
 		planningScreen.onClickedDeleteCategory({ currentTarget: categoryTd });
-		await planningScreen.onClickedSave();
+		await planningScreen.onClickedSavePlanning();
 
 		const deletedCategory = (await cache.read(planning.id))
 			.statements[0]
@@ -353,7 +353,7 @@ describe('Planning screen', () => {
 		const categoryTotalRow = categoryRows[categoryRows.length - 1];
 		const categoryAddCell = categoryTotalRow.childNodes[categoryTotalRow.childNodes.length - 1];
 		screen.onClickedAddGoal({ currentTarget: categoryAddCell });
-		await screen.onClickedSave();
+		await screen.onClickedSavePlanning();
 
 		const updatePlanning = await cache.read(planning.id);
 		expect(updatePlanning.statements[0].categories[0].goals.length).toBe(1 + storedGoalsCount);
@@ -378,7 +378,7 @@ describe('Planning screen', () => {
 		const categoryGoalRow = categoryRows[0];
 		const goalDeleteCell = categoryGoalRow.childNodes[categoryGoalRow.childNodes.length - 1];
 		screen.onClickedDeleteGoal({ currentTarget: goalDeleteCell });
-		await screen.onClickedSave();
+		await screen.onClickedSavePlanning();
 
 		const updatePlanning = await cache.read(planning.id);
 		expect(updatePlanning.statements[0].categories[0].goals.length).toBe(storedGoalsCount - 1);
@@ -403,7 +403,7 @@ describe('Planning screen', () => {
 		goalNameCell.textContent = 'Other Goal';
 
 		screen.onKeyUpGoal({ currentTarget: goalNameCell, cellIndex: 0 });
-		await screen.onClickedSave();
+		await screen.onClickedSavePlanning();
 
 		const updatePlanning = await cache.read(planning.id);
 		expect(updatePlanning.statements[0].categories[0].goals[0].name).toBe('Other Goal');
@@ -428,7 +428,7 @@ describe('Planning screen', () => {
 		goalNameCell.textContent = '123';
 
 		screen.onKeyUpGoal({ currentTarget: goalNameCell, cellIndex: 1 });
-		await screen.onClickedSave();
+		await screen.onClickedSavePlanning();
 
 		const updatePlanning = await cache.read(planning.id);
 		expect(updatePlanning.statements[0].categories[0].goals[0].daily).toBe(123);
@@ -453,7 +453,7 @@ describe('Planning screen', () => {
 		goalNameCell.textContent = '123';
 
 		screen.onKeyUpGoal({ currentTarget: goalNameCell, cellIndex: 2 });
-		await screen.onClickedSave();
+		await screen.onClickedSavePlanning();
 
 		const updatePlanning = await cache.read(planning.id);
 		expect(updatePlanning.statements[0].categories[0].goals[0].monthly).toBe(123);
@@ -478,7 +478,7 @@ describe('Planning screen', () => {
 		goalNameCell.textContent = '123';
 
 		screen.onKeyUpGoal({ currentTarget: goalNameCell, cellIndex: 3 });
-		await screen.onClickedSave();
+		await screen.onClickedSavePlanning();
 
 		const updatePlanning = await cache.read(planning.id);
 		expect(updatePlanning.statements[0].categories[0].goals[0].yearly).toBe(123);

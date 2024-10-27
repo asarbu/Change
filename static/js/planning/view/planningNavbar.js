@@ -5,7 +5,6 @@ import Modal from '../../common/gui/modal.js';
 import Sidenav from '../../common/gui/sidenav.js';
 import Utils from '../../common/utils/utils.js';
 import Planning, { Statement } from '../model/planningModel.js';
-import PlanningNavbarEventListeners from './planningNavbarEventListeners.js';
 
 export default class PlanningNavbar {
 	/** @type {Dom} */
@@ -35,9 +34,6 @@ export default class PlanningNavbar {
 	/** @type {Modal} */
 	#statementTypeDropup = undefined;
 
-	/** @type {PlanningNavbarEventListeners} */
-	#eventListeners = undefined;
-
 	/** @type {Planning} */
 	#planning = undefined;
 
@@ -64,7 +60,6 @@ export default class PlanningNavbar {
 		this.#yearsInDropup = new Map();
 		this.#monthsInDropup = new Map();
 		this.#statementsInDropup = new Map();
-		this.#eventListeners = new PlanningNavbarEventListeners();
 		this.#sidenav = new Sidenav();
 
 		this.#planning = planning;
@@ -110,7 +105,7 @@ export default class PlanningNavbar {
 
 	buildNavbarHeader() {
 		const onClickEdit = this.onClickedEdit.bind(this);
-		const onClickSave = this.onClickedSave.bind(this);
+		const onClickSave = this.onClickedSavePlanning.bind(this);
 		const onClickAddStatement = this.onClickedAddStatement.bind(this);
 		const onClickDeletePlanning = this.onClickedDeletePlanning.bind(this);
 		const onClickDeleteStatement = this.onClickedDeleteStatement.bind(this);
@@ -142,28 +137,40 @@ export default class PlanningNavbar {
 		return this.#navbar.toHtml();
 	}
 
+	// #region Delete Planning
+
+	#onClickedDeletePlanning;
+
 	onClickDeletePlanning(handler) {
-		this.#eventListeners.onClickedDeletePlanning = handler;
+		this.#onClickedDeletePlanning = handler;
 	}
 
 	onClickedDeletePlanning() {
-		if (this.#eventListeners.onClickedDeletePlanning) {
-			this.#eventListeners.onClickedDeletePlanning(this.#planning);
-		}
+		this.#onClickedDeletePlanning?.(this.#planning);
 	}
 
+	// #endregion
+
+	// #region Delete Statement
+
+	#onClickedDeleteStatement;
+
 	onClickDeleteStatement(handler) {
-		this.#eventListeners.onClickedDeletedStatement = handler;
+		this.#onClickedDeleteStatement = handler;
 	}
 
 	onClickedDeleteStatement() {
-		if (this.#eventListeners.onClickedDeletedStatement) {
-			this.#eventListeners.onClickedDeletedStatement();
-		}
+		this.#onClickedDeleteStatement?.();
 	}
 
+	// #endregion
+
+	// #region Edit planning
+
+	#onClickedEditPlanning;
+
 	onClickEdit(handler) {
-		this.#eventListeners.onClickedEdit = handler;
+		this.#onClickedEditPlanning = handler;
 	}
 
 	onClickedEdit(event) {
@@ -177,16 +184,20 @@ export default class PlanningNavbar {
 		saveButton.style.display = '';
 		delPlanning.style.display = '';
 
-		if (this.#eventListeners.onClickedEdit) {
-			this.#eventListeners.onClickedEdit();
-		}
+		this.#onClickedEditPlanning?.();
 	}
 
-	onClickSave(handler) {
-		this.#eventListeners.onClickedSave = handler;
+	// #endregion
+
+	// #region Save Planning
+
+	#onClickedSavePlanning;
+
+	onClickSavePlanning(handler) {
+		this.#onClickedSavePlanning = handler;
 	}
 
-	onClickedSave(event) {
+	onClickedSavePlanning(event) {
 		const saveButton = event.currentTarget;
 		const editButton = document.getElementById('planning-navbar-edit');
 		const delStatement = document.getElementById('planning-del-statement');
@@ -197,9 +208,7 @@ export default class PlanningNavbar {
 		delStatement.style.display = 'none';
 		delPlanning.style.display = 'none';
 
-		if (this.#eventListeners.onClickedSave) {
-			this.#eventListeners.onClickedSave();
-		}
+		this.#onClickedSavePlanning?.();
 	}
 
 	#onClickedOpenSidenav() {
@@ -307,6 +316,7 @@ export default class PlanningNavbar {
 	// #endregion
 
 	// #region Statement modal
+
 	buildStatementModal() {
 		this.#statementsDropup = new Modal('planning-stmt-dropup')
 			.header(
@@ -315,8 +325,15 @@ export default class PlanningNavbar {
 		return this.#statementsDropup;
 	}
 
+	#onChangedStatement;
+
 	onChangeStatement(handler) {
-		this.#eventListeners.onChangedStatement = handler;
+		this.#onChangedStatement = handler;
+	}
+
+	onChangedStatement(statement) {
+		this.#statementsDropup.close();
+		this.#onChangedStatement?.(statement);
 	}
 
 	appendStatement(statement) {
@@ -352,16 +369,11 @@ export default class PlanningNavbar {
 		this.#statementsDropup.open();
 	}
 
-	onChangedStatement(statement) {
-		this.#statementsDropup.close();
-		if (this.#eventListeners.onChangedStatement) {
-			this.#eventListeners.onChangedStatement(statement);
-		}
-	}
-
 	// #endregion
 
 	// #region Add Statement Modal
+
+	#onClickedSaveStatement;
 
 	buildAddStatementModal() {
 		const onClickSave = this.onClickedSaveStatement.bind(this);
@@ -394,7 +406,7 @@ export default class PlanningNavbar {
 	}
 
 	onClickSaveStatement(handler) {
-		this.#eventListeners.onClickedSaveStatement = handler;
+		this.#onClickedSaveStatement = handler;
 	}
 
 	onClickedSaveStatement() {
@@ -403,9 +415,7 @@ export default class PlanningNavbar {
 		const statementType = document.getElementById('statement-type-input').value;
 		const newStatement = new Statement(statementId, statementName, statementType);
 
-		if (this.#eventListeners.onClickedSaveStatement) {
-			this.#eventListeners.onClickedSaveStatement(newStatement);
-		}
+		this.#onClickedSaveStatement?.(newStatement);
 		this.#addStatementDropup.close();
 	}
 
@@ -436,8 +446,10 @@ export default class PlanningNavbar {
 		}
 	}
 
+	#onChangedStatementType;
+
 	onChangeStatementType(handler) {
-		this.#eventListeners.onChangedStatementType = handler;
+		this.#onChangedStatementType = handler;
 	}
 
 	onChangedStatementType(event) {
@@ -448,10 +460,7 @@ export default class PlanningNavbar {
 			this.#addStatementDropup.open();
 			document.getElementById('statement-type-input').value = type;
 		}
-
-		if (this.#eventListeners.onChangedStatementType) {
-			this.#eventListeners.onChangedStatementType(event);
-		}
+		this.#onChangedStatementType?.(event);
 	}
 	// #endregion
 }
