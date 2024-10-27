@@ -80,6 +80,7 @@ export default class PlanningPersistence {
 			this.#planningIdb.store(pastPlanning);
 			return pastPlanning;
 		}
+		// TODO read also from past years
 		return undefined;
 	}
 

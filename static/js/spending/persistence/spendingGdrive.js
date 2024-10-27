@@ -153,7 +153,7 @@ export default class SpendingGDrive {
 		const fileName = this.#buildFileName(month);
 		const spendings = await this.readAll(month);
 		spendings.push(spending);
-		const fileId = await this.#gDrive.writeFile(this.#gDriveFolderId, fileName, spendings, true);
+		const fileId = await this.#gDrive.writeFile(this.#gDriveFolderId, fileName, spendings);
 		const gDriveMetadata = await this.#gDrive.readFileMetadata(fileId, GDrive.MODIFIED_TIME_FIELD);
 		const modifiedTime = new Date(gDriveMetadata[GDrive.MODIFIED_TIME_FIELD]).getTime();
 		gdriveFile.modified = modifiedTime;
@@ -170,7 +170,7 @@ export default class SpendingGDrive {
 		const gdriveFile = await this.#initializeLocalStorageFile(forMonth);
 		this.#markDirty(gdriveFile);
 		const fileName = this.#buildFileName(forMonth);
-		const fileId = await this.#gDrive.writeFile(this.#gDriveFolderId, fileName, spendings, true);
+		const fileId = await this.#gDrive.writeFile(this.#gDriveFolderId, fileName, spendings);
 		const gDriveMetadata = await this.#gDrive.readFileMetadata(fileId, GDrive.MODIFIED_TIME_FIELD);
 		const modifiedTime = new Date(gDriveMetadata[GDrive.MODIFIED_TIME_FIELD]).getTime();
 		gdriveFile.modified = modifiedTime;

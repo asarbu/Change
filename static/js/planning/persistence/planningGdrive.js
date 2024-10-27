@@ -29,17 +29,6 @@ export default class PlanningGDrive {
 	/**
 	 * @param {number} forYear
 	 * @param {boolean} rememberLogin
-	 * @returns {Promise<PlanningGDrive>}
-	 */
-	static async get(forYear, rememberLogin) {
-		const planningDrive = new PlanningGDrive(forYear, rememberLogin);
-		await planningDrive.init();
-		return planningDrive;
-	}
-
-	/**
-	 * @param {number} forYear
-	 * @param {boolean} rememberLogin
 	 */
 	constructor(forYear, rememberLogin = false) {
 		this.#year = forYear;
@@ -97,12 +86,14 @@ export default class PlanningGDrive {
 		const gdriveFile = await this.#initializeGDriveFile(planning.month);
 		this.#markDirty(gdriveFile);
 		const { fileName } = gdriveFile;
-		const fileId = await this.#gDrive.writeFile(this.#yearFolderId, fileName, planning, true);
+		const fileId = await this.#gDrive.writeFile(this.#yearFolderId, fileName, planning);
+		if (!fileId) return undefined;
 		const gDriveMetadata = await this.#gDrive.readFileMetadata(fileId, GDrive.MODIFIED_TIME_FIELD);
 		const modifiedTime = new Date(gDriveMetadata[GDrive.MODIFIED_TIME_FIELD]).getTime();
 		gdriveFile.modified = modifiedTime;
 		gdriveFile.gDriveId = fileId;
 		this.#markClean(gdriveFile);
+		return fileId;
 	}
 
 	async delete(planning) {
@@ -125,6 +116,7 @@ export default class PlanningGDrive {
 		}
 		this.#updateLocalStorageModifiedField(localStorageFile.id);
 		const gDriveFile = await this.#gDrive.readFile(localStorageFile.gDriveId);
+		if (!gDriveFile) return undefined;
 		return Planning.fromJavascriptObject(gDriveFile);
 	}
 
@@ -192,7 +184,7 @@ export default class PlanningGDrive {
 		if (!this.#initialized) await this.init();
 		if (!this.#yearFolderId) return [];
 		const monthFiles = await this.#gDrive.getChildren(this.#yearFolderId);
-		if (!monthFiles) return [];
+		if (monthFiles.length === 0) return [];
 		const regex = /.*_(.*).json/;
 		return monthFiles.files.map((monthFile) => Utils.monthForName(monthFile.name.match(regex)[1]));
 	}
