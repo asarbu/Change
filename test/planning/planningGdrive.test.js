@@ -84,10 +84,6 @@ describe('Planning gDrive', () => {
 		new LocalStorage(LocalStorage.GDRIVE_FILES_KEY).store({ id: `Planning_${now.getFullYear()}`, gDriveId: '3' });
 	}
 
-	/* it('throws error without login', () => {
-		expect(planningGdrive.readAll()).rejects.toThrowError();
-	});
-*/
 	it('init from default GDrive structure', async () => {
 		const gDriveBackend = new GDriveBackendMock(defaultGDriveStructure());
 		window.fetch = gDriveBackend.fetch.bind(gDriveBackend);
