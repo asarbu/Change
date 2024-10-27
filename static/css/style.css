@@ -104,9 +104,10 @@ h2 {
 
 /* The side navigation menu */
 .sidenav {
-	position: absolute;
+	position: fixed;
 	width: 0;
 	left: 0;
+	top: 0;
 	z-index: 3;
 	background: var(--primary-900);
 	overflow: hidden;
