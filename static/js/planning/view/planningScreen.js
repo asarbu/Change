@@ -49,12 +49,12 @@ export default class PlanningScreen {
 		this.navbar.onClickDeleteStatement(this.onClickedDeleteStatement.bind(this));
 
 		const mainElement = document.getElementById('main');
-		mainElement.appendChild(this.navbar.toHtml());
-		this.navbar.selectYear(this.#defaultPlanning.year);
 		this.containerHtml = this.buildContainer(this.#defaultPlanning).toHtml();
 		mainElement.appendChild(this.containerHtml);
 		this.gfx = new GraphicEffects();
 		this.gfx.init(this.containerHtml);
+		mainElement.appendChild(this.navbar.toHtml());
+		this.navbar.selectYear(this.#defaultPlanning.year);
 	}
 
 	// #region DOM update
