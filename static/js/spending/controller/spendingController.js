@@ -6,7 +6,6 @@ import Settings from '../../settings/settings.js';
 import Alert from '../../common/gui/alert.js';
 import PlanningPersistence from '../../planning/persistence/planningPersistence.js';
 import SpendingPersistence from '../persistence/spendingPersistence.js';
-import Planning from '../../planning/model/planningModel.js';
 
 export default class SpendingController {
 	/** @type {PlanningPersistence} */
@@ -41,9 +40,7 @@ export default class SpendingController {
 
 	async init() {
 		this.#cachedReports = await this.#spendingPersistence.readAllFromCache();
-		const cachedPlannings = await this.#planningPersistence.readAllFromCache();
-		// TODO what happens if there are no plannings in cache? Read default?
-		const defaultPlanning = await this.#planningPersistence.readFromCache(this.#defaultMonth);
+		const defaultPlanning = await this.#planningPersistence.readFromCacheOrDefault(this.#defaultMonth);
 
 		if (this.#cachedReports.length === 0 || !this.#cachedReports[this.#defaultMonth]) {
 			this.#cachedReports[this.#defaultMonth] = new SpendingReport(
@@ -53,6 +50,7 @@ export default class SpendingController {
 			);
 		}
 
+		const cachedPlannings = await this.#planningPersistence.readAllFromCache();
 		const updatedReports = [];
 		for (let month = 0; month < this.#cachedReports.length; month += 1) {
 			const report = this.#cachedReports[month];

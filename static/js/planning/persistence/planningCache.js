@@ -35,7 +35,8 @@ export default class PlanningCache {
 			PlanningCache.DATABASE_NAME,
 			PlanningCache.upgradePlanningDatabase,
 		);
-		return idb.getObjectStores();
+		// Sort array of strings years in decreasing order
+		return idb.getObjectStores().sort((a, b) => b - a);
 	}
 
 	/** @type {Idb} */

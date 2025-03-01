@@ -80,7 +80,21 @@ export default class PlanningPersistence {
 			this.#planningIdb.store(pastPlanning);
 			return pastPlanning;
 		}
-		// TODO read also from past years
+
+		// Fetch from last years
+		const lastYears = await this.cachedYears();
+		for (let lastYear = 0; lastYear < lastYears.length; lastYear += 1) {
+			const planningCache = await PlanningCache.get(lastYears[lastYear]);
+			const planning = await planningCache.readForMonth(forMonth);
+			if (planning) {
+				planning.id = new Date().getTime();
+				planning.year = this.#defaultYear;
+				planning.month = forMonth;
+				this.#planningIdb.store(planning);
+				return planning;
+			}
+		}
+
 		return undefined;
 	}
 
