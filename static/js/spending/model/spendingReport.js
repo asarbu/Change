@@ -118,11 +118,11 @@ export default class SpendingReport {
 	 * @returns {Array<Goal>}
 	 */
 	plannedGoals() {
-		return [...this.#planning.readGoals(Statement.EXPENSE)];
+		return this.#planning.readGoals(Statement.EXPENSE) ?? [];
 	}
 
 	plannedCategories() {
-		return [...this.#planning.readCategories(Statement.EXPENSE)];
+		return this.#planning?.readCategories(Statement.EXPENSE) ?? [];
 	}
 
 	/**
