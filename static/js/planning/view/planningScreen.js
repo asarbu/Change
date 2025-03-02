@@ -1,5 +1,4 @@
 /* eslint-disable class-methods-use-this */
-import GraphicEffects from '../../common/gui/effects.js';
 import Dom from '../../common/gui/dom.js';
 import Planning, { Statement, Category, Goal } from '../model/planningModel.js';
 import icons from '../../common/gui/icons.js';
@@ -44,7 +43,6 @@ export default class PlanningScreen {
 		this.navbar.onClickEdit(this.onClickedEdit.bind(this));
 		this.navbar.onChangeStatementType(this.onClickedChangeStatementType.bind(this));
 		this.navbar.onClickSaveStatement(this.onClickedSaveStatement.bind(this));
-		this.navbar.onChangeStatement(this.onClickedShowStatement.bind(this));
 		this.navbar.onClickDeletePlanning(this.onClickedDeletePlanning.bind(this));
 		this.navbar.onClickDeleteStatement(this.onClickedDeleteStatement.bind(this));
 
@@ -53,8 +51,7 @@ export default class PlanningScreen {
 		this.navbar.selectYear(this.#defaultPlanning.year);
 		this.containerHtml = this.buildContainer(this.#defaultPlanning).toHtml();
 		mainElement.appendChild(this.containerHtml);
-		this.gfx = new GraphicEffects();
-		this.gfx.init(this.containerHtml);
+		this.navbar.init();
 	}
 
 	// #region DOM update
@@ -86,7 +83,7 @@ export default class PlanningScreen {
 			const htmlStatement = this.buildStatement(statement).userData(statement);
 
 			section.append(htmlStatement);
-			this.navbar.appendStatement(statement.name);
+			this.navbar.appendStatement(statement);
 		}
 
 		container.append(section);
@@ -103,7 +100,7 @@ export default class PlanningScreen {
 
 		const onKeyUp = this.onKeyUpStatementName.bind(this);
 		const onClickStatementType = this.onClickedStatementType.bind(this);
-		const onClickAddCategory = this.onClickedAddCategory.bind(this);
+		const onClickAddCategory = this.onClickedAddCategory.bind(this, statement);
 		const slice = new Dom('div').id(`statement-${statement.id}`).cls('slice').append(
 			new Dom('h1').text(statement.name).editable().onKeyUp(onKeyUp).attr('contenteditable', this.#editMode),
 			new Dom('h2').id('planning-statement-type').text(`${statement.type} `).onClick(onClickStatementType).hideable(this.#editMode)
@@ -182,6 +179,7 @@ export default class PlanningScreen {
 		this.#defaultPlanning = planning;
 		const container = this.buildContainer(planning).toHtml();
 		this.containerHtml.parentElement.replaceChild(container, this.containerHtml);
+		this.navbar.refresh();
 		this.containerHtml = container;
 	}
 
@@ -263,12 +261,20 @@ export default class PlanningScreen {
 	// #endregion
 
 	// #region statement event handlers
+	selectStatement(statementName) {
+		this.navbar.selectStatement(statementName);
+	}
+
+	onChangedStatement(statement) {
+		this.navbar.onChangedStatement(statement);
+	}
+
 	onClickSaveStatement(handler) {
 		this.#onClickedSaveStatement = handler;
 	}
 
-	onClickedDeleteStatement() {
-		this.#defaultPlanning.statements.splice(this.gfx.selectedIndex(), 1);
+	onClickedDeleteStatement(index) {
+		this.#defaultPlanning.statements.splice(index, 1);
 		this.refresh(this.#defaultPlanning);
 	}
 
@@ -279,17 +285,7 @@ export default class PlanningScreen {
 		return undefined;
 	}
 
-	onClickedShowStatement(statementName) {
-		const { statements } = this.#defaultPlanning;
-		const index = statements.findIndex((statement) => statement.name === statementName);
-		if (index >= 0) this.gfx.slideTo(index);
-	}
-
-	onClickedChangeStatementType(e) {
-		const newStatementType = e.currentTarget.textContent;
-		const statement = this.#defaultPlanning.statements[this.gfx.selectedIndex()]
-			|| new Statement(new Date().getTime(), 'New Statement', Statement.EXPENSE, []);
-		statement.type = newStatementType;
+	onClickedChangeStatementType(statement) {
 		this.refreshStatement(statement);
 	}
 
@@ -342,11 +338,9 @@ export default class PlanningScreen {
 	// #endregion
 
 	// #region category event handlers
-	onClickedAddCategory() {
+	onClickedAddCategory(statement) {
 		const id = new Date().getTime(); // millisecond precision
 		const category = new Category(id, 'New Category');
-		/** @type{Statement} */
-		const statement = this.#defaultPlanning.statements[this.gfx.selectedIndex()];
 		statement.categories.push(category);
 		this.refreshStatement(statement);
 	}

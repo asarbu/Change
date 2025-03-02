@@ -5,6 +5,8 @@ import Modal from '../../common/gui/modal.js';
 import Sidenav from '../../common/gui/sidenav.js';
 import Utils from '../../common/utils/utils.js';
 import Planning, { Statement } from '../model/planningModel.js';
+import GraphicEffects from '../../common/gui/effects.js';
+import Alert from '../../common/gui/alert.js';
 
 export default class PlanningNavbar {
 	/** @type {Dom} */
@@ -43,7 +45,7 @@ export default class PlanningNavbar {
 	/** @type {number} */
 	#selectedYear = undefined;
 
-	/** @type {number} */
+	/** @type {Statement} */
 	#selectedStatement = undefined;
 
 	/** @type {boolean} */
@@ -66,7 +68,7 @@ export default class PlanningNavbar {
 		this.#selectedYear = planning.year;
 		this.#selectedMonth = planning.month;
 		if (planning.statements.length > 0) {
-			this.#selectedStatement = planning.statements[0].name;
+			this.#selectedStatement = planning.statements[0];
 		}
 
 		this.buildYearModal();
@@ -95,12 +97,25 @@ export default class PlanningNavbar {
 					new Dom('span').id('planning-month-caret').cls('white-50').text(''),
 				),
 				new Dom('button').cls('nav-item').onClick(onClickStatementDropup).append(
-					new Dom('span').id('planning-stmt-text').text(`${this.#selectedStatement} `),
+					new Dom('span').id('planning-stmt-text').text(`${this.#selectedStatement.name} `),
 					new Dom('span').id('planning-stmt-caret').cls('white-50').text(''),
 				),
 			),
 			new Dom('div').cls('dropup-content', 'top-round').hide(),
 		);
+	}
+
+	init() {
+		this.gfx = new GraphicEffects();
+		this.gfx.onSliceChange(this.onChangedStatementIndex.bind(this));
+		this.refresh();
+	}
+
+	refresh() {
+		if(this.gfx) {
+			const container = document.getElementById(this.#planning.year);
+			if(container) this.gfx.init(container);
+		}
 	}
 
 	buildNavbarHeader() {
@@ -160,7 +175,11 @@ export default class PlanningNavbar {
 	}
 
 	onClickedDeleteStatement() {
-		this.#onClickedDeleteStatement?.();
+		this.#onClickedDeleteStatement?.(this.gfx.selectedIndex());
+		this.#selectedStatement = this.#planning.statements[0];
+		if (this.#selectedStatement) {
+			this.updateStatementDropupText();
+		}
 	}
 
 	// #endregion
@@ -288,6 +307,7 @@ export default class PlanningNavbar {
 	selectMonth(month) {
 		if (month === this.#selectedMonth) return;
 		this.#selectedMonth = month;
+		this.updateMonthDropupText();
 	}
 
 	updateMonthDropupText() {
@@ -325,35 +345,60 @@ export default class PlanningNavbar {
 		return this.#statementsDropup;
 	}
 
-	#onChangedStatement;
-
-	onChangeStatement(handler) {
-		this.#onChangedStatement = handler;
-	}
-
-	onChangedStatement(statement) {
-		this.#statementsDropup.close();
-		this.#onChangedStatement?.(statement);
-	}
-
 	appendStatement(statement) {
-		if (this.#statementsInDropup.has(statement)) return;
+		if (this.#statementsInDropup.has(statement.name)) return;
 
 		const onStatementChanged = this.onChangedStatement.bind(this, statement);
-		const statementDropupItem = new Dom('div').cls('accordion-secondary').onClick(onStatementChanged).text(statement);
-		this.#statementsInDropup.set(statement, statementDropupItem);
+		const statementDropupItem = new Dom('div').cls('accordion-secondary').onClick(onStatementChanged).text(statement.name);
+		this.#statementsInDropup.set(statement.name, statementDropupItem);
 		this.#statementsDropup.body(statementDropupItem);
 		this.updateStatementDropupText();
 	}
 
-	selectStatement(statement) {
-		if (statement === this.#selectedStatement) return;
-		this.#selectedStatement = statement;
+	selectStatement(statementName) {
+		if (statementName === this.#selectedStatement) return;
+		
+		const { statements } = this.#planning;
+		const jump = true;
+		const statement = statements.find((stmt) => stmt.name === statementName) ?? this.#planning.statements[0];
+		this.onChangedStatement(statement, jump);
+	}
+
+	/**
+	 * 
+	 * @param {Statement} statement 
+	 * @returns 
+	 */
+	onChangedStatement(statement, jump = false) {
+		if(this.#statementsDropup.isOpen()) this.#statementsDropup.close();
+
+		const statementName = statement.name;
+		if (statementName === this.#selectedStatement) return;
+		
+		const { statements } = this.#planning;
+		const index = statements.findIndex((statement) => statement.name === statementName);
+		if (index >= 0) {
+			const statement = this.#planning.statements[index];
+			this.#selectedStatement = statement;
+			this.updateStatementDropupText();
+			if(jump) {
+				this.gfx.jumpTo(index);
+			} else {
+				this.gfx.slideTo(index);
+			}
+		} else {
+			Alert.show('Statement not found', `Statement ${statementName} not found in planning`);
+		}
+	}
+
+	onChangedStatementIndex(index) {
+		this.#selectedStatement = this.#planning.statements[index];
+		this.updateStatementDropupText();
 	}
 
 	updateStatementDropupText() {
 		const statementText = document.getElementById('planning-stmt-text');
-		const newText = `${this.#selectedStatement} `;
+		const newText = `${this.#selectedStatement.name} `;
 		if (statementText.textContent !== newText) {
 			statementText.textContent = newText;
 		}
@@ -455,12 +500,15 @@ export default class PlanningNavbar {
 	onChangedStatementType(event) {
 		const type = event.currentTarget.textContent;
 		this.#statementTypeDropup.close();
+		const statement = this.#planning.statements[this.gfx.selectedIndex()]
+			|| new Statement(new Date().getTime(), 'New Statement', Statement.EXPENSE, []);
+		statement.type = type;
 		if (this.#addSpendingPending) {
 			this.#addSpendingPending = false;
 			this.#addStatementDropup.open();
 			document.getElementById('statement-type-input').value = type;
 		}
-		this.#onChangedStatementType?.(event);
+		this.#onChangedStatementType?.(statement);
 	}
 	// #endregion
 }

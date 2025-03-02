@@ -8,6 +8,9 @@ export default class GraphicEffects {
 	/** @type {HTMLOListElement} */
 	#currentSlice = undefined;
 
+	/** @type {Function} */
+	#onSliceChanged = undefined;
+
 	constructor() {
 		/* Slice slider */
 		this.rootContainer = undefined;
@@ -66,6 +69,7 @@ export default class GraphicEffects {
 		requestAnimationFrame(() => {
 			this.sliderWrapper.style.transition = 'transform 0.2s linear';
 			this.sliderWrapper.style.transform = `translateX(${-this.containerWidth * index}px)`;
+			if (this.#onSliceChanged) this.#onSliceChanged(index);
 		});
 	}
 
@@ -73,6 +77,7 @@ export default class GraphicEffects {
 		this.#currentIndex = +index;
 		requestAnimationFrame(() => {
 			this.sliderWrapper.style.transform = `translateX(${-this.containerWidth * index}px)`;
+			if (this.#onSliceChanged) this.#onSliceChanged(index);
 		});
 	}
 
@@ -87,6 +92,10 @@ export default class GraphicEffects {
 	onClickSetSlice(e) {
 		const sliceIndex = e.target.getAttribute('data-slice-index');
 		this.slideTo(sliceIndex);
+	}
+
+	onSliceChange(callback) {
+		this.#onSliceChanged = callback;
 	}
 
 	startSlider(e) {

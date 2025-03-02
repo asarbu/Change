@@ -84,6 +84,7 @@ export default class PlanningPersistence {
 		// Fetch from last years
 		const lastYears = await this.cachedYears();
 		for (let lastYear = 0; lastYear < lastYears.length; lastYear += 1) {
+			if(lastYears[lastYear] > this.#defaultYear) continue;
 			const planningCache = await PlanningCache.get(lastYears[lastYear]);
 			const planning = await planningCache.readForMonth(forMonth);
 			if (planning) {
@@ -112,11 +113,12 @@ export default class PlanningPersistence {
 	}
 
 	async store(planning) {
-		await this.#planningIdb.store(planning);
+		const storedPlanning = await this.#planningIdb.store(planning);
 		if (this.#planningGDrive) {
 			const success = this.#planningGDrive.store(planning);
 			if (!success) this.#planningGDrive.markDirty(planning);
 		}
+		return storedPlanning;
 	}
 
 	async delete(planning) {
@@ -159,7 +161,6 @@ export default class PlanningPersistence {
 
 	async #fetchPastPlannigFromIdb(currentMonth) {
 		for (let pastMonth = currentMonth - 1; pastMonth >= 0; pastMonth -= 1) {
-			// eslint-disable-next-line no-await-in-loop
 			const pastPlanning = await this.#planningIdb.readForMonth(pastMonth);
 			if (pastPlanning) {
 				return pastPlanning;
