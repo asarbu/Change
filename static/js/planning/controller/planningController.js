@@ -31,15 +31,15 @@ export default class PlanningController {
 		if (urlYear != null) {
 			this.#defaultYear = +urlYear;
 		} else if (forYear != null) {
-			this.#defaultYear = forYear;
+			this.#defaultYear = +forYear ?? new Date().getFullYear();
 		} else {
 			this.#defaultYear = new Date().getFullYear();
 		}
 
 		if (urlMonth != null) {
-			this.#defaultMonth = Utils.monthForName(urlMonth);
+			this.#defaultMonth = Utils.monthForName(urlMonth) ?? new Date().getMonth();
 		} else if (forMonth != null) {
-			this.#defaultMonth = forMonth;
+			this.#defaultMonth = +forMonth ?? new Date().getMonth();
 		} else {
 			this.#defaultMonth = new Date().getMonth();
 		}
@@ -98,8 +98,10 @@ export default class PlanningController {
 		this.#defaultScreen.onClickSavePlanning(this.onClickSavePlanning.bind(this));
 		this.#defaultScreen.onClickSaveStatement(this.onClickedSaveStatement.bind(this));
 		this.#defaultScreen.onClickDeletePlanning(this.onClickedDeletePlanning.bind(this));
-		this.#defaultScreen.onClickedShowStatement(this.#defaultStatement);
 		this.#defaultScreen.init();
+		if(this.#defaultStatement) {
+			this.#defaultScreen.selectStatement(this.#defaultStatement);
+		}
 		return this.#defaultScreen;
 	}
 
@@ -132,10 +134,12 @@ export default class PlanningController {
 		} else {
 			planning = new Planning(date.getTime(), date.getFullYear(), date.getMonth(), [statement]);
 		}
-		await planningPersistence.store(planning);
-		if (date.getFullYear() === this.#defaultYear) {
-			this.navigateTo(date.getFullYear(), date.getMonth(), statement.name);
+		const storedPlanning = await planningPersistence.store(planning);
+		// Store is successful if the id is set
+		if (storedPlanning.id && date.getFullYear() === this.#defaultYear) {
+			this.#defaultScreen.refresh(storedPlanning);
 		}
+		this.navigateTo(date.getFullYear(), date.getMonth(), statement.name);
 	}
 
 	/**
@@ -147,7 +151,7 @@ export default class PlanningController {
 	navigateTo(year, month, statementName) {
 		// Current year and month do not require reload
 		if (year === this.#defaultYear && month === this.#defaultMonth) {
-			this.#defaultScreen.onClickedShowStatement(statementName);
+			this.#defaultScreen.selectStatement(statementName);
 			return;
 		}
 
@@ -155,13 +159,13 @@ export default class PlanningController {
 
 		if (!year) return;
 		let url = `${window.location.pathname}`;
-		url += `?${year}`;
+		url += `?year=${year}`;
 
 		if (!month) window.location.href = url;
-		url += `&${month}`;
+		url += `&month=${Utils.nameForMonth(month)}`;
 
 		if (!statementName) window.location.href = url;
-		url += `&${statementName}`;
+		url += `&statement=${statementName}`;
 		window.location.href = url;
 	}
 }

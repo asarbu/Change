@@ -20,7 +20,7 @@ module.exports = {
 		'jsdoc/no-undefined-types': 1,
 		'no-tabs': 0,
 		'no-await-in-loop': 0,
-		'max-len': 110,
+		'max-len': 1,
 		indent: [1, 'tab'],
 		'linebreak-style': ['error', 'windows'],
 		'import/extensions': 0,
