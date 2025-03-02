@@ -70,7 +70,7 @@ export default class SpendingController {
 		this.#screen.jumpToMonth(this.#defaultMonth);
 
 		const availableYears = await this.#spendingPersistence.cachedYears();
-		availableYears.forEach((spendingCache) => this.#screen.updateYear(spendingCache.year));
+		availableYears.forEach((availableYear) => this.#screen.updateYear(availableYear));
 
 		const gDriveSettings = new Settings().gDriveSettings();
 		if (!gDriveSettings || !gDriveSettings.enabled) return this.#screen;
