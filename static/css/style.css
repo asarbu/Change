@@ -565,6 +565,10 @@ label {
 		left: 25%;
 	}
 
+	nav {
+		width: 75vw;
+	}
+
 	.sidenav {
 		width: 25vw;
 		display: block;
