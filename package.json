@@ -9,7 +9,8 @@
     "build": "node ./node_scripts/build.cjs",
     "dev": "node ./node_scripts/dev.cjs",
     "clean": "node node_scripts/clean.cjs",
-    "start": "http-server ./dist"
+    "start": "http-server ./dist",
+    "lint": "eslint . --ext .js,.jsx,.ts,.tsx"
   },
   "repository": {
     "type": "git",
