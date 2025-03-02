@@ -112,9 +112,9 @@ export default class PlanningNavbar {
 	}
 
 	refresh() {
-		if(this.gfx) {
+		if (this.gfx) {
 			const container = document.getElementById(this.#planning.year);
-			if(container) this.gfx.init(container);
+			if (container) this.gfx.init(container);
 		}
 	}
 
@@ -357,31 +357,33 @@ export default class PlanningNavbar {
 
 	selectStatement(statementName) {
 		if (statementName === this.#selectedStatement) return;
-		
+
 		const { statements } = this.#planning;
 		const jump = true;
-		const statement = statements.find((stmt) => stmt.name === statementName) ?? this.#planning.statements[0];
+		const statement = statements
+			.find((stmt) =>	stmt.name.toLowerCase() === statementName.toLowerCase())
+		?? this.#planning.statements[0];
+
 		this.onChangedStatement(statement, jump);
 	}
 
 	/**
-	 * 
-	 * @param {Statement} statement 
-	 * @returns 
+	 * @param {Statement} statement
+	 * @returns
 	 */
 	onChangedStatement(statement, jump = false) {
-		if(this.#statementsDropup.isOpen()) this.#statementsDropup.close();
+		if (this.#statementsDropup.isOpen()) this.#statementsDropup.close();
 
 		const statementName = statement.name;
 		if (statementName === this.#selectedStatement) return;
-		
+
 		const { statements } = this.#planning;
-		const index = statements.findIndex((statement) => statement.name === statementName);
+		const index = statements.findIndex((stmt) => stmt.name === statementName);
 		if (index >= 0) {
-			const statement = this.#planning.statements[index];
-			this.#selectedStatement = statement;
+			const stmt = this.#planning.statements[index];
+			this.#selectedStatement = stmt;
 			this.updateStatementDropupText();
-			if(jump) {
+			if (jump) {
 				this.gfx.jumpTo(index);
 			} else {
 				this.gfx.slideTo(index);
