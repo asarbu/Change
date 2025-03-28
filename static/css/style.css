@@ -1,22 +1,22 @@
 /*Content - Generic*/
 * {
-	margin: 0px;
-	padding: 0px;
+	margin: 0;
+	padding: 0;
 	box-sizing: border-box;
 	font-family: Helvetica, sans-serif;
 }
 
 :root {
+	/*Sampled from Paint to avoid transparent sticky headers*/
 	--primary-900: #004D40;
 	--primary-700: #00796B;
-	/*Sampled from Paint to avoid transparent sticky headers*/
 	--primary-light: #4D9D94;
 	--primary-300: #4DB6AC;
 	--primary-200: #80CBC4;
 	--primary-100: #B2DFDB;
 	--primary-50: #E0F2F1;
 }
-html {
+html, body {
 	overflow: hidden;
 }
 
@@ -25,12 +25,10 @@ body {
 	background: var(--primary-900);
 	display: grid;
 	place-items: center;
-	/*Needed because we have no percentage of any parent to relate to*/
 	height: 100vh;
 	color: white;
 	overscroll-behavior: none;
 	-webkit-user-select: none;
-	overflow: hidden;
 	user-select: none;
 	font-size: 100%;
 }
@@ -46,14 +44,15 @@ main {
 	transition: transform .2s;
 }
 
-h1 {
-	padding: 5vh;
-	padding-bottom: 5vh;
+h1, h2 {
 	text-align: center;
 }
 
+h1 {
+	padding: 5vh;
+}
+
 h2 {
-	text-align: center;
 	position: relative;
 	color: rgba(255, 255, 255, 0.75);
 	height: 1.5rem;
@@ -77,12 +76,11 @@ h2 {
 	padding: 5%;
 	height: 100vh;
 	overflow-y: scroll;
-	/* Hide bottom scrollbar. It creates white artifacts in corners*/
-	overflow-x: hidden;
+	overflow-x: hidden; /* Hide bottom scrollbar. It creates white artifacts in corners*/
 	padding-bottom: 25vh;
 }
 
-/*No firefox support*/
+/* Scrollbar styling */
 ::-webkit-scrollbar {
 	width: 0.5em;
 	background: rgba(0, 0, 0, 0.125);
@@ -93,13 +91,11 @@ h2 {
 }
 
 .top-round {
-	border-top-left-radius: 0.5rem;
-	border-top-right-radius: 0.5rem;
+	border-radius: 0.5rem 0.5rem 0 0;
 }
 
-.bot-round {
-	border-bottom-left-radius: 0.5rem;
-	border-bottom-right-radius: 0.5rem;
+.round {
+	border-radius: 0.5rem;
 }
 
 /* The side navigation menu */
@@ -112,7 +108,6 @@ h2 {
 	background: var(--primary-900);
 	overflow: hidden;
 	transition: width .2s;
-	/** Extend vertically to avoid missing shadows to top and bottom */
 	height: 100vh;
 	padding-top: 2vh;
 }
@@ -143,7 +138,7 @@ h2 {
 	background: rgba(0, 0, 0, 0.2);
 }
 
-/*The bottom navigation menu*/
+/* The bottom navigation menu */
 nav {
 	position: fixed;
 	bottom: 0;
@@ -159,10 +154,14 @@ nav {
 	backdrop-filter: blur(5px);
 }
 
-.nav-header {
+.nav-header, .nav-footer {
 	height: 50%;
 	display: flex;
 	justify-content: space-evenly;
+}
+
+.nav-footer {
+	border-top: 1px solid gainsboro;
 }
 
 .nav-header:after {
@@ -171,13 +170,6 @@ nav {
 	height: 2px;
 	background: white;
 	position: absolute;
-}
-
-.nav-footer {
-	height: 50%;
-	display: flex;
-	justify-content: space-evenly;
-	border-top: 1px solid gainsboro;
 }
 
 .nav-item:hover {
@@ -216,40 +208,33 @@ img {
 	height: 1.75rem;
 }
 
-/*Table styling*/
+/* Table styling */
 table {
 	border-collapse: collapse;
 	table-layout: fixed;
 	width: 100%;
-	margin-bottom: 2rem;
+	margin: 2vh 0;
 	overflow: hidden;
-	-webkit-border-radius: 0.5rem;
 	border-radius: 0.5rem;
-	margin-top: 2vh;
 }
 
 thead tr {
 	font-weight: bold;
 	text-align: left;
 	background: rgba(200, 200, 200, 0.4);
-	-webkit-backdrop-filter: blur(5px);
 	backdrop-filter: blur(5px);
 }
 
-table th,
-table td {
-	padding-top: 0.5rem;
-	padding-bottom: 0.5rem;
-	padding-right: 0.25rem;
-	padding-left: 0.25rem;
+table th, table td {
+	padding: 0.5rem 0.25rem;
+	margin-left: 0.75rem;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	max-width: 6rem;
 	font: inherit;
 }
 
-th:first-child,
-td:first-child {
+th:first-child, td:first-child {
 	padding-left: 0.75rem;
 }
 
@@ -266,7 +251,6 @@ td:first-child {
 }
 
 tbody>tr {
-	-webkit-transition: background-color .25s ease;
 	transition: background-color .25s ease;
 	border-bottom: 1px solid gainsboro;
 	z-index: 8;
@@ -280,11 +264,7 @@ tbody>tr:nth-child(even) {
 	background: rgba(0, 0, 0, 0.2);
 }
 
-tbody>tr:hover {
-	background: rgba(0, 0, 0, 0.4);
-}
-
-.active {
+tbody>tr:hover, .active {
 	background: rgba(0, 0, 0, 0.4);
 }
 
@@ -297,18 +277,14 @@ tfoot {
 /* The Modal (backdrop) */
 .modal {
 	visibility: hidden;
-	/* Hidden by default */
 	opacity: 0;
 	position: fixed;
-	/* Stay in place */
 	left: 0;
 	top: 0;
 	width: 100vw;
 	height: 100vh;
 	overflow: auto;
-	/* Enable scroll if needed */
 	background-color: rgba(0, 0, 0, 0.3);
-	/* Black w/ opacity */
 	transition: opacity 2s;
 	z-index: 4;
 }
@@ -321,7 +297,6 @@ tfoot {
 	flex-direction: column;
 	width: 100%;
 	height: 70%;
-	z-index: 5;
 	bottom: -70%;
 	background: rgba(0, 0, 0, 0.05);
 	-webkit-backdrop-filter: blur(5px);
@@ -329,6 +304,7 @@ tfoot {
 	border-radius: 1rem 1rem 0 0;
 	border-top: 1px solid gainsboro;
 	transition: transform 0.2s ease;
+	z-index: 5;
 }
 
 .modal-header {
@@ -339,8 +315,7 @@ tfoot {
 
 .modal-body {
 	height: 85vh;
-	margin: 0 5vw;
-	margin-bottom: 10vh;
+	margin: 0 5vw 10vh;
 	overflow-y: scroll;
 	position: relative;
 }

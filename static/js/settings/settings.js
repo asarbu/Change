@@ -42,7 +42,7 @@ export default class Settings {
 
 		const settingsScreen = new Dom('div').append(
 			new Dom('h1').text('Settings'),
-			new Dom('div').cls('top-round', 'bot-round').append(
+			new Dom('div').cls('round').append(
 				new Dom('div').cls('accordion-secondary').append(
 					new Dom('span').text('Sync to Google Drive'),
 					new Dom('span').append(
