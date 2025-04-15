@@ -77,12 +77,12 @@ export default class SpendingScreen {
 		const container = this.buildScreen(defaultReport);
 		this.gfx = new GraphicEffects();
 		this.gfx.init(container);
+		this.gfx.onSliceChange(this.navbar.selectMonth.bind(this.navbar));
 
 		this.spendingReports.forEach((spendingReport) => this.refreshMonth(spendingReport));
 	}
 
 	/**
-	 * Builds or rebuilds the slice with the given report
 	 * @param {SpendingReport} spendingReport
 	 */
 	refreshMonth(spendingReport) {
@@ -92,7 +92,19 @@ export default class SpendingScreen {
 			reportSlice = new Dom('div').id(sliceId).cls('slice').userData(spendingReport).append(
 				new Dom('h1').text(`${spendingReport} spending`),
 			);
-			this.section.append(reportSlice);
+
+			// Insert the slice in calendaristic order
+			const sectionHtml = this.section.toHtml();
+			const slices = Array.from(sectionHtml.children);
+			const insertIndex = slices.findIndex(
+				(slice) => slice.userData && slice.userData.month() > spendingReport.month(),
+			);
+			if (insertIndex === -1) {
+				this.section.append(reportSlice);
+			} else {
+				sectionHtml.insertBefore(reportSlice.toHtml(), slices[insertIndex]);
+			}
+
 			this.navbar.appendMonth(spendingReport.month());
 			// Screen changed, effects need reinitialization
 			this.gfx.init(this.screen.toHtml());
@@ -108,6 +120,10 @@ export default class SpendingScreen {
 		this.#drawnSlices.set(spendingReport.month(), reportSlice);
 	}
 
+	/**
+	 * Appends a new year to the navbar
+	 * @param {number} year Year to append to the Navbar
+	 */
 	updateYear(year) {
 		this.navbar.appendYear(year);
 	}

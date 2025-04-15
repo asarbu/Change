@@ -40,7 +40,8 @@ export default class SpendingController {
 
 	async init() {
 		this.#cachedReports = await this.#spendingPersistence.readAllFromCache();
-		const defaultPlanning = await this.#planningPersistence.readFromCacheOrDefault(this.#defaultMonth);
+		const defaultPlanning = await this.#planningPersistence
+			.readFromCacheOrDefault(this.#defaultMonth);
 
 		if (this.#cachedReports.length === 0 || !this.#cachedReports[this.#defaultMonth]) {
 			this.#cachedReports[this.#defaultMonth] = new SpendingReport(
@@ -70,7 +71,7 @@ export default class SpendingController {
 		this.#screen.jumpToMonth(this.#defaultMonth);
 
 		const availableYears = await this.#spendingPersistence.cachedYears();
-		availableYears.forEach((availableYear) => this.#screen.updateYear(availableYear));
+		availableYears.forEach((availableYear) => this.#screen.updateYear(+availableYear));
 
 		const gDriveSettings = new Settings().gDriveSettings();
 		if (!gDriveSettings || !gDriveSettings.enabled) return this.#screen;
@@ -91,7 +92,7 @@ export default class SpendingController {
 	}
 
 	/**
-	 * @param {Promise<Spending>} spending
+	 * @param {Spending} spending
 	 */
 	async onCreatedSpending(spending) {
 		const report = this.#cachedReports.filter((item) => item).find(
@@ -100,10 +101,24 @@ export default class SpendingController {
 		);
 
 		if (report) {
+			// A report was found, we need to update the whole screen
 			report.appendSpending(spending);
 			this.#screen.refreshMonth(report);
+		} else if (spending.spentOn.getFullYear() === this.#defaultYear) {
+			// No report found, we need to create a new one
+			const newReport = new SpendingReport(
+				spending.spentOn.getFullYear(),
+				spending.spentOn.getMonth(),
+				spending.planning,
+			);
+			newReport.appendSpending(spending);
+			this.#cachedReports[spending.spentOn.getMonth()] = newReport;
+			this.#screen.refreshMonth(newReport);
+			this.#screen.slideToMonth(spending.spentOn.getMonth());
+		} else {
+			// Spending is from a different year, no need to create a new report
+			this.#screen.updateYear(spending.spentOn.getFullYear());
 		}
-
 		return this.#spendingPersistence.store(spending);
 	}
 

@@ -121,7 +121,17 @@ export default class SpendingNavbar {
 		const onYearChanged = this.onYearChanged.bind(this, year);
 		const yearDropupItem = new Dom('div').cls('accordion-secondary').onClick(onYearChanged).text(year);
 		this.#yearsInDropup.set(year, yearDropupItem);
-		this.#yearsDropup.body(yearDropupItem);
+
+		// Insert the year in calendaristic order
+		const yearsArray = Array.from(this.#yearsInDropup.values());
+		const insertIndex = yearsArray.findIndex((item) => +item.toHtml().textContent > year);
+		if (insertIndex === -1) {
+			this.#yearsDropup.body(yearDropupItem);
+		} else {
+			this.#yearsDropup
+				.bodyHtml()
+				.insertBefore(yearDropupItem.toHtml(), yearsArray[insertIndex].toHtml());
+		}
 		this.updateYearDropupText();
 	}
 
@@ -135,11 +145,23 @@ export default class SpendingNavbar {
 			.onClick(onMonthChanged);
 
 		this.#monthsInDropup.set(month, monthDropupItem);
-		this.#monthsDropup.body(monthDropupItem);
+		// Insert the month in calendaristic order
+		const monthsArray = Array.from(this.#monthsInDropup.values());
+		const insertIndex = monthsArray.findIndex(
+			(item) => SpendingNavbar.#MONTH_NAMES.indexOf(item.toHtml().textContent.trim()) > month,
+		);
+		if (insertIndex === -1) {
+			this.#monthsDropup.body(monthDropupItem);
+		} else {
+			this.#monthsDropup
+				.bodyHtml()
+				.insertBefore(monthDropupItem.toHtml(), monthsArray[insertIndex].toHtml());
+		}
 		this.updateMonthDropupText();
 	}
 
-	selectMonth(month) {
+	selectMonth(monthIndex) {
+		const month = Array.from(this.#monthsInDropup.keys())[monthIndex] ?? monthIndex;
 		if (month === this.#selectedMonth) return;
 
 		this.#selectedMonth = month;
