@@ -17,9 +17,6 @@ export default class SpendingReport {
 	/** @type {Planning} */
 	#planning = undefined;
 
-	/** @type {number} */
-	#total = 0;
-
 	static MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 	/**
@@ -44,7 +41,6 @@ export default class SpendingReport {
 		if (this.invalidBoughtDate(spending)) return;
 
 		this.#spendings.push(spending);
-		this.#total += spending.price;
 		this.#spentGoals.add(spending.category);
 	}
 
@@ -80,7 +76,7 @@ export default class SpendingReport {
 	 * @returns {number}
 	 */
 	total() {
-		return this.#total.toFixed(2);
+		return this.#spendings.reduce((acc, current) => acc + current.price, 0);
 	}
 
 	/**
@@ -102,7 +98,7 @@ export default class SpendingReport {
 	 * @returns {Spending}
 	 */
 	totalAsSpending() {
-		return new Spending(`total-${this.#month}`, '-', '-', '-', 'Total', this.#total);
+		return new Spending(`total-${this.#month}`, '-', '-', '-', 'Total', this.total());
 	}
 
 	/**
