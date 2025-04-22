@@ -376,10 +376,10 @@ export default class SpendingScreen {
 
 		switch (cellIndex) {
 		case 0:
-			spending.description = cell.textContent;
+			spending.spentOn.setDate(+cell.textContent);
 			break;
 		case 1:
-			spending.spentOn = cell.valueAsDate;
+			spending.description = cell.textContent;
 			break;
 		case 2:
 			spending.category = cell.textContent;
@@ -428,6 +428,9 @@ export default class SpendingScreen {
 				const reportChanged = spendingReport.applyChanges();
 				// Do not call the handler if the report did not change
 				if (this.onSaveReportCallback && reportChanged) {
+					slice.toHtml().getElementsByTagName('table')[0].tFoot.replaceChildren(
+						this.buildReadOnlyRow(spendingReport.totalAsSpending()).toHtml(),
+					);
 					this.onSaveReportCallback(spendingReport);
 				}
 			}
