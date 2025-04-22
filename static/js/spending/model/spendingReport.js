@@ -141,15 +141,9 @@ export default class SpendingReport {
 		}
 
 		const changedSpendings = this.#spendings.filter((spending) => spending.edited);
-		if (changedSpendings.length > 0) {
-			changedSpendings.forEach((changedSpending) => {
-				for (let index = 0; index < this.changedSpendings.length; index += 1) {
-					const searchedSpending = this.#spendings[index];
-					if (changedSpending.id === searchedSpending.id) {
-						delete searchedSpending.edited;
-					}
-				}
-			});
+		for (let index = 0; index < changedSpendings.length; index += 1) {
+			const searchedSpending = changedSpendings[index];
+			delete searchedSpending.edited;
 		}
 
 		return changedSpendings.length > 0 || deletedSpendings.length > 0;
