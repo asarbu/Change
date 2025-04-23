@@ -158,6 +158,11 @@ export default class Dom {
 		return this;
 	}
 
+	onFocus(listener) {
+		this.elmt.addEventListener('focus', listener, false);
+		return this;
+	}
+
 	text(text) {
 		this.elmt.textContent = text;
 		return this;
