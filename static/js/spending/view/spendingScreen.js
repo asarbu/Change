@@ -8,6 +8,7 @@ import Modal from '../../common/gui/modal.js';
 import SpendingNavbar from './spendingNavbar.js';
 import SpendingNavbarEventHandlers from './spendingNavbarHandlers.js';
 import SpendingSummaryModal from './spendingSummaryModal.js';
+import SpendingSubmitModal from './spendingSubmitModal.js';
 
 export default class SpendingScreen {
 	/** @type {(spending: Spending) => any} */
@@ -23,8 +24,8 @@ export default class SpendingScreen {
 	/** @type {Map<number, Dom} */
 	#drawnSlices = new Map();
 
-	/** @type {Modal} */
-	#addSpendingModal = undefined;
+	/** @type {SpendingSubmitModal} */
+	#spendingSubmitModal = undefined;
 
 	/** @type {Modal} */
 	#categoryModal = undefined;
@@ -70,9 +71,7 @@ export default class SpendingScreen {
 		this.navbar.selectMonth(this.#month);
 		this.navbar.selectYear(this.#year);
 
-		// TODO make this dynamic for each month
-		this.buildCategoryModal(defaultReport.plannedCategories());
-		this.buildAddSpendingModal();
+		this.buildAddSpendingModal(defaultReport.plannedCategories());
 
 		const container = this.buildScreen(defaultReport);
 		this.gfx = new GraphicEffects();
@@ -203,74 +202,11 @@ export default class SpendingScreen {
 		return spendingsDom;
 	}
 
-	buildAddSpendingModal() {
-		const onClickCategory = this.onClickCategoryInput.bind(this);
+	buildAddSpendingModal(forCategories) {
 		const onClickSave = this.onClickModalSave.bind(this);
-		this.#addSpendingModal = new Modal('add-spending').header(
-			new Dom('h2').text('Insert Spending'),
-		).body(
-			new Dom('form').append(
-				new Dom('div').cls('input-field').append(
-					new Dom('input').id('date-input-field').type('date').attr('required', '').attr('value', new Date().toISOString().substring(0, 10)),
-					new Dom('label').text('Date: '),
-				),
-				new Dom('div').cls('input-field').append(
-					new Dom('input').id('category-input-field').type('text').attr('required', '').onClick(onClickCategory),
-					new Dom('label').text('Category: '),
-				),
-				new Dom('div').cls('input-field').append(
-					new Dom('input').id('price-input-field').type('number').attr('required', '').attr('step', '0.01'),
-					new Dom('label').text('Price: '),
-				),
-				new Dom('div').cls('input-field').append(
-					new Dom('input').id('description-input-field').type('text').attr('required', ''),
-					new Dom('label').text('Description: '),
-				),
-				new Dom('input').type('submit').hide().onClick(onClickSave),
-			),
-		);
-		this.#addSpendingModal.footer(
-			new Dom('h3').text('Cancel').onClick(this.#addSpendingModal.close.bind(this.#addSpendingModal)),
-			new Dom('h3').text('Save').onClick(onClickSave),
-		);
+		this.#spendingSubmitModal = new SpendingSubmitModal(forCategories, onClickSave);
 
-		return this.#addSpendingModal;
-	}
-
-	/**
-	 * @param {Array<Category>} forCategories
-	 * @returns {Dom}
-	 */
-	buildCategoryModal(forCategories) {
-		if (!forCategories || forCategories.length === 0) {
-			this.#categoryModal = new Modal('categories')
-				.header(
-					new Dom('h2').text('Cannot Insert Spending'),
-				).body(
-					new Dom('div').cls('accordion').text('Plan your goals first!'),
-				).addCancelFooter();
-		} else {
-			const onClickCategory = this.onClickCategory.bind(this);
-			const onClickCategoryHeader = this.onClickCategoryHeader.bind(this);
-			this.#categoryModal = new Modal('categories')
-				.header(
-					new Dom('h2').text('Insert Spending'),
-				).body(
-					new Dom('div').cls('accordion').append(
-						...forCategories.map((category) => new Dom('div').cls('accordion-item').onTransitionEnd(onClickCategoryHeader).append(
-							new Dom('input').id(category.id).cls('accordion-state').attr('type', 'checkbox'),
-							new Dom('label').cls('accordion-header').attr('for', category.id).append(
-								new Dom('span').text(category.name),
-							),
-							new Dom('div').cls('accordion-content').append(
-								...category.goals.map((goal) => new Dom('div').cls('accordion-secondary').text(goal.name).onClick(onClickCategory)),
-							),
-						)),
-					),
-				).scrollable()
-				.addCancelFooter();
-		}
-		return this.#categoryModal;
+		return this.#spendingSubmitModal;
 	}
 
 	/**
@@ -280,13 +216,13 @@ export default class SpendingScreen {
 	 */
 	buildEditableRow(spending) {
 		const onClickDelete = this.onClickDeleteSpending.bind(this);
-		const onSpendingChanged = this.onSpendingChanged.bind(this);
+		const onClickedSpending = this.onClickedSpending.bind(this);
 		const spentOn = spending.spentOn.toLocaleString('en-GB', { day: 'numeric' });
 		const newRow = new Dom('tr').id(spending.id).userData(spending).append(
-			new Dom('td').text(spentOn).editable().onKeyUp(onSpendingChanged),
-			new Dom('td').text(spending.description).editable().onKeyUp(onSpendingChanged),
-			new Dom('td').text(spending.category).editable().onKeyUp(onSpendingChanged),
-			new Dom('td').text(spending.price).editable().onKeyUp(onSpendingChanged),
+			new Dom('td').text(spentOn).editable().onClick(onClickedSpending),
+			new Dom('td').text(spending.description).editable().onClick(onClickedSpending),
+			new Dom('td').text(spending.category).editable().onClick(onClickedSpending),
+			new Dom('td').text(spending.price).editable().onClick(onClickedSpending),
 			new Dom('td').hideable(this.editMode).append(
 				new Dom('button').onClick(onClickDelete).append(
 					new Dom('img').cls('white-fill').text('Delete').attr('alt', 'Delete').attr('src', icons.delete),
@@ -316,28 +252,10 @@ export default class SpendingScreen {
 	}
 
 	// #region event handlers
-	onClickModalSave(event) {
-		event.preventDefault();
-		const newSpending = {
-			id: new Date().getTime(),
-			spentOn: document.getElementById('date-input-field').valueAsDate,
-			description: document.getElementById('description-input-field').value,
-			price: +document.getElementById('price-input-field').value,
-			category: document.getElementById('category-input-field').value,
-		};
-
-		if (!newSpending.price) {
-			document.getElementById('price-input-field').focus();
-			return;
-		}
-
+	onClickModalSave(newSpending) {
 		if (this.onCreateSpendingCallback) {
 			this.onCreateSpendingCallback(newSpending);
 		}
-
-		// TODO add here the item in the interface, similar to how we remove/edit items at delete/edit
-
-		this.#addSpendingModal.close();
 	}
 
 	onClickDeleteSpending(event) {
@@ -364,34 +282,15 @@ export default class SpendingScreen {
 		table.parentNode.removeChild(table);
 	}
 
-	onSpendingChanged(event) {
+	onClickedSpending(event) {
 		if (!this.editMode) return;
 
 		const cell = event.currentTarget;
 		const row = cell.parentNode;
-
-		const { cellIndex } = event.currentTarget;
 		/** @type {Spending} */
 		const spending = row.userData;
-
-		switch (cellIndex) {
-		case 0:
-			spending.spentOn.setDate(+cell.textContent);
-			break;
-		case 1:
-			spending.description = cell.textContent;
-			break;
-		case 2:
-			spending.category = cell.textContent;
-			break;
-		case 3:
-			spending.price = +cell.textContent;
-			break;
-		default:
-			break;
-		}
-
-		spending.edited = true;
+		this.#spendingSubmitModal.editMode(spending);
+		this.#spendingSubmitModal.open();
 	}
 
 	onClickEdit() {
@@ -440,51 +339,12 @@ export default class SpendingScreen {
 	onClickedSummary() {
 		const selectedSlice = this.gfx.selectedSlice();
 		new SpendingSummaryModal(selectedSlice.userData).open();
-		// this.summaryModal.open();
 	}
 
 	onClickAddSpending() {
-		// TODO. Build category modal according to currently clicked month
-		this.onClickCategoryInput();
+		this.#spendingSubmitModal.insertMode();
+		this.#spendingSubmitModal.open();
 	}
 
-	onClickCategoryInput() {
-		if (this.#addSpendingModal.isOpen()) {
-			this.#addSpendingModal.close();
-		}
-		this.#categoryModal.open();
-	}
-
-	onClickCategoryHeader(event) {
-		const header = event.currentTarget;
-		header.scrollIntoView(true);
-	}
-
-	onClickCategory(event) {
-		// TODO move setters in modal
-		this.#categoryModal.close();
-		this.#addSpendingModal.open();
-		const categoryInput = document.getElementById('category-input-field');
-		const descriptionInput = document.getElementById('description-input-field');
-		const priceInput = document.getElementById('price-input-field');
-		categoryInput.value = event.target.textContent;
-		descriptionInput.value = '';
-		priceInput.value = '';
-		this.focusInputField('price-input-field');
-	}
-
-	focusInputField(withId) {
-		/* Focus cannot be applied to invisible elements.
-		 * We need to wait for elemnt to be focusable.
-		 * We also cannot use display: none -> display: visible because 'display' cannot be animated
-		 */
-		requestAnimationFrame(() => {
-			const priceInputField = document.getElementById(withId);
-			priceInputField.focus();
-			if (document.activeElement !== priceInputField) {
-				requestAnimationFrame(this.focusInputField.bind(this, withId));
-			}
-		});
-	}
 	// #endregion
 }
