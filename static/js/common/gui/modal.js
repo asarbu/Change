@@ -4,6 +4,9 @@ export default class Modal {
 	/** @type {boolean} */
 	#isOpen = false;
 
+	/** @type {Dom} */
+	#headerDom = undefined;
+
 	constructor(id) {
 		this.id = id;
 		const onClose = this.close.bind(this);
@@ -31,10 +34,13 @@ export default class Modal {
 	}
 
 	header(...domElements) {
-		this.content.append(
-			new Dom('div').cls('modal-header').append(
-				...domElements,
-			),
+		if (!this.#headerDom) {
+			this.#headerDom = new Dom('div').cls('modal-header');
+			this.content.append(this.#headerDom);
+		}
+		this.#headerDom.clear();
+		this.#headerDom.append(
+			...domElements,
 		);
 		return this;
 	}
