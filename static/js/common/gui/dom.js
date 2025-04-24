@@ -158,6 +158,11 @@ export default class Dom {
 		return this;
 	}
 
+	onFocus(listener) {
+		this.elmt.addEventListener('focus', listener, false);
+		return this;
+	}
+
 	text(text) {
 		this.elmt.textContent = text;
 		return this;
@@ -168,7 +173,22 @@ export default class Dom {
 		return this;
 	}
 
-	toHtml() {
+	toHtml(target) {
+		if (target) {
+			Object.assign(target, this.elmt);
+		}
+		return this.elmt;
+	}
+
+	/**
+	 * Shallow copy the content of current DOM instance to provided DOM instance
+	 * @param {Dom} target\ The instance where to copy the content to
+	 * @returns current DOM instance
+	 */
+	cloneTo(target) {
+		if (target) {
+			Object.assign(target, this);
+		}
 		return this.elmt;
 	}
 

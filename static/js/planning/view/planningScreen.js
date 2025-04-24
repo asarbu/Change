@@ -103,7 +103,7 @@ export default class PlanningScreen {
 		const onClickAddCategory = this.onClickedAddCategory.bind(this, statement);
 		const slice = new Dom('div').id(`statement-${statement.id}`).cls('slice').append(
 			new Dom('h1').text(statement.name).editable().onKeyUp(onKeyUp).attr('contenteditable', this.#editMode),
-			new Dom('h2').id('planning-statement-type').text(`${statement.type} `).onClick(onClickStatementType).hideable(this.#editMode)
+			new Dom('h2').text(`${statement.type} `).onClick(onClickStatementType).hideable(this.#editMode)
 				.append(
 					new Dom('span').cls('white-50').text('▼'),
 				),
