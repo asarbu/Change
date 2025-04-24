@@ -31,6 +31,9 @@ export default class PlanningScreen {
 			throw Error('No planning provided to draw on the screen');
 		}
 		this.#defaultPlanning = planning;
+		if (!this.#defaultPlanning.statements || this.#defaultPlanning.statements.length === 0) {
+			this.#defaultPlanning.statements = [new Statement(Date.now(), 'No planning statements', Statement.EXPENSE, [])];
+		}
 	}
 
 	/**
