@@ -51,7 +51,7 @@ export default class Modal {
 			this.content.append(this.bodyDom);
 		}
 
-		this.bodyDom.append(
+		this.bodyDom.clear().append(
 			...domElements,
 		);
 
