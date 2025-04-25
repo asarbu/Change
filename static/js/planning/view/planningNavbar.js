@@ -108,14 +108,16 @@ export default class PlanningNavbar {
 	init() {
 		this.gfx = new GraphicEffects();
 		this.gfx.onSliceChange(this.onChangedStatementIndex.bind(this));
-		this.refresh();
+		this.refresh(this.#planning);
 	}
 
-	refresh() {
+	refresh(planning) {
+		this.#planning = planning;
 		if (this.gfx) {
 			const container = document.getElementById(this.#planning.year);
 			if (container) this.gfx.init(container);
 		}
+		this.refreshStatementDropup();
 	}
 
 	buildNavbarHeader() {
@@ -353,6 +355,18 @@ export default class PlanningNavbar {
 		this.#statementsInDropup.set(statement.name, statementDropupItem);
 		this.#statementsDropup.body(statementDropupItem);
 		this.updateStatementDropupText();
+	}
+
+	refreshStatementDropup() {
+		this.#statementsDropup.body(
+			...this.#planning.statements.map(this.#statementToDom.bind(this)),
+		);
+	}
+
+	#statementToDom(statement) {
+		const onStatementChanged = this.onChangedStatement.bind(this, statement);
+		const statementDropupItem = new Dom('div').cls('accordion-secondary').onClick(onStatementChanged).text(statement.name);
+		return statementDropupItem;
 	}
 
 	selectStatement(statementName) {

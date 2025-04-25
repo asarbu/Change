@@ -79,15 +79,10 @@ export default class PlanningScreen {
 	buildContainer(planning) {
 		const container = new Dom('div').id(planning.year).cls('container');
 		const section =	new Dom('div').cls('section');
-		const { statements } = planning;
-
-		for (let i = 0; i < statements.length; i += 1) {
-			const statement = statements[i];
-			const htmlStatement = this.buildStatement(statement).userData(statement);
-
-			section.append(htmlStatement);
-			this.navbar.appendStatement(statement);
-		}
+		planning.statements
+			.map(this.buildStatement.bind(this))
+			.reduce((dom, statement) => dom.append(statement), section);
+		this.navbar.refreshStatementDropup(planning);
 
 		container.append(section);
 		return container;
@@ -104,7 +99,7 @@ export default class PlanningScreen {
 		const onKeyUp = this.onKeyUpStatementName.bind(this);
 		const onClickStatementType = this.onClickedStatementType.bind(this);
 		const onClickAddCategory = this.onClickedAddCategory.bind(this, statement);
-		const slice = new Dom('div').id(`statement-${statement.id}`).cls('slice').append(
+		const slice = new Dom('div').id(`statement-${statement.id}`).cls('slice').userData(statement).append(
 			new Dom('h1').text(statement.name).editable().onKeyUp(onKeyUp).attr('contenteditable', this.#editMode),
 			new Dom('h2').text(`${statement.type} `).onClick(onClickStatementType).hideable(this.#editMode)
 				.append(
@@ -182,7 +177,7 @@ export default class PlanningScreen {
 		this.#defaultPlanning = planning;
 		const container = this.buildContainer(planning).toHtml();
 		this.containerHtml.parentElement.replaceChild(container, this.containerHtml);
-		this.navbar.refresh();
+		this.navbar.refresh(planning);
 		this.containerHtml = container;
 	}
 
