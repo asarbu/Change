@@ -31,9 +31,6 @@ export default class PlanningScreen {
 			throw Error('No planning provided to draw on the screen');
 		}
 		this.#defaultPlanning = planning;
-		if (!this.#defaultPlanning.statements || this.#defaultPlanning.statements.length === 0) {
-			this.#defaultPlanning.statements = [new Statement(Date.now(), 'No planning statements', Statement.EXPENSE, [])];
-		}
 	}
 
 	/**
@@ -52,7 +49,7 @@ export default class PlanningScreen {
 		const mainElement = document.getElementById('main');
 		mainElement.appendChild(this.navbar.toHtml());
 		this.navbar.selectYear(this.#defaultPlanning.year);
-		this.containerHtml = this.buildContainer(this.#defaultPlanning).toHtml();
+		this.containerHtml = this.buildContainerDom(this.#defaultPlanning).toHtml();
 		mainElement.appendChild(this.containerHtml);
 		this.navbar.init();
 	}
@@ -76,13 +73,19 @@ export default class PlanningScreen {
 	 * @param {Planning} planning
 	 * @returns {Dom}
 	 */
-	buildContainer(planning) {
+	buildContainerDom(planning) {
 		const container = new Dom('div').id(planning.year).cls('container');
 		const section =	new Dom('div').cls('section');
-		planning.statements
-			.map(this.buildStatement.bind(this))
-			.reduce((dom, statement) => dom.append(statement), section);
-		this.navbar.refreshStatementDropup(planning);
+		if (planning.statements.length === 0) {
+			section.append(
+				new Dom('h1').cls('slice').text('No statements available'),
+			);
+		} else {
+			planning.statements
+				.map(this.#buildStatementDom.bind(this))
+				.reduce((dom, statement) => dom.append(statement), section);
+		}
+		this.navbar.refresh(planning);
 
 		container.append(section);
 		return container;
@@ -93,7 +96,7 @@ export default class PlanningScreen {
 	 * @param {Statement} statement Statement representing this slice
 	 * @returns {Dom | undefined} Constructed and decorated DOM element
 	 */
-	buildStatement(statement) {
+	#buildStatementDom(statement) {
 		if (!statement) return undefined;
 
 		const onKeyUp = this.onKeyUpStatementName.bind(this);
@@ -175,9 +178,9 @@ export default class PlanningScreen {
 	/** Refresh screen */
 	refresh(planning) {
 		this.#defaultPlanning = planning;
-		const container = this.buildContainer(planning).toHtml();
+
+		const container = this.buildContainerDom(planning).toHtml();
 		this.containerHtml.parentElement.replaceChild(container, this.containerHtml);
-		this.navbar.refresh(planning);
 		this.containerHtml = container;
 	}
 
@@ -186,7 +189,7 @@ export default class PlanningScreen {
 	 */
 	refreshStatement(statement) {
 		const statementHtml = document.getElementById(`statement-${statement.id}`);
-		const statementDom = this.buildStatement(statement);
+		const statementDom = this.#buildStatementDom(statement);
 		const { scrollTop } = statementHtml;
 		statementHtml.parentElement.replaceChild(statementDom.toHtml(), statementHtml);
 		statementDom.toHtml().scrollTop = scrollTop;
@@ -197,7 +200,7 @@ export default class PlanningScreen {
 	 */
 	refreshCategory(category) {
 		const categoryHtml = document.getElementById(`${category.id}`);
-		const categoryDom = this.buildStatement(category);
+		const categoryDom = this.#buildStatementDom(category);
 		const { scrollTop } = categoryHtml;
 		categoryHtml.parentElement.replaceChild(categoryDom.toHtml(), categoryHtml);
 		categoryDom.toHtml().scrollTop = scrollTop;

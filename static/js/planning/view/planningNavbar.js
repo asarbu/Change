@@ -67,8 +67,11 @@ export default class PlanningNavbar {
 		this.#planning = planning;
 		this.#selectedYear = planning.year;
 		this.#selectedMonth = planning.month;
+
 		if (planning.statements.length > 0) {
 			this.#selectedStatement = planning.statements[0];
+		} else {
+			this.#selectedStatement = new Statement(new Date().getTime(), 'No planning statements', Statement.EXPENSE, []);
 		}
 
 		this.buildYearModal();
@@ -117,7 +120,12 @@ export default class PlanningNavbar {
 			const container = document.getElementById(this.#planning.year);
 			if (container) this.gfx.init(container);
 		}
-		this.refreshStatementDropup();
+		if (planning.statements.length > 0) {
+			this.#selectedStatement = planning.statements[0];
+		} else {
+			this.#selectedStatement = new Statement(new Date().getTime(), 'No planning statements', Statement.EXPENSE, []);
+		}
+		this.#refreshStatementDropup();
 	}
 
 	buildNavbarHeader() {
@@ -177,11 +185,13 @@ export default class PlanningNavbar {
 	}
 
 	onClickedDeleteStatement() {
+		if (this.#planning.statements.length <= 1) {
+			Alert.show('Delete Planning', 'You cannot delete the last statement of a planning');
+			return;
+		}
+
 		this.#onClickedDeleteStatement?.(this.gfx.selectedIndex());
 		this.#selectedStatement = this.#planning.statements[0];
-		if (this.#selectedStatement) {
-			this.updateStatementDropupText();
-		}
 	}
 
 	// #endregion
@@ -357,7 +367,12 @@ export default class PlanningNavbar {
 		this.updateStatementDropupText();
 	}
 
-	refreshStatementDropup() {
+	#refreshStatementDropup() {
+		if (this.#planning.statements.length === 0) {
+			document.getElementById('planning-stmt-text').textContent = 'No planning statements';
+			return;
+		}
+
 		this.#statementsDropup.body(
 			...this.#planning.statements.map(this.#statementToDom.bind(this)),
 		);
