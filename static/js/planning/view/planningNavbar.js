@@ -452,7 +452,7 @@ export default class PlanningNavbar {
 					new Dom('label').text('Statement name: '),
 				),
 				new Dom('div').cls('input-field').onClick().append(
-					new Dom('input').id('statement-type-input').onClick(onClickStatementType).type('text').attr('required', ''),
+					new Dom('input').id('statement-type-input').onFocus(onClickStatementType).onClick(onClickStatementType).type('text').attr('required', ''),
 					new Dom('label').text('Type: '),
 				),
 				new Dom('input').type('submit').hide().onClick(onClickSave),
