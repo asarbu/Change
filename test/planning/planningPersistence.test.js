@@ -8,7 +8,6 @@ import {
 } from '@jest/globals';
 import PlanningPersistence from '../../static/js/planning/persistence/planningPersistence.js';
 import GDriveBackendMock from '../common/gDriveBackendMock.js';
-import GDrive from '../../static/js/common/persistence/gDrive.js';
 import Planning, { Statement } from '../../static/js/planning/model/planningModel.js';
 
 describe('Planning persistence', () => {
@@ -22,50 +21,6 @@ describe('Planning persistence', () => {
 		localStorage.clear();
 		jest.restoreAllMocks();
 	});
-
-	function validGDriveOAuthToken() {
-		const endOfYear = new Date(now.getFullYear(), now.getMonth, now.getDate(), 23, 59, 59);
-		return {
-			access_token: '1234',
-			expires_in: 3599,
-			scope: 'https://www.googleapis.com/auth/drive',
-			token_type: 'Bearer',
-			refreshed_at: now.getTime(),
-			expires_at: `${endOfYear.getTime()}`,
-		};
-	}
-
-	/**
-	 * @returns {JSON} Initial GDrive folder state of a working application
-	 */
-	function defaultGDriveStructure() {
-		return {
-			id: 'root',
-			name: 'root',
-			mimeType: GDrive.GDRIVE_MIME_TYPE_FOLDER,
-			files: [{
-				id: '1',
-				name: 'Change!',
-				mimeType: GDrive.GDRIVE_MIME_TYPE_FOLDER,
-				files: [{
-					id: '2',
-					name: 'Planning',
-					mimeType: GDrive.GDRIVE_MIME_TYPE_FOLDER,
-					files: [{
-						id: '3', name: `${now.getFullYear()}`, mimeType: GDrive.GDRIVE_MIME_TYPE_FOLDER, files: [],
-					}],
-				}, {
-					id: '4',
-					name: 'Spending',
-					mimeType: 'application/vnd.google-apps.folder',
-					files: [{
-						id: '5', name: `${now.getFullYear()}`, mimeType: GDrive.GDRIVE_MIME_TYPE_FOLDER, files: [],
-					}],
-				},
-				],
-			}],
-		};
-	}
 
 	it('reads undefined value from empty cache (no GDrive)', async () => {
 		const now = new Date(2200, 1, 1);
