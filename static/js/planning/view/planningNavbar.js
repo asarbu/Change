@@ -67,8 +67,11 @@ export default class PlanningNavbar {
 		this.#planning = planning;
 		this.#selectedYear = planning.year;
 		this.#selectedMonth = planning.month;
+
 		if (planning.statements.length > 0) {
 			this.#selectedStatement = planning.statements[0];
+		} else {
+			this.#selectedStatement = new Statement(new Date().getTime(), 'No planning statements', Statement.EXPENSE, []);
 		}
 
 		this.buildYearModal();
@@ -108,14 +111,21 @@ export default class PlanningNavbar {
 	init() {
 		this.gfx = new GraphicEffects();
 		this.gfx.onSliceChange(this.onChangedStatementIndex.bind(this));
-		this.refresh();
+		this.refresh(this.#planning);
 	}
 
-	refresh() {
+	refresh(planning) {
+		this.#planning = planning;
 		if (this.gfx) {
 			const container = document.getElementById(this.#planning.year);
 			if (container) this.gfx.init(container);
 		}
+		if (planning.statements.length > 0) {
+			this.#selectedStatement = planning.statements[0];
+		} else {
+			this.#selectedStatement = new Statement(new Date().getTime(), 'No planning statements', Statement.EXPENSE, []);
+		}
+		this.#refreshStatementDropup();
 	}
 
 	buildNavbarHeader() {
@@ -175,11 +185,13 @@ export default class PlanningNavbar {
 	}
 
 	onClickedDeleteStatement() {
+		if (this.#planning.statements.length <= 1) {
+			Alert.show('Delete Planning', 'You cannot delete the last statement of a planning');
+			return;
+		}
+
 		this.#onClickedDeleteStatement?.(this.gfx.selectedIndex());
 		this.#selectedStatement = this.#planning.statements[0];
-		if (this.#selectedStatement) {
-			this.updateStatementDropupText();
-		}
 	}
 
 	// #endregion
@@ -355,6 +367,23 @@ export default class PlanningNavbar {
 		this.updateStatementDropupText();
 	}
 
+	#refreshStatementDropup() {
+		if (this.#planning.statements.length === 0) {
+			document.getElementById('planning-stmt-text').textContent = 'No planning statements';
+			return;
+		}
+
+		this.#statementsDropup.body(
+			...this.#planning.statements.map(this.#statementToDom.bind(this)),
+		);
+	}
+
+	#statementToDom(statement) {
+		const onStatementChanged = this.onChangedStatement.bind(this, statement);
+		const statementDropupItem = new Dom('div').cls('accordion-secondary').onClick(onStatementChanged).text(statement.name);
+		return statementDropupItem;
+	}
+
 	selectStatement(statementName) {
 		if (statementName === this.#selectedStatement) return;
 
@@ -438,7 +467,7 @@ export default class PlanningNavbar {
 					new Dom('label').text('Statement name: '),
 				),
 				new Dom('div').cls('input-field').onClick().append(
-					new Dom('input').id('statement-type-input').onClick(onClickStatementType).type('text').attr('required', ''),
+					new Dom('input').id('statement-type-input').onFocus(onClickStatementType).onClick(onClickStatementType).type('text').attr('required', ''),
 					new Dom('label').text('Type: '),
 				),
 				new Dom('input').type('submit').hide().onClick(onClickSave),

@@ -52,7 +52,6 @@ export default class SpendingController {
 		}
 
 		const cachedPlannings = await this.#planningPersistence.readAllFromCache();
-		const updatedReports = [];
 		for (let month = 0; month < this.#cachedReports.length; month += 1) {
 			const report = this.#cachedReports[month];
 			if (report) {
@@ -60,7 +59,6 @@ export default class SpendingController {
 				report.updatePlanning(planning);
 			}
 		}
-		await Promise.all(updatedReports);
 
 		/** @type {SpendingScreen} */
 		this.#screen = new SpendingScreen(this.#defaultYear, this.#defaultMonth, this.#cachedReports);
