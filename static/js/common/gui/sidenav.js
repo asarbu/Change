@@ -23,13 +23,7 @@ export default class Sidenav {
 
 	#onCloseSidenav = undefined;
 
-	/** Allow only one instance of sidenav in the app */
-	static #instance = undefined;
-
 	constructor() {
-		if (Sidenav.#instance) return Sidenav.#instance;
-
-		Sidenav.#instance = this;
 		this.#sideNavDom = new Dom('div').id('sidenav').cls('sidenav').append(
 			new Dom('a').cls('view-link').attr('href', Sidenav.PLANNING_SUFFIX).text('Plannings'),
 			new Dom('a').cls('view-link').attr('href', Sidenav.SPENDING_SUFFIX).text('Spendings'),
