@@ -149,8 +149,8 @@ export default class GDriveBackendMock {
 	}
 
 	async #processPostUpload(url, config) {
-		const metadata = JSON.parse(await this.readBlob(config.body.get('metadata')));
-		const file = (await this.readBlob(config.body.get('file')));
+		const metadata = JSON.parse(await GDriveBackendMock.readBlob(config.body.get('metadata')));
+		const file = (await GDriveBackendMock.readBlob(config.body.get('file')));
 
 		const newFile = {};
 		newFile.id = crypto.randomUUID();
@@ -166,14 +166,14 @@ export default class GDriveBackendMock {
 	}
 
 	async #processPatchUpload(url, config) {
-		const file = (await this.readBlob(config.body.get('file')));
+		const file = (await GDriveBackendMock.readBlob(config.body.get('file')));
 		const fileId = url.pathname.substring(url.pathname.lastIndexOf('/') + 1);
 		this.#filesById.get(fileId).data = file;
 
 		return { ok: true, status: 200, json: async () => ({ id: fileId }) };
 	}
 
-	readBlob(blob) {
+	static readBlob(blob) {
 		return new Promise((resolve) => {
 			const reader = new FileReader();
 			reader.onload = () => { resolve(reader.result);	};

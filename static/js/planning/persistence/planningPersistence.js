@@ -83,16 +83,19 @@ export default class PlanningPersistence {
 
 		// Fetch from last years
 		const lastYears = await this.cachedYears();
+		// TODO replace with filter, find, map
 		for (let lastYear = 0; lastYear < lastYears.length; lastYear += 1) {
-			if(lastYears[lastYear] > this.#defaultYear) continue;
-			const planningCache = await PlanningCache.get(lastYears[lastYear]);
-			const planning = await planningCache.readForMonth(forMonth);
-			if (planning) {
-				planning.id = new Date().getTime();
-				planning.year = this.#defaultYear;
-				planning.month = forMonth;
-				this.#planningIdb.store(planning);
-				return planning;
+			if (lastYears[lastYear] <= this.#defaultYear) {
+				const planningCache = await PlanningCache.get(lastYears[lastYear]);
+				const planning = await planningCache.readForMonth(forMonth);
+				// TODO move impure domain logic to controller
+				if (planning) {
+					planning.id = new Date().getTime();
+					planning.year = this.#defaultYear;
+					planning.month = forMonth;
+					this.#planningIdb.store(planning);
+					return planning;
+				}
 			}
 		}
 

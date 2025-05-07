@@ -7,6 +7,9 @@ export default class Modal {
 	/** @type {Dom} */
 	#headerDom = undefined;
 
+	/** @type {Dom} */
+	#bodyDom = undefined;
+
 	constructor(id) {
 		this.id = id;
 		const onClose = this.close.bind(this);
@@ -46,20 +49,27 @@ export default class Modal {
 	}
 
 	body(...domElements) {
-		if (!this.bodyDom) {
-			this.bodyDom = new Dom('div').cls('modal-body', 'no-scrollbar');
-			this.content.append(this.bodyDom);
+		if (!this.#bodyDom) {
+			this.#bodyDom = new Dom('div').cls('modal-body', 'no-scrollbar');
+			this.content.append(this.#bodyDom);
 		}
 
-		this.bodyDom.clear().append(
+		this.#bodyDom.append(
 			...domElements,
 		);
 
 		return this;
 	}
 
+	clearBody() {
+		if (this.#bodyDom) {
+			this.#bodyDom.clear();
+		}
+		return this;
+	}
+
 	bodyHtml() {
-		return this.body().bodyDom.toHtml();
+		return this.body().#bodyDom.toHtml();
 	}
 
 	footer(...domElements) {
@@ -142,7 +152,7 @@ export default class Modal {
 	}
 
 	scrollable() {
-		this.bodyDom.elmt.classList.remove('no-scrollbar');
+		this.#bodyDom.elmt.classList.remove('no-scrollbar');
 		return this;
 	}
 

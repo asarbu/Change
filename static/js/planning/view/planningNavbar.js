@@ -372,8 +372,7 @@ export default class PlanningNavbar {
 			document.getElementById('planning-stmt-text').textContent = 'No planning statements';
 			return;
 		}
-
-		this.#statementsDropup.body(
+		this.#statementsDropup.clearBody().body(
 			...this.#planning.statements.map(this.#statementToDom.bind(this)),
 		);
 	}

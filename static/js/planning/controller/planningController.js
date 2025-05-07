@@ -99,7 +99,7 @@ export default class PlanningController {
 		this.#defaultScreen.onClickSaveStatement(this.onClickedSaveStatement.bind(this));
 		this.#defaultScreen.onClickDeletePlanning(this.onClickedDeletePlanning.bind(this));
 		this.#defaultScreen.init();
-		if(this.#defaultStatement) {
+		if (this.#defaultStatement) {
 			this.#defaultScreen.selectStatement(this.#defaultStatement);
 		}
 		return this.#defaultScreen;

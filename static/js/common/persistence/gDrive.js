@@ -69,7 +69,27 @@ export default class GDrive {
 	}
 
 	async deleteFile(fileId) {
-		// TODO implement
+		const token = await this.#gDriveAuth.getAccessToken();
+		if (token) {
+			if (!fileId) {
+				throw Error('No file id provided to delete');
+			}
+
+			const header = await this.#getHeader();
+			const url = new URL(`${GDrive.#FILES_API}/${fileId}`);
+
+			const response = await fetch(url, {
+				method: 'DELETE',
+				headers: header,
+			});
+
+			if (!response.ok) {
+				throw Error(`Failed to delete file with id ${fileId}`);
+			}
+
+			return fileId; // Indicate successful deletion
+		}
+		return undefined; // Indicate failure due to missing token
 	}
 
 	/**
