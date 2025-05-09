@@ -47,6 +47,7 @@ export default class PlanningScreen {
 		this.navbar.onClickDeleteStatement(this.onClickedDeleteStatement.bind(this));
 
 		const mainElement = document.getElementById('main');
+		mainElement.replaceChildren();
 		mainElement.appendChild(this.navbar.toHtml());
 		this.navbar.selectYear(this.#defaultPlanning.year);
 		this.containerHtml = this.buildContainerDom(this.#defaultPlanning).toHtml();

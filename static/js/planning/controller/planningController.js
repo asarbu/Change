@@ -1,9 +1,11 @@
+import RoutingController from '../../common/controller/routingController.js';
 import Alert from '../../common/gui/alert.js';
 import Utils from '../../common/utils/utils.js';
 import Settings from '../../settings/settings.js';
 import Planning, { Statement } from '../model/planningModel.js';
 import PlanningPersistence from '../persistence/planningPersistence.js';
 import PlanningScreen from '../view/planningScreen.js';
+import PlanningMissingScreen from '../view/planningMissingScreen.js';
 
 export default class PlanningController {
 	/** @type {PlanningScreen} */
@@ -20,6 +22,9 @@ export default class PlanningController {
 
 	/** @type {PlanningPersistence} */
 	#planningPersistence = undefined;
+
+	/** @type {RoutingController} */
+	#routingController = undefined;
 
 	constructor(forYear = undefined, forMonth = undefined, forStatement = undefined) {
 		const queryString = window.location.search;
@@ -51,6 +56,8 @@ export default class PlanningController {
 		} else {
 			this.#defaultStatement = '';
 		}
+
+		this.#routingController = new RoutingController();
 	}
 
 	/**
@@ -59,33 +66,60 @@ export default class PlanningController {
 	 */
 	async init() {
 		this.#planningPersistence = new PlanningPersistence(this.#defaultYear);
-		let planning = await this.#planningPersistence.readFromCache(this.#defaultMonth);
-		if (!planning) {
-			// TODO prompt user do create his own planning, fetch default or activate gDrive
-			planning = new Planning(0, this.#defaultYear, this.#defaultMonth, []);
+		const isGDriveEnabled = new Settings().gDriveSettings()?.enabled;
+
+		let screen = await this.initScreenFromCache();
+
+		if (isGDriveEnabled) {
+			screen = await this.initScreenFromGDrive();
 		}
-		const screen = await this.initPlanningScreen(planning);
 
-		const cachedYears = await this.#planningPersistence.cachedYears();
-		cachedYears.forEach((year) => screen.appendYear(year));
-		const cachedMonths = await this.#planningPersistence.cachedMonths();
-		cachedMonths.forEach((month) => screen.appendMonth(month));
+		if (!screen) {
+			screen = this.initPlanningMissingScreen();
+		}
+		return screen;
+	}
 
-		const gDriveSettings = new Settings().gDriveSettings();
-		if (!gDriveSettings || !gDriveSettings.enabled) return screen;
+	async initScreenFromCache() {
+		const planning = await this.#planningPersistence.readFromCache(this.#defaultMonth);
+		if (planning) {
+			const screen = await this.initPlanningScreen(planning);
 
+			const cachedYears = await this.#planningPersistence.cachedYears();
+			cachedYears.forEach((year) => screen.appendYear(year));
+
+			const cachedMonths = await this.#planningPersistence.cachedMonths();
+			cachedMonths.forEach((month) => screen.appendMonth(month));
+
+			return screen;
+		}
+		return undefined;
+	}
+
+	async initScreenFromGDrive() {
 		Alert.show('Google Drive', 'Started synchronization with Google Drive...');
 		const gDrivePlanning = await this.#planningPersistence.readFromGDrive(this.#defaultMonth);
-		if (gDrivePlanning) screen.refresh(gDrivePlanning);
+		if (gDrivePlanning) {
+			const screen = this.initPlanningScreen(gDrivePlanning);
 
-		const gDriveYears = await this.#planningPersistence.gDriveYears();
-		gDriveYears.forEach((year) => {	screen.appendYear(year); });
+			const gDriveYears = await this.#planningPersistence.gDriveYears();
+			gDriveYears.forEach((year) => {	screen.appendYear(year); });
 
-		const gDriveMonths = await this.#planningPersistence.gDriveMonths();
-		gDriveMonths.forEach((month) => { screen.appendMonth(month); });
+			const gDriveMonths = await this.#planningPersistence.gDriveMonths();
+			gDriveMonths.forEach((month) => { screen.appendMonth(month); });
+
+			return screen;
+		}
 
 		Alert.show('Google Drive', 'Finished synchronization with Google Drive');
-		return screen;
+		return undefined;
+	}
+
+	initPlanningMissingScreen() {
+		const planningMissingScreen = new PlanningMissingScreen().init();
+		planningMissingScreen.onClickFetchDefault(this.onClickedFetchDefaultPlanning.bind(this));
+		planningMissingScreen.onClickGoToSettings(this.onClickedGoToSettings.bind(this));
+		return planningMissingScreen;
 	}
 
 	/**
@@ -140,6 +174,23 @@ export default class PlanningController {
 			this.#defaultScreen.refresh(storedPlanning);
 		}
 		this.navigateTo(date.getFullYear(), date.getMonth(), statement.name);
+	}
+
+	onClickedFetchDefaultPlanning() {
+		const storePlanning = this.#planningPersistence.store.bind(this.#planningPersistence);
+		const initPlanningScreen = this.initPlanningScreen.bind(this);
+
+		this.#routingController
+			.fetchDefaultPlanning()
+			.then(storePlanning)
+			.then(initPlanningScreen)
+			.catch((e) => {
+				Alert.show('Error', `Error at fetching default planning. ${e}`);
+			});
+	}
+
+	onClickedGoToSettings() {
+		this.#routingController.redirectToSettings();
 	}
 
 	/**

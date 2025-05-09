@@ -2,7 +2,6 @@ import Settings from '../../settings/settings.js';
 import PlanningCache from './planningCache.js';
 import Planning from '../model/planningModel.js';
 import PlanningGDrive from './planningGdrive.js';
-import Utils from '../../common/utils/utils.js';
 
 export default class PlanningPersistence {
 	/** @type {number} */
@@ -102,19 +101,6 @@ export default class PlanningPersistence {
 		return undefined;
 	}
 
-	async readFromCacheOrDefault(forMonth) {
-		let planning = await this.readFromCache(forMonth);
-		if (!planning) {
-			planning = await this.readDefaultPlanningFromServer();
-			this.store(planning);
-		}
-		if (!planning) {
-			planning = new Planning(new Date(), this.#defaultYear, forMonth, []);
-			this.store(planning);
-		}
-		return planning;
-	}
-
 	async store(planning) {
 		const storedPlanning = await this.#planningIdb.store(planning);
 		if (this.#planningGDrive) {
@@ -130,36 +116,6 @@ export default class PlanningPersistence {
 		if (this.#planningGDrive) {
 			await this.#planningGDrive.delete(planning);
 		}
-	}
-
-	async readDefaultPlanningFromServer() {
-		if (this.#defaultPlanning) return this.#defaultPlanning;
-		if (!this.#fetchingFromServer) {
-			this.#fetchingFromServer = true;
-		} else {
-			while (!this.#defaultPlanning) {
-				await Utils.sleep(10);
-			}
-			return this.#defaultPlanning;
-		}
-
-		const now = new Date();
-		let statements = [];
-		const response = await fetch(PlanningCache.PLANNING_TEMPLATE_URI);
-		if (response.ok) {
-			statements = await response.json();
-		}
-
-		const planning = {
-			id: now.getTime(),
-			year: now.getFullYear(),
-			month: now.getMonth(),
-			statements: statements,
-		};
-
-		this.#defaultPlanning = Planning.fromJavascriptObject(planning);
-		this.#fetchingFromServer = false;
-		return this.#defaultPlanning;
 	}
 
 	async #fetchPastPlannigFromIdb(currentMonth) {
