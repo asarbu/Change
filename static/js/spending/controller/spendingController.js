@@ -6,6 +6,8 @@ import Settings from '../../settings/settings.js';
 import Alert from '../../common/gui/alert.js';
 import PlanningPersistence from '../../planning/persistence/planningPersistence.js';
 import SpendingPersistence from '../persistence/spendingPersistence.js';
+import PlanningMissingScreen from '../view/planningMissingScreen.js';
+import RoutingController from '../../common/controller/routingController.js';
 
 export default class SpendingController {
 	/** @type {PlanningPersistence} */
@@ -26,6 +28,9 @@ export default class SpendingController {
 	/** @type { Array<SpendingReport> } */
 	#cachedReports = undefined;
 
+	/** @type {RoutingController} */
+	#routingController = undefined;
+
 	constructor() {
 		const now = new Date();
 		const queryString = window.location.search;
@@ -36,13 +41,37 @@ export default class SpendingController {
 		this.#defaultMonth = month || now.getMonth();
 		this.#planningPersistence = new PlanningPersistence(this.#defaultYear);
 		this.#spendingPersistence = new SpendingPersistence(this.#defaultYear);
+		this.#routingController = new RoutingController();
 	}
 
+	/**
+	 * @returns {Promise<SpendingScreen>}
+	 */
 	async init() {
-		this.#cachedReports = await this.#spendingPersistence.readAllFromCache();
-		const defaultPlanning = await this.#planningPersistence
-			.readFromCacheOrDefault(this.#defaultMonth);
+		const screenFromCache = await this.initScreenFromCache();
+		const screenFromGDrive = await this.initScreenFromGDrive();
 
+		if (!screenFromCache && !screenFromGDrive) {
+			const planningMissingScreen = new PlanningMissingScreen();
+			planningMissingScreen.onClickFetchDefault(this.onClickedFetchDefaultPlanning.bind(this));
+			planningMissingScreen.onClickGoToSettings(this.onClickedGoToSettings.bind(this));
+			planningMissingScreen.onClickGoToPlanning(this.onClickedGoToPlanning.bind(this));
+			planningMissingScreen.init();
+			return planningMissingScreen;
+		}
+
+		return this.#screen;
+	}
+
+	async initScreenFromCache() {
+		const defaultPlanning = await this.#planningPersistence
+			.readFromCache(this.#defaultMonth);
+
+		if (!defaultPlanning) {
+			return undefined;
+		}
+
+		this.#cachedReports = await this.#spendingPersistence.readAllFromCache();
 		if (this.#cachedReports.length === 0 || !this.#cachedReports[this.#defaultMonth]) {
 			this.#cachedReports[this.#defaultMonth] = new SpendingReport(
 				this.#defaultYear,
@@ -51,6 +80,7 @@ export default class SpendingController {
 			);
 		}
 
+		// TODO Remove planning dependency from spending report. Use the goals from spendings directly
 		const cachedPlannings = await this.#planningPersistence.readAllFromCache();
 		for (let month = 0; month < this.#cachedReports.length; month += 1) {
 			const report = this.#cachedReports[month];
@@ -60,32 +90,57 @@ export default class SpendingController {
 			}
 		}
 
-		/** @type {SpendingScreen} */
-		this.#screen = new SpendingScreen(this.#defaultYear, this.#defaultMonth, this.#cachedReports);
-		this.#screen.init();
-		this.#screen.onCreateSpendingCallback = this.onCreatedSpending.bind(this);
-		this.#screen.onSaveReportCallback = this.onSavedReport.bind(this);
-		this.#screen.onDeleteReportCallback = this.onDeletedReport.bind(this);
-		this.#screen.jumpToMonth(this.#defaultMonth);
+		this.initSpendingScreen(this.#cachedReports);
 
 		const availableYears = await this.#spendingPersistence.cachedYears();
 		availableYears.forEach((availableYear) => this.#screen.updateYear(+availableYear));
 
-		const gDriveSettings = new Settings().gDriveSettings();
-		if (!gDriveSettings || !gDriveSettings.enabled) return this.#screen;
+		return this.#screen;
+	}
+
+	// TODO: Move this to a sepparate file and load it in init(?)
+	// only if the user has gdrive enabled in settings
+	async initScreenFromGDrive() {
+		const isGDriveEnabled = new Settings().gDriveSettings()?.enabled;
+
+		if (!isGDriveEnabled) {
+			return undefined;
+		}
 
 		Alert.show('Google Drive', 'Started synchronization with Google Drive...');
-		const gDrivePlannings = await this.#planningPersistence.readAllFromGDrive();
-		const gDriveReports = await this.#spendingPersistence.readAllFromGDrive();
 
+		const gDriveReports = await this.#spendingPersistence.readAllFromGDrive();
+		if (gDriveReports.length === 0) {
+			return undefined;
+		}
+
+		const gDrivePlannings = await this.#planningPersistence.readAllFromGDrive();
 		gDriveReports.filter((item) => item).forEach((gDriveReport) => {
 			const month = gDriveReport.month();
-			const planning = gDrivePlannings[month] || cachedPlannings[month] || defaultPlanning;
-			gDriveReport.updatePlanning(planning);
-			this.#cachedReports[month] = gDriveReport;
-			this.#screen.refreshMonth(gDriveReport);
+			const planning = gDrivePlannings[month];
+			if (planning) {
+				gDriveReport.updatePlanning(planning);
+				this.#cachedReports[month] = gDriveReport;
+			} else {
+				// TODO Look in cache for planning, or create a new empty one in GDrive if not available
+				Alert.show('Google Drive', `No planning found for month ${month + 1}`);
+			}
 		});
+
+		this.initSpendingScreen(this.#cachedReports);
+
 		Alert.show('Google Drive', 'Finished synchronization with Google Drive');
+		return this.#screen;
+	}
+
+	initSpendingScreen(reports) {
+		this.#screen = new SpendingScreen(this.#defaultYear, this.#defaultMonth, reports);
+		this.#screen.init();
+		// TODO transform assignments to methods
+		this.#screen.onCreateSpendingCallback = this.onCreatedSpending.bind(this);
+		this.#screen.onSaveReportCallback = this.onSavedReport.bind(this);
+		this.#screen.onDeleteReportCallback = this.onDeletedReport.bind(this);
+		this.#screen.jumpToMonth(this.#defaultMonth);
 		return this.#screen;
 	}
 
@@ -134,5 +189,23 @@ export default class SpendingController {
 	 */
 	async onSavedReport(spendingReport) {
 		await this.#spendingPersistence.updateAll(spendingReport);
+	}
+
+	onClickedFetchDefaultPlanning() {
+		const storePlanning = this.#planningPersistence.store.bind(this.#planningPersistence);
+		const reinitializeScreen = this.init.bind(this);
+
+		this.#routingController
+			.fetchDefaultPlanning()
+			.then(storePlanning)
+			.then(reinitializeScreen);
+	}
+
+	onClickedGoToSettings() {
+		this.#routingController.redirectToSettings();
+	}
+
+	onClickedGoToPlanning() {
+		this.#routingController.redirectToPlanning();
 	}
 }
