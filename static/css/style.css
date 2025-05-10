@@ -49,16 +49,26 @@ h1, h2 {
 }
 
 h1 {
-	padding: 5vh;
+	padding-top: 5vh;
 }
 
 h2 {
 	position: relative;
 	color: rgba(255, 255, 255, 0.75);
-	height: 1.5rem;
 	line-height: 1.5rem;
 	font-size: 1.25rem;
 	font-weight: normal;
+	padding-top: 1vh;
+}
+
+h3 {
+	position: relative;
+	color: rgba(255, 255, 255, 0.5);
+	line-height: 1rem;
+	font-size: 1.25rem;
+	font-weight: normal;
+	padding-top: 1vh;
+	text-align: center;
 }
 
 div {
@@ -66,7 +76,7 @@ div {
 }
 
 a {
-	color: var(--primary-100);
+	color: rgba(255, 255, 255, 0.75);
 }
 
 li {
