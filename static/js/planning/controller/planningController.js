@@ -1,11 +1,11 @@
 import RoutingController from '../../common/controller/routingController.js';
 import Alert from '../../common/gui/alert.js';
 import Utils from '../../common/utils/utils.js';
-import Settings from '../../settings/settings.js';
 import Planning, { Statement } from '../model/planningModel.js';
 import PlanningPersistence from '../persistence/planningPersistence.js';
 import PlanningScreen from '../view/planningScreen.js';
 import PlanningMissingScreen from '../view/planningMissingScreen.js';
+import SettingsController from '../../settings/controller/settingsController.js';
 
 export default class PlanningController {
 	/** @type {PlanningScreen} */
@@ -66,11 +66,11 @@ export default class PlanningController {
 	 */
 	async init() {
 		this.#planningPersistence = new PlanningPersistence(this.#defaultYear);
-		const isGDriveEnabled = new Settings().gDriveSettings()?.enabled;
-
 		let screen = await this.initScreenFromCache();
 
-		if (isGDriveEnabled) {
+		const gDriveSettings = new SettingsController().currentSettings().gDriveSettings();
+		if (gDriveSettings.isEnabled()) {
+			this.#planningPersistence.enableGDrive(gDriveSettings.canRememberLogin());
 			screen = await this.initScreenFromGDrive();
 		}
 

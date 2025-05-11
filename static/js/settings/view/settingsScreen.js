@@ -1,0 +1,170 @@
+import Dom from '../../common/gui/dom.js';
+import icons from '../../common/gui/icons.js';
+import Modal from '../../common/gui/modal.js';
+import Sidenav from '../../common/gui/sidenav.js';
+import Settings from '../model/settings.js';
+
+export default class SettingsScreen {
+	#onClickedDeleteDatabaseHandler = undefined;
+
+	#onClickedDeleteLocalStorageHandler = undefined;
+
+	#onClickedSyncGDriveHandler = undefined;
+
+	#onClickedRememberLoginHandler = undefined;
+
+	/** @type {Settings} */
+	#settings = undefined;
+
+	/** @type {Dom} */
+	#navbar = undefined;
+
+	/** @type {Dom} */
+	#dom = undefined;
+
+	/** @type {Dom} */
+	#sidenav = undefined;
+
+	#gDriveEnabledInput = new Dom();
+
+	#gDriveRememberLoginInput = new Dom();
+
+	constructor(settings) {
+		this.#settings = settings;
+	}
+
+	init() {
+		this.buildSettingsScreen();
+		this.buildNavBar();
+		this.#sidenav = new Sidenav();
+
+		const main = document.getElementById('main');
+		main.appendChild(this.#dom.toHtml());
+		main.appendChild(this.#navbar.toHtml());
+
+		return this;
+	}
+
+	buildSettingsScreen() {
+		const onClickedSyncGdrive = this.#onClickedSyncGdrive.bind(this);
+		const onClickedRememberGdrive = this.#onClickedRememberLogin.bind(this);
+		const gDriveSettings = this.#settings.gDriveSettings();
+
+		this.#dom = new Dom('div').append(
+			new Dom('h1').text('Settings'),
+			new Dom('h2').text('Google Drive Settings'),
+			new Dom('div').cls('round').append(
+				new Dom('div').cls('accordion-secondary').append(
+					new Dom('span').text('Sync to Google Drive'),
+					new Dom('span').append(
+						new Dom('label').cls('setting').append(
+							new Dom('input').onClick(onClickedSyncGdrive).cls('setting-state')
+								.type('checkbox').checked(gDriveSettings.isEnabled()).hide()
+								.cloneTo(this.#gDriveEnabledInput),
+							new Dom('span').cls('setting-outline'),
+							new Dom('i').cls('setting-indicator'),
+						),
+					),
+				),
+				new Dom('div').cls('accordion-secondary').append(
+					new Dom('span').text('Keep me logged in'),
+					new Dom('span').append(
+						new Dom('label').cls('setting').append(
+							new Dom('input').onClick(onClickedRememberGdrive).cls('setting-state')
+								.type('checkbox').checked(gDriveSettings.canRememberLogin()).hide()
+								.cloneTo(this.#gDriveRememberLoginInput),
+							new Dom('span').cls('setting-outline'),
+							new Dom('i').cls('setting-indicator'),
+						),
+					),
+				),
+			),
+		);
+		return this.#dom;
+	}
+
+	buildNavBar() {
+		const onDeleteDatabase = this.#onClickedDeleteDatabase.bind(this);
+		const onDeleteLocalStorage = this.#onClickedDeleteLocalStorage.bind(this);
+		const onClickOpenSidenav = this.#onClickedOpenSidenav.bind(this);
+
+		this.#navbar = new Dom('nav').append(
+			new Dom('div').cls('nav-header').append(
+				new Dom('button').cls('nav-item').onClick(onDeleteLocalStorage).append(
+					new Dom('img').cls('white-fill').text('Delete Planning').attr('alt', 'Delete Planning').attr('src', icons.remove_table),
+				),
+				new Dom('button').cls('nav-item').onClick(onDeleteDatabase).append(
+					new Dom('img').cls('white-fill').text('Delete Statement').attr('alt', 'Delete Statement').attr('src', icons.remove_database),
+				),
+			),
+			new Dom('div').cls('nav-footer').append(
+				new Dom('button').cls('nav-item', 'nav-trigger').onClick(onClickOpenSidenav).append(
+					new Dom('img').cls('white-fill').text('Menu').attr('alt', 'Menu').attr('src', icons.menu),
+				),
+			),
+			new Dom('div').cls('dropup-content', 'top-round').hide(),
+		);
+		return this.#navbar;
+	}
+
+	#onClickedSyncGdrive(event) {
+		this.#onClickedSyncGDriveHandler?.(event.currentTarget.checked);
+	}
+
+	#onClickedRememberLogin(event) {
+		this.#onClickedRememberLoginHandler?.(event.currentTarget.checked);
+	}
+
+	#onClickedOpenSidenav() {
+		this.#sidenav.open();
+	}
+
+	#onClickedDeleteDatabase() {
+		const areYouSureModal = Modal.areYouSureModal(
+			'delete-databases',
+			'Are you sure you want to delete all local databases?',
+			this.#onClickedDeleteDatabaseHandler,
+		);
+		areYouSureModal.open();
+	}
+
+	#onClickedDeleteLocalStorage() {
+		const areYouSureModal = Modal.areYouSureModal(
+			'delete-local-storage',
+			'Are you sure you want to delete all local storage?',
+			this.#onClickedDeleteLocalStorageHandler,
+		);
+		areYouSureModal.open();
+	}
+
+	onClickDeleteDatabase(handler) {
+		this.#onClickedDeleteDatabaseHandler = handler;
+		return this;
+	}
+
+	onClickDeleteLocalStorage(handler) {
+		this.#onClickedDeleteLocalStorageHandler = handler;
+		return this;
+	}
+
+	onClickSyncGdrive(handler) {
+		this.#onClickedSyncGDriveHandler = handler;
+		return this;
+	}
+
+	onClickedRememberLogin(handler) {
+		this.#onClickedRememberLoginHandler = handler;
+		return this;
+	}
+
+	/**
+	 * Redraw the Settings screen according to the provided settings
+	 * @param {Settings} settings
+	 */
+	refresh(settings) {
+		this.#settings = settings;
+		const gDriveSettings = settings.gDriveSettings();
+		this.#gDriveEnabledInput.checked(gDriveSettings.isEnabled());
+		this.#gDriveRememberLoginInput.checked(gDriveSettings.canRememberLogin());
+	}
+}

@@ -2,7 +2,7 @@ import SpendingScreen from '../view/spendingScreen.js';
 import Spending from '../model/spending.js';
 import SpendingReport from '../model/spendingReport.js';
 import Utils from '../../common/utils/utils.js';
-import Settings from '../../settings/settings.js';
+import SettingsController from '../../settings/controller/settingsController.js';
 import Alert from '../../common/gui/alert.js';
 import PlanningPersistence from '../../planning/persistence/planningPersistence.js';
 import SpendingPersistence from '../persistence/spendingPersistence.js';
@@ -101,19 +101,19 @@ export default class SpendingController {
 	// TODO: Move this to a sepparate file and load it in init(?)
 	// only if the user has gdrive enabled in settings
 	async initScreenFromGDrive() {
-		const isGDriveEnabled = new Settings().gDriveSettings()?.enabled;
-
-		if (!isGDriveEnabled) {
+		const gDriveSettings = new SettingsController().currentSettings().gDriveSettings();
+		if (!gDriveSettings.isEnabled()) {
 			return undefined;
 		}
 
 		Alert.show('Google Drive', 'Started synchronization with Google Drive...');
-
+		this.#spendingPersistence.enableGdrive(gDriveSettings.canRememberLogin());
 		const gDriveReports = await this.#spendingPersistence.readAllFromGDrive();
 		if (gDriveReports.length === 0) {
 			return undefined;
 		}
 
+		// TODO Remove planning dependency from this class
 		const gDrivePlannings = await this.#planningPersistence.readAllFromGDrive();
 		gDriveReports.filter((item) => item).forEach((gDriveReport) => {
 			const month = gDriveReport.month();
@@ -122,7 +122,6 @@ export default class SpendingController {
 				gDriveReport.updatePlanning(planning);
 				this.#cachedReports[month] = gDriveReport;
 			} else {
-				// TODO Look in cache for planning, or create a new empty one in GDrive if not available
 				Alert.show('Google Drive', `No planning found for month ${month + 1}`);
 			}
 		});
