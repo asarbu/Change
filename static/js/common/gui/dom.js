@@ -95,11 +95,7 @@ export default class Dom {
 	}
 
 	checked(value) {
-		if (value) {
-			this.elmt.checked = 'checked';
-		} else {
-			delete this.elmt.checked;
-		}
+		this.elmt.checked = !!value;
 		return this;
 	}
 
