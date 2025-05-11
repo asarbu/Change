@@ -49,7 +49,7 @@ h1, h2 {
 }
 
 h1 {
-	padding-top: 5vh;
+	padding: 5vh 0;
 }
 
 h2 {
