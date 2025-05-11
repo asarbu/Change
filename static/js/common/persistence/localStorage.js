@@ -56,4 +56,12 @@ export default class LocalStorage {
 	clear() {
 		this.#localStorage.clear();
 	}
+
+	getItem(key) {
+		return JSON.parse(this.#localStorage.getItem(key)) || undefined;
+	}
+
+	setItem(key, value) {
+		this.#localStorage.setItem(key, JSON.stringify(value));
+	}
 }
