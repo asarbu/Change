@@ -22,26 +22,25 @@ export default class PlanningTutorialScreen {
 
 		const goToSettings = () => { this.#onClickedGoToSettings?.(); };
 		const fetchDefault = () => { this.#onClickedFetchDefault?.(); };
+		// TODO : Implement onClickGoToPlanning
 		const onClickAddStatement = () => {};
 		const onClickOpenSidenav = () => { this.#sidenav.open(); };
 
 		this.#dom = new Dom('div').cls('container').append(
 			new Dom('div').cls('section').append(
 				new Dom('div').cls('slice').append(
-					new Dom('h1').text('There is currently no planning available'),
-					new Dom('ul').cls('list').append(
-						new Dom('li').append(
-							new Dom('span').text('You can create a new planning by clicking on the navbar button below.'),
-						),
-						new Dom('li').append(
-							new Dom('span').text('You can also '),
-							new Dom('a').text('fetch a default planning ').onClick(fetchDefault).attr('href', '#'),
-						),
-						new Dom('li').append(
-							new Dom('span').text('Alternatively, you can '),
-							new Dom('a').text('go to settings ').onClick(goToSettings).attr('href', '#'),
-							new Dom('span').text('and enable synchronization to Google Drive.'),
-						),
+					new Dom('h1').text('Would you like to start planning your spendings?'),
+					new Dom('h2').text('In order to user the application, you need to define planning goals for each day/month/year, group them into logical categories, then group categories into statements'),
+					new Dom('h3').text('You can create a new planning by clicking on the navbar button below.'),
+					new Dom('h1').text('I want to to receive default planning statements'),
+					new Dom('h2').text('Receive carefully prepared common planning statements that you can edit later.'),
+					new Dom('h3').append(
+						new Dom('a').text('Fetch default planning ').onClick(fetchDefault).attr('href', '#'),
+					),
+					new Dom('h1').text('I want to restore my planning from Google Drive'),
+					new Dom('h2').text('If you have used this application in the past and backed up your data, you can sync it from Google Drive.'),
+					new Dom('h3').append(
+						new Dom('a').text('Go to settings ').onClick(goToSettings).attr('href', '#'),
 					),
 				),
 			),
