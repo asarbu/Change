@@ -7,6 +7,7 @@ import Utils from '../../common/utils/utils.js';
 import Planning, { Statement } from '../model/planningModel.js';
 import GraphicEffects from '../../common/gui/effects.js';
 import Alert from '../../common/gui/alert.js';
+import AddStatementModal from './addStatementModal.js';
 
 export default class PlanningNavbar {
 	/** @type {Dom} */
@@ -30,8 +31,8 @@ export default class PlanningNavbar {
 	/** @type {Modal} */
 	#statementsDropup = undefined;
 
-	/** @type {Modal} */
-	#addStatementDropup = undefined;
+	/** @type {AddStatementModal} */
+	#addStatementModal = undefined;
 
 	/** @type {Modal} */
 	#statementTypeDropup = undefined;
@@ -451,51 +452,18 @@ export default class PlanningNavbar {
 	#onClickedSaveStatement;
 
 	buildAddStatementModal() {
-		const onClickSave = this.onClickedSaveStatement.bind(this);
-		const onClickStatementType = this.onClickedStatementType.bind(this, true);
-		this.#addStatementDropup = new Modal('add-statement').header(
-			new Dom('h2').text('Add Statement'),
-		).body(
-			new Dom('form').append(
-				new Dom('div').cls('input-field').append(
-					new Dom('input').id('statement-date-input').type('date').attr('required', '').attr('value', new Date().toISOString().substring(0, 10)),
-					new Dom('label').text('Date: '),
-				),
-				new Dom('div').cls('input-field').append(
-					new Dom('input').id('statement-name-input').type('text').attr('required', ''),
-					new Dom('label').text('Statement name: '),
-				),
-				new Dom('div').cls('input-field').onClick().append(
-					new Dom('input').id('statement-type-input').onFocus(onClickStatementType).onClick(onClickStatementType).type('text').attr('required', ''),
-					new Dom('label').text('Type: '),
-				),
-				new Dom('input').type('submit').hide().onClick(onClickSave),
-			),
-		);
-		this.#addStatementDropup.footer(
-			new Dom('h3').text('Cancel').onClick(this.#addStatementDropup.close.bind(this.#addStatementDropup)),
-			new Dom('h3').text('Save').onClick(onClickSave),
-		);
-
-		return this.#addStatementDropup;
+		this.#addStatementModal = new AddStatementModal();
+		this.#addStatementModal.onClickSaveStatement(this.#onClickedSaveStatement);
+		this.#addStatementModal.onClickStatementType(this.#onClickedStatementType.bind(this));
+		return this.#addStatementModal;
 	}
 
 	onClickSaveStatement(handler) {
 		this.#onClickedSaveStatement = handler;
 	}
 
-	onClickedSaveStatement() {
-		const statementId = document.getElementById('statement-date-input').valueAsDate.getTime();
-		const statementName = document.getElementById('statement-name-input').value;
-		const statementType = document.getElementById('statement-type-input').value;
-		const newStatement = new Statement(statementId, statementName, statementType);
-
-		this.#onClickedSaveStatement?.(newStatement);
-		this.#addStatementDropup.close();
-	}
-
 	onClickedAddStatement() {
-		this.#addStatementDropup.open();
+		this.#addStatementModal.open();
 	}
 	// #endregion
 
@@ -513,11 +481,11 @@ export default class PlanningNavbar {
 		return this.#statementTypeDropup;
 	}
 
-	onClickedStatementType() {
+	#onClickedStatementType() {
 		this.#statementTypeDropup.open();
-		if (this.#addStatementDropup.isOpen()) {
+		if (this.#addStatementModal.isOpen()) {
 			this.#addSpendingPending = true;
-			this.#addStatementDropup.close();
+			this.#addStatementModal.close();
 		}
 	}
 
@@ -535,7 +503,7 @@ export default class PlanningNavbar {
 		statement.type = type;
 		if (this.#addSpendingPending) {
 			this.#addSpendingPending = false;
-			this.#addStatementDropup.open();
+			this.#addStatementModal.open();
 			document.getElementById('statement-type-input').value = type;
 		}
 		this.#onChangedStatementType?.(statement);
