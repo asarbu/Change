@@ -4,10 +4,7 @@ import { Category } from '../../planning/model/planningModel.js';
 import Spending from '../model/spending.js';
 import SpendingCategoryModal from './spendingCategoryModal.js';
 
-export default class SpendingSubmitModal {
-	/** @type {Modal} */
-	#submitSpendingDom = undefined;
-
+export default class SpendingSubmitModal extends Modal {
 	/** @type {SpendingCategoryModal} */
 	#categoryModal = undefined;
 
@@ -32,9 +29,11 @@ export default class SpendingSubmitModal {
 	#priceInput = new Dom();
 
 	constructor(forCategories) {
+		super('spending-submit-modal');
+
 		const onClickCategoryInput = this.#onClickedCategoryInput.bind(this);
 
-		this.#submitSpendingDom = new Modal('add-spending').header(
+		this.header(
 			new Dom('h2').text('Insert Spending'),
 		).body(
 			new Dom('form').append(
@@ -74,21 +73,9 @@ export default class SpendingSubmitModal {
 		return this.#categoryModal;
 	}
 
-	isOpen() {
-		return this.#submitSpendingDom.isOpen();
-	}
-
-	open() {
-		this.#submitSpendingDom.open();
-	}
-
-	close() {
-		this.#submitSpendingDom.close();
-	}
-
 	editMode(spending) {
 		this.#editMode = true;
-		this.#submitSpendingDom.header(new Dom('h2').text('Edit Spending'));
+		this.header(new Dom('h2').text('Edit Spending'));
 		this.#spending = spending;
 		this.#spending.edited = true;
 
@@ -101,7 +88,7 @@ export default class SpendingSubmitModal {
 	insertMode() {
 		this.#editMode = false;
 
-		this.#submitSpendingDom.header(new Dom('h2').text('Insert Spending'));
+		this.header(new Dom('h2').text('Insert Spending'));
 		this.#spending = new Spending(new Date().getTime());
 
 		this.#descriptionInput.toHtml().value = '';
