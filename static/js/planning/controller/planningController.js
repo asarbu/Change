@@ -11,6 +11,9 @@ export default class PlanningController {
 	/** @type {PlanningScreen} */
 	#defaultScreen = undefined;
 
+	/** @type {Planning} */
+	#planning = undefined;
+
 	/** @type {number} */
 	#defaultYear = undefined;
 
@@ -127,10 +130,11 @@ export default class PlanningController {
 	 * @returns {Promise<PlanningScreen>}
 	 */
 	async initPlanningScreen(planning) {
+		this.#planning = planning;
 		this.#defaultScreen = new PlanningScreen(planning);
-		// TODO replace this with methods
 		this.#defaultScreen.onClickSavePlanning(this.onClickSavePlanning.bind(this));
-		this.#defaultScreen.onClickSaveStatement(this.onClickedSaveStatement.bind(this));
+		this.#defaultScreen.onInsertStatement(this.onInsertedStatement.bind(this));
+		this.#defaultScreen.onEditStatement(this.onEditedStatement.bind(this));
 		this.#defaultScreen.onClickDeletePlanning(this.onClickedDeletePlanning.bind(this));
 		this.#defaultScreen.init();
 		if (this.#defaultStatement) {
@@ -156,24 +160,33 @@ export default class PlanningController {
 	/**
 	 * @param {Statement} statement
 	 */
-	async onClickedSaveStatement(statement) {
-		const date = new Date(statement.id);
-		let planningPersistence = this.#planningPersistence;
-		if (date.getFullYear() !== this.#defaultYear) {
-			planningPersistence = new PlanningPersistence(date.getFullYear());
+	async onInsertedStatement(statement) {
+		// TODO Identify duplicated statement names
+		this.#planning.statements.push(statement);
+		await this.#planningPersistence
+			.store(this.#planning)
+			.then(this.#defaultScreen.refresh)
+			.then(this.navigateTo(this.#defaultYear, this.#defaultMonth, statement.name))
+			.catch((reason) => Alert.show(`Error at saving statement ${statement.name} ${reason}`));
+		return this.#planning;
+	}
+
+	/**
+	 * @param {Statement} newStatement
+	 */
+	onEditedStatement(newStatement) {
+		// TODO remove ID and identify statement by names
+		const editedStatement = this.#planning.statements
+			.find((oldStatement) => oldStatement.id === newStatement.id);
+		if (!editedStatement) {
+			Alert.show(`No statement found to edit with name ${newStatement.name}`);
+			return undefined;
 		}
-		let planning = await planningPersistence.readFromCache(date.getMonth());
-		if (planning) {
-			planning.statements.push(statement);
-		} else {
-			planning = new Planning(date.getTime(), date.getFullYear(), date.getMonth(), [statement]);
-		}
-		const storedPlanning = await planningPersistence.store(planning);
-		// Store is successful if the id is set
-		if (storedPlanning.id && date.getFullYear() === this.#defaultYear) {
-			this.#defaultScreen.refresh(storedPlanning);
-		}
-		this.navigateTo(date.getFullYear(), date.getMonth(), statement.name);
+
+		editedStatement.name = newStatement.name;
+		editedStatement.type = newStatement.type;
+		this.#defaultScreen.refreshStatement(editedStatement);
+		return this.#planning;
 	}
 
 	onClickedFetchDefaultPlanning() {

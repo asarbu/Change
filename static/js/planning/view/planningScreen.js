@@ -8,7 +8,9 @@ import Modal from '../../common/gui/modal.js';
 export default class PlanningScreen {
 	#onClickSavePlanning = undefined;
 
-	#onClickedSaveStatement = undefined;
+	#onInsertedStatementHandler = undefined;
+
+	#onEditedStatementHandler = undefined;
 
 	#onClickedDeletePlanning = undefined;
 
@@ -41,8 +43,8 @@ export default class PlanningScreen {
 
 		this.navbar.onClickSavePlanning(this.onClickedSavePlanning.bind(this));
 		this.navbar.onClickEdit(this.onClickedEdit.bind(this));
-		this.navbar.onChangeStatementType(this.onClickedChangeStatementType.bind(this));
-		this.navbar.onClickSaveStatement(this.onClickedSaveStatement.bind(this));
+		this.navbar.onInsertStatement(this.onInsertedStatement.bind(this));
+		this.navbar.onEditStatement(this.onEditedStatement.bind(this));
 		this.navbar.onClickDeletePlanning(this.onClickedDeletePlanning.bind(this));
 		this.navbar.onClickDeleteStatement(this.onClickedDeleteStatement.bind(this));
 
@@ -101,14 +103,10 @@ export default class PlanningScreen {
 		if (!statement) return undefined;
 
 		const onKeyUp = this.onKeyUpStatementName.bind(this);
-		const onClickStatementType = this.onClickedStatementType.bind(this);
 		const onClickAddCategory = this.onClickedAddCategory.bind(this, statement);
-		const slice = new Dom('div').id(`statement-${statement.id}`).cls('slice').userData(statement).append(
-			new Dom('h1').text(statement.name).editable().onKeyUp(onKeyUp).attr('contenteditable', this.#editMode),
-			new Dom('h2').text(`${statement.type} `).onClick(onClickStatementType).hideable(this.#editMode)
-				.append(
-					new Dom('span').cls('white-50').text('▼'),
-				),
+		const slice = new Dom('div').id(statement.id).cls('slice').userData(statement).append(
+			new Dom('h1').text(statement.name).onKeyUp(onKeyUp).onClick(this.navbar.onClickedEditStatement.bind(this.navbar)),
+			new Dom('h2').text(`${statement.type} `).hideable(this.#editMode).onClick(this.navbar.onClickedEditStatement.bind(this.navbar)),
 			...this.buildCategories(statement.categories),
 			Dom.imageButton('Add Category', icons.add_table).hideable(this.#editMode).onClick(onClickAddCategory),
 		);
@@ -183,13 +181,15 @@ export default class PlanningScreen {
 		const container = this.buildContainerDom(planning).toHtml();
 		this.containerHtml.parentElement.replaceChild(container, this.containerHtml);
 		this.containerHtml = container;
+		// Screen changed, effects need reinitialization
+		this.navbar.refresh(this.#defaultPlanning);
 	}
 
 	/**
 	 * @param {Statement} statement
 	 */
 	refreshStatement(statement) {
-		const statementHtml = document.getElementById(`statement-${statement.id}`);
+		const statementHtml = document.getElementById(statement.id);
 		const statementDom = this.#buildStatementDom(statement);
 		const { scrollTop } = statementHtml;
 		statementHtml.parentElement.replaceChild(statementDom.toHtml(), statementHtml);
@@ -271,8 +271,8 @@ export default class PlanningScreen {
 		this.navbar.onChangedStatement(statement);
 	}
 
-	onClickSaveStatement(handler) {
-		this.#onClickedSaveStatement = handler;
+	onInsertStatement(handler) {
+		this.#onInsertedStatementHandler = handler;
 	}
 
 	onClickedDeleteStatement(index) {
@@ -280,15 +280,19 @@ export default class PlanningScreen {
 		this.refresh(this.#defaultPlanning);
 	}
 
-	onClickedSaveStatement(statement) {
-		if (this.#onClickedSaveStatement) {
-			return this.#onClickedSaveStatement(statement);
-		}
-		return undefined;
+	onInsertedStatement(statement) {
+		this.#defaultPlanning.statements.push(statement);
+		this.refresh(this.#defaultPlanning);
+		this.navbar.onChangedStatement(statement);
+		return this.#onInsertedStatementHandler?.(statement);
 	}
 
-	onClickedChangeStatementType(statement) {
-		this.refreshStatement(statement);
+	onEditStatement(handler) {
+		this.#onEditedStatementHandler = handler;
+	}
+
+	onEditedStatement(editedStatement) {
+		this.#onEditedStatementHandler?.(editedStatement);
 	}
 
 	onClickedEdit() {
@@ -326,10 +330,6 @@ export default class PlanningScreen {
 			return this.#onClickSavePlanning(planning);
 		}
 		return undefined;
-	}
-
-	onClickedStatementType() {
-		this.navbar.onClickedStatementType();
 	}
 
 	onKeyUpStatementName(event) {
