@@ -54,14 +54,23 @@ export default class GraphicEffects {
 		this.#currentIndex = 0;
 
 		// * when mousedown or touchstart
-		this.sliderWrapper.addEventListener('mousedown', this.startSliderEventListener);
-		this.sliderWrapper.addEventListener('touchmove', this.startSliderEventListener, { passive: true });
+		this.resume();
 
 		// * when mouseup or touchend
 		// TODO This registers the event listener multiple times
 		window.addEventListener('mouseup', this.endSliderEventListener);
 		window.addEventListener('touchend', this.endSliderEventListener);
 		window.addEventListener('resize', this.refreshEventListener, true);
+	}
+
+	pause() {
+		this.sliderWrapper.removeEventListener('mousedown', this.startSliderEventListener);
+		this.sliderWrapper.removeEventListener('touchmove', this.startSliderEventListener, { passive: true });
+	}
+
+	resume() {
+		this.sliderWrapper.addEventListener('mousedown', this.startSliderEventListener);
+		this.sliderWrapper.addEventListener('touchmove', this.startSliderEventListener, { passive: true });
 	}
 
 	slideTo(index) {
@@ -111,7 +120,7 @@ export default class GraphicEffects {
 		this.rootContainer.addEventListener(
 			e.clientX ? 'mousemove' : 'touchmove',
 			this.moveSliderEventListener,
-			{ passive: true },
+			{ passive: false },
 		);
 		this.#currentSlice = this.#slices[this.#currentIndex];
 	}
