@@ -137,9 +137,6 @@ export default class PlanningController {
 		this.#defaultScreen.onEditStatement(this.onEditedStatement.bind(this));
 		this.#defaultScreen.onClickDeletePlanning(this.onClickedDeletePlanning.bind(this));
 		this.#defaultScreen.init();
-		if (this.#defaultStatement) {
-			this.#defaultScreen.selectStatement(this.#defaultStatement);
-		}
 		return this.#defaultScreen;
 	}
 
@@ -165,8 +162,8 @@ export default class PlanningController {
 		this.#planning.statements.push(statement);
 		await this.#planningPersistence
 			.store(this.#planning)
-			.then(this.#defaultScreen.refresh)
-			.then(this.navigateTo(this.#defaultYear, this.#defaultMonth, statement.name))
+			.then(this.#defaultScreen.refresh(this.#planning))
+			.then(this.#defaultScreen.onSelectedStatement(statement))
 			.catch((reason) => Alert.show(`Error at saving statement ${statement.name} ${reason}`));
 		return this.#planning;
 	}
@@ -215,7 +212,8 @@ export default class PlanningController {
 	navigateTo(year, month, statementName) {
 		// Current year and month do not require reload
 		if (year === this.#defaultYear && month === this.#defaultMonth) {
-			this.#defaultScreen.selectStatement(statementName);
+			const statement = this.#planning.statements.find((stmt) => stmt.name === statementName);
+			this.#defaultScreen.onSelectedStatement(statement);
 			return;
 		}
 
