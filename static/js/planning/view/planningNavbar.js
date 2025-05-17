@@ -5,9 +5,6 @@ import Modal from '../../common/gui/modal.js';
 import Sidenav from '../../common/gui/sidenav.js';
 import Utils from '../../common/utils/utils.js';
 import Planning, { Statement } from '../model/planningModel.js';
-import GraphicEffects from '../../common/gui/effects.js';
-import Alert from '../../common/gui/alert.js';
-import SubmitStatementModal from './submitStatementModal.js';
 
 export default class PlanningNavbar {
 	/** @type {Dom} */
@@ -31,9 +28,6 @@ export default class PlanningNavbar {
 	/** @type {Modal} */
 	#statementsDropup = undefined;
 
-	/** @type {SubmitStatementModal} */
-	#submitStatementModal = undefined;
-
 	/** @type {Planning} */
 	#planning = undefined;
 
@@ -50,10 +44,11 @@ export default class PlanningNavbar {
 	#sidenav = undefined;
 
 	/** @type {(statement: Statement) => void} */
-	#onInsertedStatementHandler = undefined;
+	#onClickedInsertStatementHandler = undefined;
 
-	/** @type {(statement: Statement) => void} */
-	#onEditedStatementHandler = undefined;
+	#onSelectedStatementHandler = undefined;
+
+	#onClickedDeleteStatementHandler = undefined;
 
 	/**
 	 * Constructs an instance of Planning Navbar
@@ -78,7 +73,6 @@ export default class PlanningNavbar {
 		this.buildYearModal();
 		this.buildMonthModal();
 		this.buildStatementModal();
-		this.buildSubmitStatementModal();
 
 		const onClickedYearDropup = this.#onClickedYearDropup.bind(this);
 		const onClickedMonthDropup = this.#onClickedMonthDropup.bind(this);
@@ -109,17 +103,11 @@ export default class PlanningNavbar {
 	}
 
 	init() {
-		this.gfx = new GraphicEffects();
-		this.gfx.onSliceChange(this.onChangedStatementIndex.bind(this));
 		this.refresh(this.#planning);
 	}
 
 	refresh(planning) {
 		this.#planning = planning;
-		if (this.gfx) {
-			const container = document.getElementById(this.#planning.year);
-			if (container) this.gfx.init(container);
-		}
 		if (planning.statements.length > 0) {
 			this.#selectedStatement = planning.statements[0];
 		} else {
@@ -132,7 +120,6 @@ export default class PlanningNavbar {
 		const onClicedkEdit = this.onClickedEdit.bind(this);
 		const onClickedSave = this.onClickedSavePlanning.bind(this);
 		const onClickedAddStatement = this.#onClickedInsertStatement.bind(this);
-		const onClickedEditStatement = this.onClickedEditStatement.bind(this);
 		const onClickedDeleteStatement = this.#onClickedDeleteStatement.bind(this);
 		const onClickedDeletePlanning = this.onClickedDeletePlanning.bind(this);
 
@@ -146,9 +133,6 @@ export default class PlanningNavbar {
 			),
 			new Dom('button').id('planning-navbar-edit').cls('nav-item').onClick(onClicedkEdit).append(
 				new Dom('img').cls('white-fill').text('Edit').attr('alt', 'Edit').attr('src', icons.edit),
-			),
-			new Dom('button').id('planning-navbar-edit-statement').cls('nav-item').onClick(onClickedEditStatement).hide().append(
-				new Dom('img').cls('white-fill').text('Edit Statement').attr('alt', 'Edit Statement').attr('src', icons.edit_file),
 			),
 			new Dom('button').id('planning-add-statement').cls('nav-item').onClick(onClickedAddStatement).append(
 				new Dom('img').cls('white-fill').text('Add Statement').attr('alt', 'Add Statement').attr('src', icons.add_file),
@@ -177,26 +161,6 @@ export default class PlanningNavbar {
 
 	// #endregion
 
-	// #region Delete Statement
-
-	#onClickedDeleteStatementHandler;
-
-	onClickDeleteStatement(handler) {
-		this.#onClickedDeleteStatementHandler = handler;
-	}
-
-	#onClickedDeleteStatement() {
-		if (this.#planning.statements.length <= 1) {
-			Alert.show('Delete Planning', 'You cannot delete the last statement of a planning');
-			return;
-		}
-
-		this.#onClickedDeleteStatementHandler?.(this.gfx.selectedIndex());
-		this.#selectedStatement = this.#planning.statements[0];
-	}
-
-	// #endregion
-
 	// #region Edit planning
 
 	#onClickedEditPlanning;
@@ -210,13 +174,11 @@ export default class PlanningNavbar {
 		const saveButton = document.getElementById('planning-navbar-save');
 		const delStatement = document.getElementById('planning-del-statement');
 		const delPlanning = document.getElementById('planning-del-planning');
-		const editStatement = document.getElementById('planning-navbar-edit-statement');
 
 		editButton.style.display = 'none';
 		delStatement.style.display = '';
 		saveButton.style.display = '';
 		delPlanning.style.display = '';
-		editStatement.style.display = '';
 
 		this.#onClickedEditPlanning?.();
 	}
@@ -236,13 +198,11 @@ export default class PlanningNavbar {
 		const editButton = document.getElementById('planning-navbar-edit');
 		const delStatement = document.getElementById('planning-del-statement');
 		const delPlanning = document.getElementById('planning-del-planning');
-		const editStatement = document.getElementById('planning-navbar-edit-statement');
 
 		editButton.style.display = '';
 		saveButton.style.display = 'none';
 		delStatement.style.display = 'none';
 		delPlanning.style.display = 'none';
-		editStatement.style.display = 'none';
 
 		this.#onClickedSavePlanning?.();
 	}
@@ -387,8 +347,8 @@ export default class PlanningNavbar {
 	}
 
 	#statementToDom(statement) {
-		const onStatementChanged = this.onChangedStatement.bind(this, statement);
-		const statementDropupItem = new Dom('div').cls('accordion-secondary').onClick(onStatementChanged).text(statement.name);
+		const onStatementSelected = this.onSelectedStatement.bind(this, statement);
+		const statementDropupItem = new Dom('div').cls('accordion-secondary').onClick(onStatementSelected).text(statement.name);
 		return statementDropupItem;
 	}
 
@@ -396,42 +356,28 @@ export default class PlanningNavbar {
 		if (statementName === this.#selectedStatement) return;
 
 		const { statements } = this.#planning;
-		const jump = true;
 		const statement = statements
 			.find((stmt) =>	stmt.name.toLowerCase() === statementName.toLowerCase())
 		?? this.#planning.statements[0];
 
-		this.onChangedStatement(statement, jump);
+		this.onSelectedStatement(statement);
+	}
+
+	onSelectStatement(handler) {
+		this.#onSelectedStatementHandler = handler;
 	}
 
 	/**
 	 * @param {Statement} statement
 	 * @returns
 	 */
-	onChangedStatement(statement, jump = false) {
+	onSelectedStatement(statement) {
 		if (this.#statementsDropup.isOpen()) this.#statementsDropup.close();
-
-		const statementName = statement.name;
-		if (statementName === this.#selectedStatement) return;
-
-		const { statements } = this.#planning;
-		const index = statements.findIndex((stmt) => stmt.name === statementName);
-		if (index >= 0) {
-			const stmt = this.#planning.statements[index];
-			this.#selectedStatement = stmt;
-			this.updateStatementDropupText();
-			if (jump) {
-				this.gfx.jumpTo(index);
-			} else {
-				this.gfx.slideTo(index);
-			}
-		} else {
-			Alert.show('Statement not found', `Statement ${statementName} not found in planning`);
-		}
+		this.#onSelectedStatementHandler?.(statement);
 	}
 
-	onChangedStatementIndex(index) {
-		this.#selectedStatement = this.#planning.statements[index];
+	onChangedStatement(statement) {
+		this.#selectedStatement = statement;
 		this.updateStatementDropupText();
 	}
 
@@ -453,45 +399,20 @@ export default class PlanningNavbar {
 		this.#statementsDropup.open();
 	}
 
-	// #endregion
-
-	// #region Add Statement Modal
-
-	buildSubmitStatementModal() {
-		this.#submitStatementModal = new SubmitStatementModal();
-		this.#submitStatementModal.onInsertStatement(this.#onInsertedStatement.bind(this));
-		this.#submitStatementModal.onEditStatement(this.#onEditedStatement.bind(this));
-		return this.#submitStatementModal;
+	onClickDeleteStatement(handler) {
+		this.#onClickedDeleteStatementHandler = handler;
 	}
 
-	/**
-	 * @param {(newStatement: Statement) => void} handler
-	 */
-	onInsertStatement(handler) {
-		this.#onInsertedStatementHandler = handler;
+	#onClickedDeleteStatement() {
+		this.#onClickedDeleteStatementHandler?.();
 	}
 
-	#onInsertedStatement(statement) {
-		this.#onInsertedStatementHandler?.(statement);
+	onClickInsertStatement(handler) {
+		this.#onClickedInsertStatementHandler = handler;
 	}
 
 	#onClickedInsertStatement() {
-		this.#submitStatementModal.insertMode().open();
-	}
-	// #endregion
-
-	// #region Edit Statement
-	onEditStatement(handler) {
-		this.#onEditedStatementHandler = handler;
-	}
-
-	#onEditedStatement(statement) {
-		this.#onEditedStatementHandler?.(statement);
-	}
-
-	onClickedEditStatement() {
-		const statement = this.gfx.selectedSlice().userData;
-		this.#submitStatementModal.editMode(statement).open();
+		this.#onClickedInsertStatementHandler?.();
 	}
 
 	// #endregion
