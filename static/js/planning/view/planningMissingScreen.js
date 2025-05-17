@@ -64,6 +64,7 @@ export default class PlanningTutorialScreen {
 
 	init() {
 		const mainElement = document.getElementById('main');
+		mainElement.replaceChildren();
 		mainElement.appendChild(this.#dom.toHtml());
 		mainElement.appendChild(this.#navbar.toHtml());
 

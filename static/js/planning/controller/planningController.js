@@ -122,6 +122,7 @@ export default class PlanningController {
 		const planningMissingScreen = new PlanningMissingScreen().init();
 		planningMissingScreen.onClickFetchDefault(this.onClickedFetchDefaultPlanning.bind(this));
 		planningMissingScreen.onClickGoToSettings(this.onClickedGoToSettings.bind(this));
+		planningMissingScreen.init();
 		return planningMissingScreen;
 	}
 
@@ -135,7 +136,7 @@ export default class PlanningController {
 		this.#defaultScreen.onClickSavePlanning(this.onClickSavePlanning.bind(this));
 		this.#defaultScreen.onInsertStatement(this.onInsertedStatement.bind(this));
 		this.#defaultScreen.onEditStatement(this.onEditedStatement.bind(this));
-		this.#defaultScreen.onClickDeletePlanning(this.onClickedDeletePlanning.bind(this));
+		this.#defaultScreen.onDeletePlanning(this.onDeletedPlanning.bind(this));
 		this.#defaultScreen.init();
 		return this.#defaultScreen;
 	}
@@ -150,8 +151,9 @@ export default class PlanningController {
 	/**
 	 * @param {Planning} planning
 	 */
-	async onClickedDeletePlanning(planning) {
-		await this.#planningPersistence.delete(planning);
+	async onDeletedPlanning(planning) {
+		this.#planningPersistence.delete(planning)
+			.then(this.initPlanningMissingScreen());
 	}
 
 	/**
