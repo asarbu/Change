@@ -102,8 +102,8 @@ export default class GraphicEffects {
 		this.mouseDown = true;
 
 		// read from desktop or mobile devices
-		this.startX = e.clientX ? e.clientX : e.touches[0]?.screenX;
-		this.startY = e.clientY ? e.clientY : e.touches[0]?.screenY;
+		this.startX = e.clientX ? e.clientX : e.touches[0].screenX;
+		this.startY = e.clientY ? e.clientY : e.touches[0].screenY;
 
 		this.sliderWrapper.removeEventListener('touchmove', this.startSliderEventListener);
 		this.sliderWrapper.removeEventListener('mousemove', this.startSliderEventListener);
