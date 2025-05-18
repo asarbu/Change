@@ -2,10 +2,12 @@ import Dom from '../../common/gui/dom.js';
 import icons from '../../common/gui/icons.js';
 import Sidenav from '../../common/gui/sidenav.js';
 
-export default class PlanningTutorialScreen {
+export default class PlanningMissingScreen {
 	#onClickedGoToSettings = undefined;
 
 	#onClickedFetchDefault = undefined;
+
+	#onClickedCreateNewPlan = undefined;
 
 	#navbar = undefined;
 
@@ -22,8 +24,7 @@ export default class PlanningTutorialScreen {
 
 		const goToSettings = () => { this.#onClickedGoToSettings?.(); };
 		const fetchDefault = () => { this.#onClickedFetchDefault?.(); };
-		// TODO : Implement onClickGoToPlanning
-		const onClickAddStatement = () => {};
+		const createNewPlan = () => { this.#onClickedCreateNewPlan?.(); };
 		const onClickOpenSidenav = () => { this.#sidenav.open(); };
 
 		this.#dom = new Dom('div').cls('container').append(
@@ -31,7 +32,9 @@ export default class PlanningTutorialScreen {
 				new Dom('div').cls('slice').append(
 					new Dom('h1').text('Would you like to start planning your spendings?'),
 					new Dom('h2').text('In order to user the application, you need to define planning goals for each day/month/year, group them into logical categories, then group categories into statements'),
-					new Dom('h3').text('You can create a new planning by clicking on the navbar button below.'),
+					new Dom('h3').append(
+						new Dom('a').text('Start a new plan from scratch').onClick(createNewPlan).attr('href', '#'),
+					),
 					new Dom('h1').text('I want to to receive default planning statements'),
 					new Dom('h2').text('Receive carefully prepared common planning statements that you can edit later.'),
 					new Dom('h3').append(
@@ -47,12 +50,6 @@ export default class PlanningTutorialScreen {
 		);
 
 		this.#navbar = new Dom('nav').append(
-			new Dom('div').cls('nav-header').append(
-				new Dom('button').id('planning-add-statement').cls('nav-item').onClick(onClickAddStatement)
-					.append(
-						new Dom('img').cls('white-fill').text('Add Statement').attr('alt', 'Add Statement').attr('src', icons.add_file),
-					),
-			),
 			new Dom('div').cls('nav-footer').append(
 				new Dom('button').cls('nav-item', 'nav-trigger').onClick(onClickOpenSidenav).append(
 					new Dom('img').cls('white-fill').text('Menu').attr('alt', 'Menu').attr('src', icons.menu),
@@ -77,5 +74,9 @@ export default class PlanningTutorialScreen {
 
 	onClickGoToSettings(handler) {
 		this.#onClickedGoToSettings = handler;
+	}
+
+	onClickCreateNewPlan(handler) {
+		this.#onClickedCreateNewPlan = handler;
 	}
 }

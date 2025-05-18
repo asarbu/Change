@@ -95,14 +95,23 @@ export default class PlanningScreen {
 		const section =	new Dom('div').cls('section');
 		if (planning.statements.length === 0) {
 			section.append(
-				new Dom('h1').cls('slice').text('No statements available'),
+				new Dom('div').cls('slice').append(
+					new Dom('h1').text('No statements available'),
+					new Dom('h2').append(
+						new Dom('span').text('You need a statement to be able to add categories of goals.'),
+					),
+					new Dom('h2').append(
+						new Dom('span').text('Click '),
+						new Dom('a').text('"Add statement"').attr('href', '#').onClick(this.navbar.clickInsertStatement.bind(this.navbar)),
+						new Dom('span').text(' to add a new Expense/Income/Savings statement.'),
+					),
+				),
 			);
 		} else {
 			planning.statements
 				.map(this.#buildStatementDom.bind(this))
 				.reduce((dom, statement) => dom.append(statement), section);
 		}
-		this.navbar.refresh(planning);
 
 		container.append(section);
 		return container;
@@ -260,7 +269,7 @@ export default class PlanningScreen {
 
 	// #region event handlers
 	// #region planning event handlers
-	onClickDeletePlanning(handler) {
+	onDeletePlanning(handler) {
 		this.#onClickedDeletePlanning = handler;
 	}
 
@@ -292,7 +301,7 @@ export default class PlanningScreen {
 		const index = this.#defaultPlanning.statements
 			.findIndex((stmt) => stmt.name === statement.name);
 		if (index >= 0) {
-			this.#gfx.slideTo(index);
+			this.#gfx.jumpTo(index);
 		} else {
 			Alert.show('Statement not found', `Statement ${statement.name} not found in planning`);
 		}
@@ -304,10 +313,13 @@ export default class PlanningScreen {
 	}
 
 	onClickedDeleteStatement() {
+		if (this.#defaultPlanning.statements.length === 0) return;
+
 		const index = this.#gfx.selectedIndex();
 		this.#defaultPlanning.statements.splice(index, 1);
 		this.refresh(this.#defaultPlanning);
-		const selectIndex = this.#defaultPlanning.statements.length < index ? index : index - 1;
+		// Next available index after deletion
+		const selectIndex = Math.min(this.#defaultPlanning.statements.length, Math.max(index - 1, 0));
 		this.#gfx.jumpTo(selectIndex);
 	}
 

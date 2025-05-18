@@ -6,6 +6,7 @@ import PlanningPersistence from '../persistence/planningPersistence.js';
 import PlanningScreen from '../view/planningScreen.js';
 import PlanningMissingScreen from '../view/planningMissingScreen.js';
 import SettingsController from '../../settings/controller/settingsController.js';
+import PlanningCreateModal from '../view/planningCreateModal.js';
 
 export default class PlanningController {
 	/** @type {PlanningScreen} */
@@ -21,7 +22,7 @@ export default class PlanningController {
 	#defaultMonth = undefined;
 
 	/** @type {string} */
-	#defaultStatement = undefined;
+	#defaultStatementName = undefined;
 
 	/** @type {PlanningPersistence} */
 	#planningPersistence = undefined;
@@ -53,11 +54,11 @@ export default class PlanningController {
 		}
 
 		if (urlStatement != null) {
-			this.#defaultStatement = urlStatement;
+			this.#defaultStatementName = urlStatement;
 		} else if (forStatement != null) {
-			this.#defaultStatement = forStatement;
+			this.#defaultStatementName = forStatement;
 		} else {
-			this.#defaultStatement = '';
+			this.#defaultStatementName = '';
 		}
 
 		this.#routingController = new RoutingController();
@@ -80,6 +81,13 @@ export default class PlanningController {
 		if (!screen) {
 			screen = this.initPlanningMissingScreen();
 		}
+
+		if (this.#defaultStatementName !== '') {
+			const statement = this.#planning.statements
+				.find((stmt) => stmt.name === this.#defaultStatementName);
+			screen.onSelectedStatement(statement);
+		}
+
 		return screen;
 	}
 
@@ -120,8 +128,9 @@ export default class PlanningController {
 
 	initPlanningMissingScreen() {
 		const planningMissingScreen = new PlanningMissingScreen().init();
-		planningMissingScreen.onClickFetchDefault(this.onClickedFetchDefaultPlanning.bind(this));
-		planningMissingScreen.onClickGoToSettings(this.onClickedGoToSettings.bind(this));
+		planningMissingScreen.onClickFetchDefault(this.#onClickedFetchDefaultPlanning.bind(this));
+		planningMissingScreen.onClickGoToSettings(this.#onClickedGoToSettings.bind(this));
+		planningMissingScreen.onClickCreateNewPlan(this.#onClickedCreateNewPlan.bind(this));
 		planningMissingScreen.init();
 		return planningMissingScreen;
 	}
@@ -159,14 +168,19 @@ export default class PlanningController {
 	/**
 	 * @param {Statement} statement
 	 */
-	async onInsertedStatement(statement) {
-		// TODO Identify duplicated statement names
+	onInsertedStatement(statement) {
+		const duplicatedStatement = this.#planning.statements
+			.find((stmt) => stmt.name === statement.name);
+
+		if (duplicatedStatement) {
+			Alert.show('Statement already exists', 'You can edit it below');
+			this.#defaultScreen.onSelectedStatement(statement);
+			return this.#planning;
+		}
+
 		this.#planning.statements.push(statement);
-		await this.#planningPersistence
-			.store(this.#planning)
-			.then(this.#defaultScreen.refresh(this.#planning))
-			.then(this.#defaultScreen.onSelectedStatement(statement))
-			.catch((reason) => Alert.show(`Error at saving statement ${statement.name} ${reason}`));
+		this.#defaultScreen.refresh(this.#planning);
+		this.#defaultScreen.onSelectedStatement(statement);
 		return this.#planning;
 	}
 
@@ -188,7 +202,7 @@ export default class PlanningController {
 		return this.#planning;
 	}
 
-	onClickedFetchDefaultPlanning() {
+	#onClickedFetchDefaultPlanning() {
 		const storePlanning = this.#planningPersistence.store.bind(this.#planningPersistence);
 		const initPlanningScreen = this.initPlanningScreen.bind(this);
 
@@ -201,8 +215,22 @@ export default class PlanningController {
 			});
 	}
 
-	onClickedGoToSettings() {
+	#onClickedGoToSettings() {
 		this.#routingController.redirectToSettings();
+	}
+
+	#onClickedCreateNewPlan() {
+		const planningCreateModal = new PlanningCreateModal();
+		planningCreateModal.onCreatePlanning(this.#onCreatedPlanning.bind(this));
+		planningCreateModal.open();
+	}
+
+	#onCreatedPlanning(planning) {
+		const initPlanningScreen = this.initPlanningScreen.bind(this);
+
+		this.#planningPersistence
+			.store(planning)
+			.then(initPlanningScreen);
 	}
 
 	/**
