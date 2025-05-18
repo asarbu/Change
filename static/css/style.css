@@ -165,7 +165,7 @@ li {
 nav {
 	position: fixed;
 	bottom: 0;
-	height: 20%;
+	height: auto;
 	width: 100%;
 	display: block;
 	justify-content: space-evenly;
@@ -178,7 +178,7 @@ nav {
 }
 
 .nav-header, .nav-footer {
-	height: 50%;
+	height: 10vh;
 	display: flex;
 	justify-content: space-evenly;
 }
