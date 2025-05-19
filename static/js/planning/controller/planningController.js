@@ -65,7 +65,6 @@ export default class PlanningController {
 	}
 
 	/**
-	 * @param {boolean} fetchDefaultPlanning
 	 * @returns {Promise<PlanningScreen>}
 	 */
 	async init() {
@@ -92,6 +91,8 @@ export default class PlanningController {
 	}
 
 	async initScreenFromCache() {
+		if (this.#defaultMonth === undefined) return undefined;
+
 		const planning = await this.#planningPersistence.readFromCache(this.#defaultMonth);
 		if (planning) {
 			const screen = await this.initPlanningScreen(planning);
@@ -162,7 +163,15 @@ export default class PlanningController {
 	 */
 	async onDeletedPlanning(planning) {
 		this.#planningPersistence.delete(planning)
-			.then(this.initPlanningMissingScreen());
+			.then(this.#updateCurrentMonth.bind(this))
+			.then(this.init.bind(this))
+			.catch(
+				(e) => Alert.show(e.name, e.message)
+			);
+	}
+
+	async #updateCurrentMonth() {
+		[this.#defaultMonth] = await this.#planningPersistence.cachedMonths();
 	}
 
 	/**
