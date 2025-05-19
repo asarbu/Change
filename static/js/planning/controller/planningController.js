@@ -165,9 +165,7 @@ export default class PlanningController {
 		this.#planningPersistence.delete(planning)
 			.then(this.#updateCurrentMonth.bind(this))
 			.then(this.init.bind(this))
-			.catch(
-				(e) => Alert.show(e.name, e.message)
-			);
+			.catch((e) => Alert.show(e.name, e.message));
 	}
 
 	async #updateCurrentMonth() {
