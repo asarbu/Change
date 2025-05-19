@@ -15,8 +15,11 @@ export default class PlanningCreateModal extends Modal {
 
 	#monthInput = new Dom();
 
+	#dateTimeProvider = undefined;
+
 	constructor(dateTimeProvider = new Date()) {
 		super('planning_create_modal');
+		this.#dateTimeProvider = dateTimeProvider;
 
 		this.#planMonthModal = new PlanningMonthModal();
 		this.#planMonthModal.onSelectMonth(this.#onSelectedPlanMonth.bind(this));
@@ -57,6 +60,7 @@ export default class PlanningCreateModal extends Modal {
 
 	#onCreatedPlanning() {
 		const newPlanning = new Planning();
+		newPlanning.id = this.#dateTimeProvider.getTime();
 		newPlanning.year = this.#yearInput.toHtml().value;
 		newPlanning.month = Utils.monthForName(this.#monthInput.toHtml().value);
 		this.#onCreatedPlanningHandler?.(newPlanning);
