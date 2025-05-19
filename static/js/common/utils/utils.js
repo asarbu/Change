@@ -1,6 +1,6 @@
 export default class Utils {
 	// TODO replace this with date constructs to parse months?
-	static #MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+	static MONTH_NAMES = Object.freeze(['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']);
 
 	/**
 	 * Converts to integers short month names (Jan, Feb, etc.)
@@ -8,8 +8,8 @@ export default class Utils {
 	 * @returns {number}
 	 */
 	static monthForName(name) {
-		if (!Utils.#MONTH_NAMES.includes(name)) return undefined;
-		return Utils.#MONTH_NAMES.indexOf(name);
+		if (!Utils.MONTH_NAMES.includes(name)) return undefined;
+		return Utils.MONTH_NAMES.indexOf(name);
 	}
 
 	/**
@@ -19,7 +19,7 @@ export default class Utils {
 	 */
 	static nameForMonth(month) {
 		if (month === undefined || month === null || Number.isNaN(month)) return undefined;
-		return Utils.#MONTH_NAMES.at(month);
+		return Utils.MONTH_NAMES.at(month);
 	}
 
 	static async sleep(ms) {
