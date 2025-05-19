@@ -49,7 +49,8 @@ h1, h2 {
 }
 
 h1 {
-	padding: 5vh 0;
+	padding-top: 2rem;
+	padding-bottom: 1rem;
 }
 
 h2 {
@@ -58,7 +59,8 @@ h2 {
 	line-height: 1.5rem;
 	font-size: 1.25rem;
 	font-weight: normal;
-	padding-top: 1vh;
+	padding-top: 1rem;
+	padding-bottom: 0.5rem;
 }
 
 h3 {
@@ -67,7 +69,8 @@ h3 {
 	line-height: 1rem;
 	font-size: 1.25rem;
 	font-weight: normal;
-	padding-top: 1vh;
+	padding-top: 0.5rem;
+	padding-bottom: 0.5rem;
 	text-align: center;
 }
 
