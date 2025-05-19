@@ -31,7 +31,7 @@ export default class PlanningMissingScreen {
 			new Dom('div').cls('section').append(
 				new Dom('div').cls('slice').append(
 					new Dom('h1').text('Would you like to start planning your spendings?'),
-					new Dom('h2').text('In order to user the application, you need to define planning goals for each day/month/year, group them into logical categories, then group categories into statements'),
+					new Dom('h2').text('In order to user the application, you need to define monthly planning goals, linked into categories and grouped into statements'),
 					new Dom('h3').append(
 						new Dom('a').text('Start a new plan from scratch').onClick(createNewPlan).attr('href', '#'),
 					),
