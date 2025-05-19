@@ -91,6 +91,10 @@ export default class PlanningScreen {
 	 * @returns {Dom}
 	 */
 	buildContainerDom(planning) {
+		const addStatement = () => {
+			this.navbar.onClickedEdit();
+			this.navbar.clickInsertStatement();
+		};
 		const container = new Dom('div').id(planning.year).cls('container');
 		const section =	new Dom('div').cls('section');
 		if (planning.statements.length === 0) {
@@ -98,11 +102,11 @@ export default class PlanningScreen {
 				new Dom('div').cls('slice').append(
 					new Dom('h1').text('No statements available'),
 					new Dom('h2').append(
-						new Dom('span').text('You need a statement to be able to add categories of goals.'),
+						new Dom('span').text('You need a statement to define categories of goals. A statement groups together goal categories by type (income, expenses, savings). You can have multiple statements of the same type.'),
 					),
 					new Dom('h2').append(
 						new Dom('span').text('Click '),
-						new Dom('a').text('"Add statement"').attr('href', '#').onClick(this.navbar.clickInsertStatement.bind(this.navbar)),
+						new Dom('a').text('"Add statement"').attr('href', '#').onClick(addStatement),
 						new Dom('span').text(' to add a new Expense/Income/Savings statement.'),
 					),
 				),
@@ -130,6 +134,7 @@ export default class PlanningScreen {
 		const slice = new Dom('div').id(statement.id).cls('slice').userData(statement).append(
 			new Dom('h1').text(statement.name).onKeyUp(onKeyUp).onClick(this.#onClickedEditStatement.bind(this)),
 			new Dom('h2').text(`${statement.type} `).hideable(this.#editMode).onClick(this.#onClickedEditStatement.bind(this)),
+			new Dom('h3').text('Remember to save any changes before exiting.').hideable(this.#editMode),
 			...this.buildCategories(statement.categories),
 			Dom.imageButton('Add Category', icons.add_table).hideable(this.#editMode).onClick(onClickAddCategory),
 		);
@@ -143,6 +148,10 @@ export default class PlanningScreen {
 	 * @returns {Array<Dom>} Document fragment with all of the created tables
 	 */
 	buildCategories(planningCategories) {
+		if (!planningCategories || planningCategories.length === 0) {
+			return [new Dom('h3').text('No categories defined. Click the button below to define a category of goals')];
+		}
+
 		const categories = [];
 		const onKeyUpCategoryName = this.onKeyUpCategoryName.bind(this);
 		const onClickedDeleteCategory = this.onClickedDeleteCategory.bind(this);
