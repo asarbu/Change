@@ -95,11 +95,7 @@ export default class Dom {
 	}
 
 	checked(value) {
-		if (value) {
-			this.elmt.checked = 'checked';
-		} else {
-			delete this.elmt.checked;
-		}
+		this.elmt.checked = !!value;
 		return this;
 	}
 
@@ -163,6 +159,11 @@ export default class Dom {
 		return this;
 	}
 
+	show() {
+		this.elmt.style.display = '';
+		return this;
+	}
+
 	text(text) {
 		this.elmt.textContent = text;
 		return this;
@@ -180,6 +181,11 @@ export default class Dom {
 		return this.elmt;
 	}
 
+	value(value) {
+		this.elmt.value = value;
+		return this;
+	}
+
 	/**
 	 * Shallow copy the content of current DOM instance to provided DOM instance
 	 * @param {Dom} target\ The instance where to copy the content to
@@ -189,7 +195,7 @@ export default class Dom {
 		if (target) {
 			Object.assign(target, this);
 		}
-		return this.elmt;
+		return this;
 	}
 
 	userData(userData) {

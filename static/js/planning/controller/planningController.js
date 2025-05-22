@@ -1,13 +1,19 @@
+import RoutingController from '../../common/controller/routingController.js';
 import Alert from '../../common/gui/alert.js';
 import Utils from '../../common/utils/utils.js';
-import Settings from '../../settings/settings.js';
 import Planning, { Statement } from '../model/planningModel.js';
 import PlanningPersistence from '../persistence/planningPersistence.js';
 import PlanningScreen from '../view/planningScreen.js';
+import PlanningMissingScreen from '../view/planningMissingScreen.js';
+import SettingsController from '../../settings/controller/settingsController.js';
+import PlanningCreateModal from '../view/planningCreateModal.js';
 
 export default class PlanningController {
 	/** @type {PlanningScreen} */
 	#defaultScreen = undefined;
+
+	/** @type {Planning} */
+	#planning = undefined;
 
 	/** @type {number} */
 	#defaultYear = undefined;
@@ -16,10 +22,13 @@ export default class PlanningController {
 	#defaultMonth = undefined;
 
 	/** @type {string} */
-	#defaultStatement = undefined;
+	#defaultStatementName = undefined;
 
 	/** @type {PlanningPersistence} */
 	#planningPersistence = undefined;
+
+	/** @type {RoutingController} */
+	#routingController = undefined;
 
 	constructor(forYear = undefined, forMonth = undefined, forStatement = undefined) {
 		const queryString = window.location.search;
@@ -45,47 +54,86 @@ export default class PlanningController {
 		}
 
 		if (urlStatement != null) {
-			this.#defaultStatement = urlStatement;
+			this.#defaultStatementName = urlStatement;
 		} else if (forStatement != null) {
-			this.#defaultStatement = forStatement;
+			this.#defaultStatementName = forStatement;
 		} else {
-			this.#defaultStatement = '';
+			this.#defaultStatementName = '';
 		}
+
+		this.#routingController = new RoutingController();
 	}
 
 	/**
-	 * @param {boolean} fetchDefaultPlanning
 	 * @returns {Promise<PlanningScreen>}
 	 */
 	async init() {
 		this.#planningPersistence = new PlanningPersistence(this.#defaultYear);
-		let planning = await this.#planningPersistence.readFromCache(this.#defaultMonth);
-		if (!planning) {
-			// TODO prompt user do create his own planning, fetch default or activate gDrive
-			planning = new Planning(0, this.#defaultYear, this.#defaultMonth, []);
+		let screen = await this.initScreenFromCache();
+
+		const gDriveSettings = new SettingsController().currentSettings().gDriveSettings();
+		if (gDriveSettings.isEnabled()) {
+			this.#planningPersistence.enableGDrive(gDriveSettings.canRememberLogin());
+			screen = await this.initScreenFromGDrive();
 		}
-		const screen = await this.initPlanningScreen(planning);
 
-		const cachedYears = await this.#planningPersistence.cachedYears();
-		cachedYears.forEach((year) => screen.appendYear(year));
-		const cachedMonths = await this.#planningPersistence.cachedMonths();
-		cachedMonths.forEach((month) => screen.appendMonth(month));
+		if (!screen) {
+			screen = this.initPlanningMissingScreen();
+		}
 
-		const gDriveSettings = new Settings().gDriveSettings();
-		if (!gDriveSettings || !gDriveSettings.enabled) return screen;
+		if (this.#defaultStatementName !== '') {
+			const statement = this.#planning.statements
+				.find((stmt) => stmt.name === this.#defaultStatementName);
+			screen.onSelectedStatement(statement);
+		}
 
+		return screen;
+	}
+
+	async initScreenFromCache() {
+		if (this.#defaultMonth === undefined) return undefined;
+
+		const planning = await this.#planningPersistence.readFromCache(this.#defaultMonth);
+		if (planning) {
+			const screen = await this.initPlanningScreen(planning);
+
+			const cachedYears = await this.#planningPersistence.cachedYears();
+			cachedYears.forEach((year) => screen.appendYear(year));
+
+			const cachedMonths = await this.#planningPersistence.cachedMonths();
+			cachedMonths.forEach((month) => screen.appendMonth(month));
+
+			return screen;
+		}
+		return undefined;
+	}
+
+	async initScreenFromGDrive() {
 		Alert.show('Google Drive', 'Started synchronization with Google Drive...');
 		const gDrivePlanning = await this.#planningPersistence.readFromGDrive(this.#defaultMonth);
-		if (gDrivePlanning) screen.refresh(gDrivePlanning);
+		if (gDrivePlanning) {
+			const screen = this.initPlanningScreen(gDrivePlanning);
 
-		const gDriveYears = await this.#planningPersistence.gDriveYears();
-		gDriveYears.forEach((year) => {	screen.appendYear(year); });
+			const gDriveYears = await this.#planningPersistence.gDriveYears();
+			gDriveYears.forEach((year) => {	screen.appendYear(year); });
 
-		const gDriveMonths = await this.#planningPersistence.gDriveMonths();
-		gDriveMonths.forEach((month) => { screen.appendMonth(month); });
+			const gDriveMonths = await this.#planningPersistence.gDriveMonths();
+			gDriveMonths.forEach((month) => { screen.appendMonth(month); });
+
+			return screen;
+		}
 
 		Alert.show('Google Drive', 'Finished synchronization with Google Drive');
-		return screen;
+		return undefined;
+	}
+
+	initPlanningMissingScreen() {
+		const planningMissingScreen = new PlanningMissingScreen().init();
+		planningMissingScreen.onClickFetchDefault(this.#onClickedFetchDefaultPlanning.bind(this));
+		planningMissingScreen.onClickGoToSettings(this.#onClickedGoToSettings.bind(this));
+		planningMissingScreen.onClickCreateNewPlan(this.#onClickedCreateNewPlan.bind(this));
+		planningMissingScreen.init();
+		return planningMissingScreen;
 	}
 
 	/**
@@ -93,15 +141,13 @@ export default class PlanningController {
 	 * @returns {Promise<PlanningScreen>}
 	 */
 	async initPlanningScreen(planning) {
+		this.#planning = planning;
 		this.#defaultScreen = new PlanningScreen(planning);
-		// TODO replace this with methods
 		this.#defaultScreen.onClickSavePlanning(this.onClickSavePlanning.bind(this));
-		this.#defaultScreen.onClickSaveStatement(this.onClickedSaveStatement.bind(this));
-		this.#defaultScreen.onClickDeletePlanning(this.onClickedDeletePlanning.bind(this));
+		this.#defaultScreen.onInsertStatement(this.onInsertedStatement.bind(this));
+		this.#defaultScreen.onEditStatement(this.onEditedStatement.bind(this));
+		this.#defaultScreen.onDeletePlanning(this.onDeletedPlanning.bind(this));
 		this.#defaultScreen.init();
-		if (this.#defaultStatement) {
-			this.#defaultScreen.selectStatement(this.#defaultStatement);
-		}
 		return this.#defaultScreen;
 	}
 
@@ -115,31 +161,83 @@ export default class PlanningController {
 	/**
 	 * @param {Planning} planning
 	 */
-	async onClickedDeletePlanning(planning) {
-		await this.#planningPersistence.delete(planning);
+	async onDeletedPlanning(planning) {
+		this.#planningPersistence.delete(planning)
+			.then(this.#updateCurrentMonth.bind(this))
+			.then(this.init.bind(this))
+			.catch((e) => Alert.show(e.name, e.message));
+	}
+
+	async #updateCurrentMonth() {
+		[this.#defaultMonth] = await this.#planningPersistence.cachedMonths();
 	}
 
 	/**
 	 * @param {Statement} statement
 	 */
-	async onClickedSaveStatement(statement) {
-		const date = new Date(statement.id);
-		let planningPersistence = this.#planningPersistence;
-		if (date.getFullYear() !== this.#defaultYear) {
-			planningPersistence = new PlanningPersistence(date.getFullYear());
+	onInsertedStatement(statement) {
+		const duplicatedStatement = this.#planning.statements
+			.find((stmt) => stmt.name === statement.name);
+
+		if (duplicatedStatement) {
+			Alert.show('Statement already exists', 'You can edit it below');
+			this.#defaultScreen.onSelectedStatement(statement);
+			return this.#planning;
 		}
-		let planning = await planningPersistence.readFromCache(date.getMonth());
-		if (planning) {
-			planning.statements.push(statement);
-		} else {
-			planning = new Planning(date.getTime(), date.getFullYear(), date.getMonth(), [statement]);
+
+		this.#planning.statements.push(statement);
+		this.#defaultScreen.refresh(this.#planning);
+		this.#defaultScreen.onSelectedStatement(statement);
+		return this.#planning;
+	}
+
+	/**
+	 * @param {Statement} newStatement
+	 */
+	onEditedStatement(newStatement) {
+		// TODO remove ID and identify statement by names
+		const editedStatement = this.#planning.statements
+			.find((oldStatement) => oldStatement.id === newStatement.id);
+		if (!editedStatement) {
+			Alert.show(`No statement found to edit with name ${newStatement.name}`);
+			return undefined;
 		}
-		const storedPlanning = await planningPersistence.store(planning);
-		// Store is successful if the id is set
-		if (storedPlanning.id && date.getFullYear() === this.#defaultYear) {
-			this.#defaultScreen.refresh(storedPlanning);
-		}
-		this.navigateTo(date.getFullYear(), date.getMonth(), statement.name);
+
+		editedStatement.name = newStatement.name;
+		editedStatement.type = newStatement.type;
+		this.#defaultScreen.refreshStatement(editedStatement);
+		return this.#planning;
+	}
+
+	#onClickedFetchDefaultPlanning() {
+		const storePlanning = this.#planningPersistence.store.bind(this.#planningPersistence);
+		const initPlanningScreen = this.initPlanningScreen.bind(this);
+
+		this.#routingController
+			.fetchDefaultPlanning()
+			.then(storePlanning)
+			.then(initPlanningScreen)
+			.catch((e) => {
+				Alert.show('Error', `Error at fetching default planning. ${e}`);
+			});
+	}
+
+	#onClickedGoToSettings() {
+		this.#routingController.redirectToSettings();
+	}
+
+	#onClickedCreateNewPlan() {
+		const planningCreateModal = new PlanningCreateModal();
+		planningCreateModal.onCreatePlanning(this.#onCreatedPlanning.bind(this));
+		planningCreateModal.open();
+	}
+
+	#onCreatedPlanning(planning) {
+		const initPlanningScreen = this.initPlanningScreen.bind(this);
+
+		this.#planningPersistence
+			.store(planning)
+			.then(initPlanningScreen);
 	}
 
 	/**
@@ -151,7 +249,8 @@ export default class PlanningController {
 	navigateTo(year, month, statementName) {
 		// Current year and month do not require reload
 		if (year === this.#defaultYear && month === this.#defaultMonth) {
-			this.#defaultScreen.selectStatement(statementName);
+			const statement = this.#planning.statements.find((stmt) => stmt.name === statementName);
+			this.#defaultScreen.onSelectedStatement(statement);
 			return;
 		}
 

@@ -58,6 +58,8 @@ export default class SpendingScreen {
 			this.spendingReports.push(defaultReport);
 		}
 
+		document.getElementById('main').replaceChildren();
+
 		this.buildNavbar(defaultReport);
 		this.buildSubmitSpendingModal(defaultReport.plannedCategories());
 		const screen = this.buildScreen(defaultReport);

@@ -89,10 +89,19 @@ export class Category {
 	}
 }
 
+export class StatementType {
+	static INCOME = 'Income';
+
+	static EXPENSE = 'Expense';
+
+	static SAVING = 'Saving';
+}
+
 /**
  * @class
  */
 export class Statement {
+	// TODO replace this with above
 	static INCOME = 'Income';
 
 	static EXPENSE = 'Expense';

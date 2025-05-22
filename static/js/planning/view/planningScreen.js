@@ -4,11 +4,16 @@ import Planning, { Statement, Category, Goal } from '../model/planningModel.js';
 import icons from '../../common/gui/icons.js';
 import PlanningNavbar from './planningNavbar.js';
 import Modal from '../../common/gui/modal.js';
+import GraphicEffects from '../../common/gui/effects.js';
+import Alert from '../../common/gui/alert.js';
+import SubmitStatementModal from './submitStatementModal.js';
 
 export default class PlanningScreen {
 	#onClickSavePlanning = undefined;
 
-	#onClickedSaveStatement = undefined;
+	#onInsertedStatementHandler = undefined;
+
+	#onEditedStatementHandler = undefined;
 
 	#onClickedDeletePlanning = undefined;
 
@@ -20,6 +25,12 @@ export default class PlanningScreen {
 
 	/** @type {boolean} */
 	#editMode = false;
+
+	/** @type {GraphicEffects} */
+	#gfx = undefined;
+
+	/** @type {SubmitStatementModal} */
+	#submitStatementModal = undefined;
 
 	/**
 	 * Constructor
@@ -41,17 +52,23 @@ export default class PlanningScreen {
 
 		this.navbar.onClickSavePlanning(this.onClickedSavePlanning.bind(this));
 		this.navbar.onClickEdit(this.onClickedEdit.bind(this));
-		this.navbar.onChangeStatementType(this.onClickedChangeStatementType.bind(this));
-		this.navbar.onClickSaveStatement(this.onClickedSaveStatement.bind(this));
+		this.navbar.onClickInsertStatement(this.#onClickedInsertStatement.bind(this));
+		this.navbar.onSelectStatement(this.onSelectedStatement.bind(this));
 		this.navbar.onClickDeletePlanning(this.onClickedDeletePlanning.bind(this));
 		this.navbar.onClickDeleteStatement(this.onClickedDeleteStatement.bind(this));
 
 		const mainElement = document.getElementById('main');
+		mainElement.replaceChildren();
 		mainElement.appendChild(this.navbar.toHtml());
 		this.navbar.selectYear(this.#defaultPlanning.year);
 		this.containerHtml = this.buildContainerDom(this.#defaultPlanning).toHtml();
 		mainElement.appendChild(this.containerHtml);
 		this.navbar.init();
+
+		this.buildSubmitStatementModal();
+		this.#gfx = new GraphicEffects();
+		this.#gfx.onSliceChange(this.onChangedStatementIndex.bind(this));
+		this.#gfx.init(this.containerHtml);
 	}
 
 	// #region DOM update
@@ -74,18 +91,31 @@ export default class PlanningScreen {
 	 * @returns {Dom}
 	 */
 	buildContainerDom(planning) {
+		const addStatement = () => {
+			this.navbar.onClickedEdit();
+			this.navbar.clickInsertStatement();
+		};
 		const container = new Dom('div').id(planning.year).cls('container');
 		const section =	new Dom('div').cls('section');
 		if (planning.statements.length === 0) {
 			section.append(
-				new Dom('h1').cls('slice').text('No statements available'),
+				new Dom('div').cls('slice').append(
+					new Dom('h1').text('No statements available'),
+					new Dom('h2').append(
+						new Dom('span').text('You need a statement to define categories of goals. A statement groups together goal categories by type (income, expenses, savings). You can have multiple statements of the same type.'),
+					),
+					new Dom('h2').append(
+						new Dom('span').text('Click '),
+						new Dom('a').text('"Add statement"').attr('href', '#').onClick(addStatement),
+						new Dom('span').text(' to add a new Expense/Income/Savings statement.'),
+					),
+				),
 			);
 		} else {
 			planning.statements
 				.map(this.#buildStatementDom.bind(this))
 				.reduce((dom, statement) => dom.append(statement), section);
 		}
-		this.navbar.refresh(planning);
 
 		container.append(section);
 		return container;
@@ -100,14 +130,11 @@ export default class PlanningScreen {
 		if (!statement) return undefined;
 
 		const onKeyUp = this.onKeyUpStatementName.bind(this);
-		const onClickStatementType = this.onClickedStatementType.bind(this);
 		const onClickAddCategory = this.onClickedAddCategory.bind(this, statement);
-		const slice = new Dom('div').id(`statement-${statement.id}`).cls('slice').userData(statement).append(
-			new Dom('h1').text(statement.name).editable().onKeyUp(onKeyUp).attr('contenteditable', this.#editMode),
-			new Dom('h2').text(`${statement.type} `).onClick(onClickStatementType).hideable(this.#editMode)
-				.append(
-					new Dom('span').cls('white-50').text('▼'),
-				),
+		const slice = new Dom('div').id(statement.id).cls('slice').userData(statement).append(
+			new Dom('h1').text(statement.name).onKeyUp(onKeyUp).onClick(this.#onClickedEditStatement.bind(this)),
+			new Dom('h2').text(`${statement.type} `).hideable(this.#editMode).onClick(this.#onClickedEditStatement.bind(this)),
+			new Dom('h3').text('Remember to save any changes before exiting.').hideable(this.#editMode),
 			...this.buildCategories(statement.categories),
 			Dom.imageButton('Add Category', icons.add_table).hideable(this.#editMode).onClick(onClickAddCategory),
 		);
@@ -121,6 +148,10 @@ export default class PlanningScreen {
 	 * @returns {Array<Dom>} Document fragment with all of the created tables
 	 */
 	buildCategories(planningCategories) {
+		if (!planningCategories || planningCategories.length === 0) {
+			return [new Dom('h3').text('No categories defined. Click the button below to define a category of goals')];
+		}
+
 		const categories = [];
 		const onKeyUpCategoryName = this.onKeyUpCategoryName.bind(this);
 		const onClickedDeleteCategory = this.onClickedDeleteCategory.bind(this);
@@ -175,6 +206,7 @@ export default class PlanningScreen {
 	// #endregion
 
 	// #region DOM manipulation
+
 	/** Refresh screen */
 	refresh(planning) {
 		this.#defaultPlanning = planning;
@@ -182,13 +214,21 @@ export default class PlanningScreen {
 		const container = this.buildContainerDom(planning).toHtml();
 		this.containerHtml.parentElement.replaceChild(container, this.containerHtml);
 		this.containerHtml = container;
+		// Screen changed, effects need reinitialization
+		if (this.#gfx) {
+			if (container) this.#gfx.init(container);
+		}
+		if (this.#defaultPlanning.statements.length === 0) {
+			// TODO Add empty statement tutorial DOM
+		}
+		this.navbar.refresh(this.#defaultPlanning);
 	}
 
 	/**
 	 * @param {Statement} statement
 	 */
 	refreshStatement(statement) {
-		const statementHtml = document.getElementById(`statement-${statement.id}`);
+		const statementHtml = document.getElementById(statement.id);
 		const statementDom = this.#buildStatementDom(statement);
 		const { scrollTop } = statementHtml;
 		statementHtml.parentElement.replaceChild(statementDom.toHtml(), statementHtml);
@@ -238,7 +278,7 @@ export default class PlanningScreen {
 
 	// #region event handlers
 	// #region planning event handlers
-	onClickDeletePlanning(handler) {
+	onDeletePlanning(handler) {
 		this.#onClickedDeletePlanning = handler;
 	}
 
@@ -262,35 +302,57 @@ export default class PlanningScreen {
 	// #endregion
 
 	// #region statement event handlers
-	selectStatement(statementName) {
-		this.navbar.selectStatement(statementName);
+
+	/**
+	 * @param {Statement} statement
+	 */
+	onSelectedStatement(statement) {
+		const index = this.#defaultPlanning.statements
+			.findIndex((stmt) => stmt.name === statement.name);
+		if (index >= 0) {
+			this.#gfx.jumpTo(index);
+		} else {
+			Alert.show('Statement not found', `Statement ${statement.name} not found in planning`);
+		}
 	}
 
-	onChangedStatement(statement) {
+	onChangedStatementIndex(index) {
+		const statement = this.#defaultPlanning.statements[index];
 		this.navbar.onChangedStatement(statement);
 	}
 
-	onClickSaveStatement(handler) {
-		this.#onClickedSaveStatement = handler;
-	}
+	onClickedDeleteStatement() {
+		if (this.#defaultPlanning.statements.length === 0) return;
 
-	onClickedDeleteStatement(index) {
+		const index = this.#gfx.selectedIndex();
 		this.#defaultPlanning.statements.splice(index, 1);
 		this.refresh(this.#defaultPlanning);
+		// Next available index after deletion
+		const selectIndex = Math.min(this.#defaultPlanning.statements.length, Math.max(index - 1, 0));
+		this.#gfx.jumpTo(selectIndex);
 	}
 
-	onClickedSaveStatement(statement) {
-		if (this.#onClickedSaveStatement) {
-			return this.#onClickedSaveStatement(statement);
+	onInsertedStatement(statement) {
+		this.#defaultPlanning.statements.push(statement);
+		this.refresh(this.#defaultPlanning);
+		this.navbar.onSelectedStatement(statement);
+		return this.#onInsertedStatementHandler?.(statement);
+	}
+
+	onEditStatement(handler) {
+		this.#onEditedStatementHandler = handler;
+	}
+
+	#onClickedEditStatement() {
+		if (this.#editMode) {
+			const editedStatement = this.#gfx.selectedSlice().userData;
+			this.#submitStatementModal.editMode(editedStatement).open();
 		}
-		return undefined;
-	}
-
-	onClickedChangeStatementType(statement) {
-		this.refreshStatement(statement);
 	}
 
 	onClickedEdit() {
+		// Disable sliding effects to avoid listener conflicts.
+		this.#gfx.pause();
 		const tableDefs = document.querySelectorAll('[editable="true"]');
 		for (let i = 0; i < tableDefs.length; i += 1) {
 			tableDefs[i].contentEditable = 'true';
@@ -308,6 +370,8 @@ export default class PlanningScreen {
 	 * @param {Planning} forPlanning
 	 */
 	onClickedSavePlanning(forPlanning) {
+		// Resume effects as there will be no listener conflicts anymore.
+		this.#gfx.resume();
 		const editableElmts = document.querySelectorAll('[editable="true"]');
 		for (let i = 0; i < editableElmts.length; i += 1) {
 			editableElmts[i].contentEditable = 'false';
@@ -325,10 +389,6 @@ export default class PlanningScreen {
 			return this.#onClickSavePlanning(planning);
 		}
 		return undefined;
-	}
-
-	onClickedStatementType() {
-		this.navbar.onClickedStatementType();
 	}
 
 	onKeyUpStatementName(event) {
@@ -432,5 +492,35 @@ export default class PlanningScreen {
 		this.recomputeCategoryTotal(category);
 	}
 	// #endregion
+
+	// #region Submit Statement Modal
+
+	buildSubmitStatementModal() {
+		this.#submitStatementModal = new SubmitStatementModal();
+
+		this.#submitStatementModal.onInsertStatement(this.#onInsertedStatement.bind(this));
+		this.#submitStatementModal.onEditStatement(this.#onEditedStatement.bind(this));
+
+		return this.#submitStatementModal;
+	}
+
+	/**
+	 * @param {(newStatement: Statement) => void} handler
+	 */
+	onInsertStatement(handler) {
+		this.#onInsertedStatementHandler = handler;
+	}
+
+	#onInsertedStatement(statement) {
+		this.#onInsertedStatementHandler?.(statement);
+	}
+
+	#onEditedStatement(editedStatement) {
+		this.#onEditedStatementHandler?.(editedStatement);
+	}
+
+	#onClickedInsertStatement() {
+		this.#submitStatementModal.insertMode().open();
+	}
 	// #endregion
 }

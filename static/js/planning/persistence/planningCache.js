@@ -4,8 +4,6 @@ import Planning from '../model/planningModel.js';
 export default class PlanningCache {
 	static DATABASE_NAME = 'Planning';
 
-	static PLANNING_TEMPLATE_URI = '/planning.json';
-
 	/**
 	 * Avoid initializing IDBs multiple times so we can update versions
 	 * @type {Array<PlanningCache>}

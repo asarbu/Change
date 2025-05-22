@@ -49,16 +49,42 @@ h1, h2 {
 }
 
 h1 {
-	padding: 5vh;
+	padding-top: 2rem;
+	padding-bottom: 1rem;
 }
 
 h2 {
 	position: relative;
 	color: rgba(255, 255, 255, 0.75);
-	height: 1.5rem;
 	line-height: 1.5rem;
 	font-size: 1.25rem;
 	font-weight: normal;
+	padding-top: 1rem;
+	padding-bottom: 0.5rem;
+}
+
+h3 {
+	position: relative;
+	color: rgba(255, 255, 255, 0.5);
+	line-height: 1rem;
+	font-size: 1.25rem;
+	font-weight: normal;
+	padding-top: 0.5rem;
+	padding-bottom: 0.5rem;
+	text-align: center;
+}
+
+div {
+	font-size: 1rem;
+}
+
+a {
+	color: rgba(255, 255, 255, 0.75);
+}
+
+li {
+	margin: 1rem;
+	font-size: 1.25rem;
 }
 
 .container {
@@ -142,7 +168,7 @@ h2 {
 nav {
 	position: fixed;
 	bottom: 0;
-	height: 20%;
+	height: auto;
 	width: 100%;
 	display: block;
 	justify-content: space-evenly;
@@ -155,7 +181,7 @@ nav {
 }
 
 .nav-header, .nav-footer {
-	height: 50%;
+	height: 10vh;
 	display: flex;
 	justify-content: space-evenly;
 }

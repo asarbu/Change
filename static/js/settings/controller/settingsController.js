@@ -1,0 +1,61 @@
+import PlanningCache from '../../planning/persistence/planningCache.js';
+import SpendingCache from '../../spending/persistence/spendingCache.js';
+import LocalStorage from '../../common/persistence/localStorage.js';
+import Settings from '../model/settings.js';
+import SettingsScreen from '../view/settingsScreen.js';
+
+export default class SettingsController {
+	static #SETTINGS_LOCALSTORAGE_KEY = 'settings';
+
+	/** @type {SettingsScreen} */
+	#settingsScreen = undefined;
+
+	/** @type {LocalStorage} */
+	#localStorage = undefined;
+
+	constructor() {
+		this.#localStorage = new LocalStorage();
+	}
+
+	init() {
+		this.#settingsScreen = new SettingsScreen(this.currentSettings()).init()
+			.onClickDeleteDatabase(SettingsController.#onClickedDeleteDatabase.bind(this))
+			.onClickDeleteLocalStorage(this.#onClickedDeleteLocalStorage.bind(this))
+			.onClickSyncGdrive(this.#onClickedSyncGdrive.bind(this))
+			.onClickedRememberLogin(this.#onClickedRememberLogin.bind(this));
+	}
+
+	/**
+	 * Reads and parses the user settings at the current time
+	 * @returns {Settings} Current user settings
+	 */
+	currentSettings() {
+		return Settings
+			.fromJson(this.#localStorage.getItem(SettingsController.#SETTINGS_LOCALSTORAGE_KEY));
+	}
+
+	static #onClickedDeleteDatabase() {
+		window.indexedDB.deleteDatabase(PlanningCache.DATABASE_NAME);
+		window.indexedDB.deleteDatabase(SpendingCache.DATABASE_NAME);
+	}
+
+	#onClickedDeleteLocalStorage() {
+		this.#localStorage.clear();
+	}
+
+	#onClickedSyncGdrive(value) {
+		const currentSettings = this.currentSettings();
+		currentSettings.gDriveSettings().enable(value);
+		this.#localStorage
+			.setItem(SettingsController.#SETTINGS_LOCALSTORAGE_KEY, currentSettings.toJson());
+		this.#settingsScreen.refresh(this.currentSettings());
+	}
+
+	#onClickedRememberLogin(value) {
+		const currentSettings = this.currentSettings();
+		currentSettings.gDriveSettings().rememberLogin(value);
+		this.#localStorage
+			.setItem(SettingsController.#SETTINGS_LOCALSTORAGE_KEY, currentSettings.toJson());
+		this.#settingsScreen.refresh(this.currentSettings());
+	}
+}

@@ -1,4 +1,3 @@
-import Settings from '../../settings/settings.js';
 import Spending from '../model/spending.js';
 import SpendingReport from '../model/spendingReport.js';
 import SpendingCache from './spendingCache.js';
@@ -17,10 +16,10 @@ export default class SpendingPersistence {
 	constructor(forYear) {
 		this.#year = forYear;
 		this.#spendingCache = SpendingCache.for(forYear);
+	}
 
-		const settings = new Settings().gDriveSettings();
-		if (!settings || !settings.enabled) return;
-		this.#spendingGDrive = new SpendingGDrive(forYear, settings.rememberLogin);
+	enableGdrive(rememberLogin) {
+		this.#spendingGDrive = new SpendingGDrive(this.#year, rememberLogin);
 	}
 
 	/**

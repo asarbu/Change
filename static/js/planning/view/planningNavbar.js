@@ -5,8 +5,6 @@ import Modal from '../../common/gui/modal.js';
 import Sidenav from '../../common/gui/sidenav.js';
 import Utils from '../../common/utils/utils.js';
 import Planning, { Statement } from '../model/planningModel.js';
-import GraphicEffects from '../../common/gui/effects.js';
-import Alert from '../../common/gui/alert.js';
 
 export default class PlanningNavbar {
 	/** @type {Dom} */
@@ -18,9 +16,6 @@ export default class PlanningNavbar {
 	/** @type {Map<number, Dom} */
 	#yearsInDropup = undefined;
 
-	/** @type {Map<number, Dom} */
-	#statementsInDropup = undefined;
-
 	/** @type {Modal} */
 	#yearsDropup = undefined;
 
@@ -29,12 +24,6 @@ export default class PlanningNavbar {
 
 	/** @type {Modal} */
 	#statementsDropup = undefined;
-
-	/** @type {Modal} */
-	#addStatementDropup = undefined;
-
-	/** @type {Modal} */
-	#statementTypeDropup = undefined;
 
 	/** @type {Planning} */
 	#planning = undefined;
@@ -48,11 +37,27 @@ export default class PlanningNavbar {
 	/** @type {Statement} */
 	#selectedStatement = undefined;
 
-	/** @type {boolean} */
-	#addSpendingPending = false;
-
 	/** @type {Sidenav} */
 	#sidenav = undefined;
+
+	/** @type {(statement: Statement) => void} */
+	#onClickedInsertStatementHandler = undefined;
+
+	#onSelectedStatementHandler = undefined;
+
+	#onClickedDeleteStatementHandler = undefined;
+
+	#editPlanningButton = new Dom();
+
+	#savePlanningButton = new Dom();
+
+	#insertStatementButton = new Dom();
+
+	#deleteStatementButton = new Dom();
+
+	#deletePlanningButton = new Dom();
+
+	#editMode = false;
 
 	/**
 	 * Constructs an instance of Planning Navbar
@@ -61,7 +66,6 @@ export default class PlanningNavbar {
 	constructor(planning) {
 		this.#yearsInDropup = new Map();
 		this.#monthsInDropup = new Map();
-		this.#statementsInDropup = new Map();
 		this.#sidenav = new Sidenav();
 
 		this.#planning = planning;
@@ -77,29 +81,27 @@ export default class PlanningNavbar {
 		this.buildYearModal();
 		this.buildMonthModal();
 		this.buildStatementModal();
-		this.buildStatementTypeModal();
-		this.buildAddStatementModal();
 
-		const onClickYearDropup = this.onClickedYearDropup.bind(this);
-		const onClickMonthDropup = this.onClickedMonthDropup.bind(this);
-		const onClickStatementDropup = this.onClickedStatementDropup.bind(this);
-		const onClickOpenSidenav = this.#onClickedOpenSidenav.bind(this);
+		const onClickedYearDropup = this.#onClickedYearDropup.bind(this);
+		const onClickedMonthDropup = this.#onClickedMonthDropup.bind(this);
+		const onClickedStatementDropup = this.#onClickedStatementDropup.bind(this);
+		const onClickedOpenSidenav = this.#onClickedOpenSidenav.bind(this);
 
 		this.#navbar = new Dom('nav').append(
 			this.buildNavbarHeader(),
 			new Dom('div').cls('nav-footer').append(
-				new Dom('button').cls('nav-item', 'nav-trigger').onClick(onClickOpenSidenav).append(
+				new Dom('button').cls('nav-item', 'nav-trigger').onClick(onClickedOpenSidenav).append(
 					new Dom('img').cls('white-fill').text('Menu').attr('alt', 'Menu').attr('src', icons.menu),
 				),
-				new Dom('button').cls('nav-item').onClick(onClickYearDropup).append(
+				new Dom('button').cls('nav-item').onClick(onClickedYearDropup).append(
 					new Dom('span').id('planning-year-text').text(`${this.#selectedYear} `),
 					new Dom('span').id('planning-year-caret').cls('white-50').text(''),
 				),
-				new Dom('button').cls('nav-item').onClick(onClickMonthDropup).append(
+				new Dom('button').cls('nav-item').onClick(onClickedMonthDropup).append(
 					new Dom('span').id('planning-month-text').text(`${Utils.nameForMonth(this.#selectedMonth)} `),
 					new Dom('span').id('planning-month-caret').cls('white-50').text(''),
 				),
-				new Dom('button').cls('nav-item').onClick(onClickStatementDropup).append(
+				new Dom('button').cls('nav-item').onClick(onClickedStatementDropup).append(
 					new Dom('span').id('planning-stmt-text').text(`${this.#selectedStatement.name} `),
 					new Dom('span').id('planning-stmt-caret').cls('white-50').text(''),
 				),
@@ -109,52 +111,70 @@ export default class PlanningNavbar {
 	}
 
 	init() {
-		this.gfx = new GraphicEffects();
-		this.gfx.onSliceChange(this.onChangedStatementIndex.bind(this));
 		this.refresh(this.#planning);
 	}
 
+	/**
+	 * @param {Planning} planning
+	 */
 	refresh(planning) {
 		this.#planning = planning;
-		if (this.gfx) {
-			const container = document.getElementById(this.#planning.year);
-			if (container) this.gfx.init(container);
-		}
 		if (planning.statements.length > 0) {
 			this.#selectedStatement = planning.statements[0];
+			if (this.#editMode) {
+				this.#editPlanningButton.hide();
+				this.#savePlanningButton.show();
+				this.#deletePlanningButton.show();
+				this.#deleteStatementButton.show();
+			} else {
+				this.#editPlanningButton.show();
+				this.#savePlanningButton.hide();
+				this.#deletePlanningButton.hide();
+				this.#deleteStatementButton.hide();
+			}
 		} else {
 			this.#selectedStatement = new Statement(new Date().getTime(), 'No planning statements', Statement.EXPENSE, []);
+			if (this.#editMode) {
+				this.#editPlanningButton.hide();
+				this.#savePlanningButton.show();
+				this.#deletePlanningButton.show();
+				this.#deleteStatementButton.hide();
+				this.#insertStatementButton.show();
+			} else {
+				this.#editPlanningButton.show();
+				this.#savePlanningButton.hide();
+				this.#deletePlanningButton.hide();
+				this.#deleteStatementButton.hide();
+				this.#insertStatementButton.hide();
+			}
 		}
 		this.#refreshStatementDropup();
 	}
 
 	buildNavbarHeader() {
-		const onClickEdit = this.onClickedEdit.bind(this);
-		const onClickSave = this.onClickedSavePlanning.bind(this);
-		const onClickAddStatement = this.onClickedAddStatement.bind(this);
-		const onClickDeletePlanning = this.onClickedDeletePlanning.bind(this);
-		const onClickDeleteStatement = this.onClickedDeleteStatement.bind(this);
+		const onClicedkEdit = this.onClickedEdit.bind(this);
+		const onClickedSave = this.onClickedSavePlanning.bind(this);
+		const onClickedAddStatement = this.#onClickedInsertStatement.bind(this);
+		const onClickedDeleteStatement = this.#onClickedDeleteStatement.bind(this);
+		const onClickedDeletePlanning = this.onClickedDeletePlanning.bind(this);
 
 		return new Dom('div').cls('nav-header').append(
-			new Dom('button').id('planning-del-planning').cls('nav-item').hide().onClick(onClickDeletePlanning)
-				.append(
-					new Dom('img').cls('white-fill').text('Delete Planning').attr('alt', 'Delete Planning').attr('src', icons.notebook_remove),
-				),
-			new Dom('button').id('planning-del-statement').cls('nav-item').hide().onClick(onClickDeleteStatement)
-				.append(
-					new Dom('img').cls('white-fill').text('Delete Statement').attr('alt', 'Delete Statement').attr('src', icons.delete_file),
-				),
-			new Dom('button').id('planning-navbar-edit').cls('nav-item').onClick(onClickEdit).append(
+			// TODO replace ID with attributes and create DomImage class with alt and src setters
+			new Dom('button').cls('nav-item').hide().onClick(onClickedDeletePlanning).cloneTo(this.#deletePlanningButton).append(
+				new Dom('img').cls('white-fill').text('Delete Planning').attr('alt', 'Delete Planning').attr('src', icons.notebook_remove),
+			),
+			new Dom('button').cls('nav-item').hide().onClick(onClickedDeleteStatement).cloneTo(this.#deleteStatementButton).append(
+				new Dom('img').cls('white-fill').text('Delete Statement').attr('alt', 'Delete Statement').attr('src', icons.delete_file),
+			),
+			new Dom('button').cls('nav-item').onClick(onClicedkEdit).cloneTo(this.#editPlanningButton).append(
 				new Dom('img').cls('white-fill').text('Edit').attr('alt', 'Edit').attr('src', icons.edit),
 			),
-			new Dom('button').id('planning-navbar-save').cls('nav-item').onClick(onClickSave).hide()
-				.append(
-					new Dom('img').cls('white-fill').text('Save').attr('alt', 'Save').attr('src', icons.save),
-				),
-			new Dom('button').id('planning-add-statement').cls('nav-item').onClick(onClickAddStatement)
-				.append(
-					new Dom('img').cls('white-fill').text('Add Statement').attr('alt', 'Add Statement').attr('src', icons.add_file),
-				),
+			new Dom('button').cls('nav-item').hide().onClick(onClickedAddStatement).cloneTo(this.#insertStatementButton).append(
+				new Dom('img').cls('white-fill').text('Add Statement').attr('alt', 'Add Statement').attr('src', icons.add_file),
+			),
+			new Dom('button').cls('nav-item').onClick(onClickedSave).hide().cloneTo(this.#savePlanningButton).append(
+				new Dom('img').cls('white-fill').text('Save').attr('alt', 'Save').attr('src', icons.save),
+			),
 		);
 	}
 
@@ -176,26 +196,6 @@ export default class PlanningNavbar {
 
 	// #endregion
 
-	// #region Delete Statement
-
-	#onClickedDeleteStatement;
-
-	onClickDeleteStatement(handler) {
-		this.#onClickedDeleteStatement = handler;
-	}
-
-	onClickedDeleteStatement() {
-		if (this.#planning.statements.length <= 1) {
-			Alert.show('Delete Planning', 'You cannot delete the last statement of a planning');
-			return;
-		}
-
-		this.#onClickedDeleteStatement?.(this.gfx.selectedIndex());
-		this.#selectedStatement = this.#planning.statements[0];
-	}
-
-	// #endregion
-
 	// #region Edit planning
 
 	#onClickedEditPlanning;
@@ -204,17 +204,9 @@ export default class PlanningNavbar {
 		this.#onClickedEditPlanning = handler;
 	}
 
-	onClickedEdit(event) {
-		const editButton = event.currentTarget;
-		const saveButton = document.getElementById('planning-navbar-save');
-		const delStatement = document.getElementById('planning-del-statement');
-		const delPlanning = document.getElementById('planning-del-planning');
-
-		editButton.style.display = 'none';
-		delStatement.style.display = '';
-		saveButton.style.display = '';
-		delPlanning.style.display = '';
-
+	onClickedEdit() {
+		this.#editMode = true;
+		this.refresh(this.#planning);
 		this.#onClickedEditPlanning?.();
 	}
 
@@ -228,17 +220,9 @@ export default class PlanningNavbar {
 		this.#onClickedSavePlanning = handler;
 	}
 
-	onClickedSavePlanning(event) {
-		const saveButton = event.currentTarget;
-		const editButton = document.getElementById('planning-navbar-edit');
-		const delStatement = document.getElementById('planning-del-statement');
-		const delPlanning = document.getElementById('planning-del-planning');
-
-		editButton.style.display = '';
-		saveButton.style.display = 'none';
-		delStatement.style.display = 'none';
-		delPlanning.style.display = 'none';
-
+	onClickedSavePlanning() {
+		this.#editMode = false;
+		this.refresh(this.#planning);
 		this.#onClickedSavePlanning?.();
 	}
 
@@ -285,7 +269,7 @@ export default class PlanningNavbar {
 		}
 	}
 
-	onClickedYearDropup() {
+	#onClickedYearDropup() {
 		this.#yearsDropup.open();
 	}
 
@@ -337,7 +321,7 @@ export default class PlanningNavbar {
 		}
 	}
 
-	onClickedMonthDropup() {
+	#onClickedMonthDropup() {
 		this.#monthsDropup.open();
 	}
 
@@ -358,28 +342,30 @@ export default class PlanningNavbar {
 	}
 
 	appendStatement(statement) {
-		if (this.#statementsInDropup.has(statement.name)) return;
-
-		const onStatementChanged = this.onChangedStatement.bind(this, statement);
-		const statementDropupItem = new Dom('div').cls('accordion-secondary').onClick(onStatementChanged).text(statement.name);
-		this.#statementsInDropup.set(statement.name, statementDropupItem);
+		const statementDropupItem = this.#statementToDom(statement);
 		this.#statementsDropup.body(statementDropupItem);
 		this.updateStatementDropupText();
+
+		return statementDropupItem;
 	}
 
 	#refreshStatementDropup() {
+		if (this.#planning.statements.length === 0 || this.#planning.statements.length === 1) {
+			document.getElementById('planning-stmt-caret').textContent = '';
+		}
 		if (this.#planning.statements.length === 0) {
 			document.getElementById('planning-stmt-text').textContent = 'No planning statements';
 			return;
 		}
 		this.#statementsDropup.clearBody().body(
-			...this.#planning.statements.map(this.#statementToDom.bind(this)),
+			...this.#planning.statements.map(this.appendStatement.bind(this)),
 		);
+		this.updateStatementDropupText();
 	}
 
 	#statementToDom(statement) {
-		const onStatementChanged = this.onChangedStatement.bind(this, statement);
-		const statementDropupItem = new Dom('div').cls('accordion-secondary').onClick(onStatementChanged).text(statement.name);
+		const onStatementSelected = this.onSelectedStatement.bind(this, statement);
+		const statementDropupItem = new Dom('div').cls('accordion-secondary').onClick(onStatementSelected).text(statement.name);
 		return statementDropupItem;
 	}
 
@@ -387,42 +373,28 @@ export default class PlanningNavbar {
 		if (statementName === this.#selectedStatement) return;
 
 		const { statements } = this.#planning;
-		const jump = true;
 		const statement = statements
 			.find((stmt) =>	stmt.name.toLowerCase() === statementName.toLowerCase())
 		?? this.#planning.statements[0];
 
-		this.onChangedStatement(statement, jump);
+		this.onSelectedStatement(statement);
+	}
+
+	onSelectStatement(handler) {
+		this.#onSelectedStatementHandler = handler;
 	}
 
 	/**
 	 * @param {Statement} statement
 	 * @returns
 	 */
-	onChangedStatement(statement, jump = false) {
+	onSelectedStatement(statement) {
 		if (this.#statementsDropup.isOpen()) this.#statementsDropup.close();
-
-		const statementName = statement.name;
-		if (statementName === this.#selectedStatement) return;
-
-		const { statements } = this.#planning;
-		const index = statements.findIndex((stmt) => stmt.name === statementName);
-		if (index >= 0) {
-			const stmt = this.#planning.statements[index];
-			this.#selectedStatement = stmt;
-			this.updateStatementDropupText();
-			if (jump) {
-				this.gfx.jumpTo(index);
-			} else {
-				this.gfx.slideTo(index);
-			}
-		} else {
-			Alert.show('Statement not found', `Statement ${statementName} not found in planning`);
-		}
+		this.#onSelectedStatementHandler?.(statement);
 	}
 
-	onChangedStatementIndex(index) {
-		this.#selectedStatement = this.#planning.statements[index];
+	onChangedStatement(statement) {
+		this.#selectedStatement = statement;
 		this.updateStatementDropupText();
 	}
 
@@ -433,112 +405,36 @@ export default class PlanningNavbar {
 			statementText.textContent = newText;
 		}
 
-		const newCaret = this.#statementsInDropup.size > 1 ? '▲' : '';
+		const newCaret = this.#planning.statements.length > 1 ? '▲' : '';
 		const statementCaret = document.getElementById('planning-stmt-caret');
 		if (statementCaret.textContent !== newCaret) {
 			statementCaret.textContent = newCaret;
 		}
 	}
 
-	onClickedStatementDropup() {
+	#onClickedStatementDropup() {
 		this.#statementsDropup.open();
 	}
 
-	// #endregion
-
-	// #region Add Statement Modal
-
-	#onClickedSaveStatement;
-
-	buildAddStatementModal() {
-		const onClickSave = this.onClickedSaveStatement.bind(this);
-		const onClickStatementType = this.onClickedStatementType.bind(this, true);
-		this.#addStatementDropup = new Modal('add-statement').header(
-			new Dom('h2').text('Add Statement'),
-		).body(
-			new Dom('form').append(
-				new Dom('div').cls('input-field').append(
-					new Dom('input').id('statement-date-input').type('date').attr('required', '').attr('value', new Date().toISOString().substring(0, 10)),
-					new Dom('label').text('Date: '),
-				),
-				new Dom('div').cls('input-field').append(
-					new Dom('input').id('statement-name-input').type('text').attr('required', ''),
-					new Dom('label').text('Statement name: '),
-				),
-				new Dom('div').cls('input-field').onClick().append(
-					new Dom('input').id('statement-type-input').onFocus(onClickStatementType).onClick(onClickStatementType).type('text').attr('required', ''),
-					new Dom('label').text('Type: '),
-				),
-				new Dom('input').type('submit').hide().onClick(onClickSave),
-			),
-		);
-		this.#addStatementDropup.footer(
-			new Dom('h3').text('Cancel').onClick(this.#addStatementDropup.close.bind(this.#addStatementDropup)),
-			new Dom('h3').text('Save').onClick(onClickSave),
-		);
-
-		return this.#addStatementDropup;
+	onClickDeleteStatement(handler) {
+		this.#onClickedDeleteStatementHandler = handler;
 	}
 
-	onClickSaveStatement(handler) {
-		this.#onClickedSaveStatement = handler;
+	#onClickedDeleteStatement() {
+		this.#onClickedDeleteStatementHandler?.();
 	}
 
-	onClickedSaveStatement() {
-		const statementId = document.getElementById('statement-date-input').valueAsDate.getTime();
-		const statementName = document.getElementById('statement-name-input').value;
-		const statementType = document.getElementById('statement-type-input').value;
-		const newStatement = new Statement(statementId, statementName, statementType);
-
-		this.#onClickedSaveStatement?.(newStatement);
-		this.#addStatementDropup.close();
+	onClickInsertStatement(handler) {
+		this.#onClickedInsertStatementHandler = handler;
 	}
 
-	onClickedAddStatement() {
-		this.#addStatementDropup.open();
-	}
-	// #endregion
-
-	// #region Statement Type modal
-	buildStatementTypeModal() {
-		const onStatementTypeChanged = this.onChangedStatementType.bind(this);
-		this.#statementTypeDropup = new Modal('statement-type').header(
-			new Dom('h2').text('Select Statement Type'),
-		).body(
-			new Dom('div').cls('accordion-secondary').text('Income').onClick(onStatementTypeChanged),
-			new Dom('div').cls('accordion-secondary').text('Expense').onClick(onStatementTypeChanged),
-			new Dom('div').cls('accordion-secondary').text('Savings').onClick(onStatementTypeChanged),
-		).addCancelFooter();
-
-		return this.#statementTypeDropup;
+	#onClickedInsertStatement() {
+		this.#onClickedInsertStatementHandler?.();
 	}
 
-	onClickedStatementType() {
-		this.#statementTypeDropup.open();
-		if (this.#addStatementDropup.isOpen()) {
-			this.#addSpendingPending = true;
-			this.#addStatementDropup.close();
-		}
+	clickInsertStatement() {
+		this.#onClickedInsertStatement();
 	}
 
-	#onChangedStatementType;
-
-	onChangeStatementType(handler) {
-		this.#onChangedStatementType = handler;
-	}
-
-	onChangedStatementType(event) {
-		const type = event.currentTarget.textContent;
-		this.#statementTypeDropup.close();
-		const statement = this.#planning.statements[this.gfx.selectedIndex()]
-			|| new Statement(new Date().getTime(), 'New Statement', Statement.EXPENSE, []);
-		statement.type = type;
-		if (this.#addSpendingPending) {
-			this.#addSpendingPending = false;
-			this.#addStatementDropup.open();
-			document.getElementById('statement-type-input').value = type;
-		}
-		this.#onChangedStatementType?.(statement);
-	}
 	// #endregion
 }
