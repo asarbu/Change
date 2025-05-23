@@ -9,6 +9,10 @@ Use camelCase when declaring IDs in HTML elements. This is especially useful in 
 Do not rely on non deterministic components (e.g. Random number generators, system clock, persistence or I/O), but rather inject it. it makes the code testable, loggable and repeatable.
 [Mark Seemann - Repeatable execution (personal blogpost-2020)](https://blog.ploeh.dk/2020/03/23/repeatable-execution/)
 [Mark Seemann - Repeatable execution (talk at NDC 2022)](https://youtu.be/Ak1hGQuGBhY)
+**Example**
+If you have a GUI component that creates a `Planning` object (which should receive a unique ID), you might think to use `new Date().getTime()` as a unique identifier.
+This is an incorrect approach as you will never be able to properly test behaviour, replicate past events and debug the code.
+A better approach would be to inject a `DateTimeProvider` interface in the GUI component that has a `getTime()` function. You can use a real `Date` object in production and a stubbed `DateTimeProvider` during tests. 
 
 ## Code
 ### Sizing
