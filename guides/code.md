@@ -41,14 +41,18 @@ Instead, the `type` string attribute should be abstracted as an anumeration `Sta
 
 ## Event handlers
 
-### Recommended Action verbs
+Every change in the state of the application should lead to the creation of an immutable entity. The entity is passed around using an observer pattern.
+Other layers / components should subscribe to the events (change, create, edit, delete, etc) by passing an event handler to the **on<event><objectName>** function. This new function might receive the new immutable entity.
+In case the event does not alter the state of the model but requries feedback (e.g display a modal when a button is clicked), no new entities should be created.
+
+### Recommended Event verbs
 
 Use **change** verb when you replace/swap one object with another
 Use **edit** verb when you when you alter the state of the same object
 Use **insert** in methods name instead of **add** for clarity. You may use **add** in interface if it saves space.
 
-Use **on<actionVerb><objectName>** when creating a subscribe method (callback setter)
-Use **on<actionVerb>ed<objectName>** when handling an action (event handler)
+Use **on<event><objectName>** when creating a subscribe method (callback setter)
+Use **on<event>ed<objectName>** when handling an action (event handler)
 **Example:**
 1. `onChangeStatement(handler)` for declaring a function that takes a handler for the event of changing a statement (subscribes to the event of changing a statement)
 2. `onChangedStatement(statement)` for declaring a function that handles the behaviour of the app when the statement is changed with the provided value
