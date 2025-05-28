@@ -74,7 +74,7 @@ export default class PlanningController {
 		const gDriveSettings = new SettingsController().currentSettings().gDriveSettings();
 		if (gDriveSettings.isEnabled()) {
 			this.#planningPersistence.enableGDrive(gDriveSettings.canRememberLogin());
-			screen = await this.initScreenFromGDrive();
+			screen = await this.initScreenFromGDrive() || screen;
 		}
 
 		if (!screen) {
