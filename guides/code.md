@@ -39,6 +39,24 @@ By splitting the function into `effects.slideTo(sliceIndex)` and `effects.jumpTo
 We have a class `Statement` that has a `type` string attribute. It is very easy for the user or the programmer to change the Stetement type to an invalid type.
 Instead, the `type` string attribute should be abstracted as an anumeration `StatementType` with the desired values: `Income`, `Expense`, `Saving`. This also avoids any potential typos in the code.
 
+### Binding
+Use arrow functions inside classes to avoid the necessity of binding them outside the class scope
+**Example**
+```
+class Foo {
+constructor (x) {
+      this.x = x;
+  }
+
+  foo = (v) => { // using arrow function to ensure this is bound
+    return this.x + v;
+  }
+}
+
+const s = new Foo(2);
+[1,2,3].map(s.foo); // no problem passing this as it is bound
+```
+
 ## Event handlers
 
 Every change in the state of the application should lead to the creation of an immutable entity. The entity is passed around using an observer pattern.
