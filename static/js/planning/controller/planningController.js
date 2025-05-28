@@ -138,9 +138,9 @@ export default class PlanningController {
 
 	/**
 	 * @param {Planning} cache
-	 * @returns {Promise<PlanningScreen>}
+	 * @returns {PlanningScreen}
 	 */
-	async initPlanningScreen(planning) {
+	initPlanningScreen(planning) {
 		this.#planning = planning;
 		this.#defaultScreen = new PlanningScreen(planning);
 		this.#defaultScreen.onClickSavePlanning(this.onClickSavePlanning.bind(this));
