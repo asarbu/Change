@@ -114,6 +114,7 @@ export default class SpendingController {
 		}
 
 		// TODO Remove planning dependency from this class
+		this.#planningPersistence.enableGDrive(gDriveSettings.canRememberLogin());
 		const gDrivePlannings = await this.#planningPersistence.readAllFromGDrive();
 		gDriveReports.filter((item) => item).forEach((gDriveReport) => {
 			const month = gDriveReport.month();
