@@ -95,7 +95,7 @@ export default class PlanningController {
 
 		const planning = await this.#planningPersistence.readFromCache(this.#defaultMonth);
 		if (planning) {
-			const screen = await this.initPlanningScreen(planning);
+			const screen = this.initPlanningScreen(planning);
 
 			const cachedYears = await this.#planningPersistence.cachedYears();
 			cachedYears.forEach((year) => screen.appendYear(year));
