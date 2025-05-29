@@ -31,8 +31,13 @@ export default class SpendingController {
 	/** @type {RoutingController} */
 	#routingController = undefined;
 
-	constructor() {
-		const now = new Date();
+	#settings = undefined;
+
+	constructor(
+		dateTimeProvider = new Date(),
+		settings = new SettingsController().currentSettings(),
+	) {
+		const now = dateTimeProvider;
 		const queryString = window.location.search;
 		const urlParams = new URLSearchParams(queryString);
 		const year = +(urlParams.get('year'));
@@ -42,6 +47,7 @@ export default class SpendingController {
 		this.#planningPersistence = new PlanningPersistence(this.#defaultYear);
 		this.#spendingPersistence = new SpendingPersistence(this.#defaultYear);
 		this.#routingController = new RoutingController();
+		this.#settings = settings;
 	}
 
 	/**
@@ -101,7 +107,7 @@ export default class SpendingController {
 	// TODO: Move this to a sepparate file and load it in init(?)
 	// only if the user has gdrive enabled in settings
 	async initScreenFromGDrive() {
-		const gDriveSettings = new SettingsController().currentSettings().gDriveSettings();
+		const gDriveSettings = this.#settings.gDriveSettings();
 		if (!gDriveSettings.isEnabled()) {
 			return undefined;
 		}
