@@ -76,6 +76,7 @@ describe('Spending controller', () => {
 		const spending2 = new Spending(2, Statement.EXPENSE, now, 'Category 2', 'Descritpion 2', 9.99);
 		const spendingCache = SpendingCache.for(now.getFullYear());
 
+		await spendingController.init();
 		await spendingController.onCreatedSpending(spending1);
 		await spendingController.onCreatedSpending(spending2);
 		let cachedSpendings = await spendingCache.readAllForMonth(now.getMonth());
