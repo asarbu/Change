@@ -1,11 +1,12 @@
 # Change
-**Change** is an open source, multi-platform Javascript-powered money management application
+**Change** is an open source, Progressive Web App money management application designed for tracking spending transactions and planning financial goals. **Change** implements a dual-system architecture that separates spending management (tracking actual transactions) from planning management (setting financial goals and organizing spending categories).
 
 # Description
 **Change** structures and stores planning goals in easy to understand manner, focusing primarily on:
 * Performance (fast response times) 
 * Ease of use (good user experience) 
 * Security (data stored on device or on own Google drive).
+* Easy to understand, reusable code.
 
 The application is developed entirely in vanilla Javascript in order for me to understand the challenges of developing a large system in a dynamic manner.
 
@@ -31,8 +32,12 @@ In order to start the application locally you need to have Node installed
 Go to your web browser on the address specified by the previous command (usually 127.0.0.1:8080)
 
 # Features
+Planning is intuitively managed by hirerahically building small goals into categories and further into statements.
+Spending transactions are then registered acording to your goal categories. You can always check your progress in a monthly report.
 
-TODO: Put pictures / GIFS here
+| Planning Demo     | Spending Demo |
+| :---------------- | :------: |
+|![PlanningDemoGif](https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExNDk1aHp3cWM3NWxvbmR0YXd6NWRwNmh0OGlmOGtoOHRza296NWN3dSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/cQ0VkgDu0N3Huaxv8d/giphy.gif)|![SpendingDemoGif](https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExNzh1bDY3ZWtiams0eHZ3bzFldTV1d2JseTRpc2hweTVkYmd0dDRmcSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/zvIeb2uA23NGRuIqC9/giphy.gif)       |
 
 # Buy me a coffee
 If you found this application helpful I would be extremely glad if you could give me a star and buy me a coffee!
