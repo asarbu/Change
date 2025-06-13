@@ -188,12 +188,38 @@ export default class SpendingGDrive {
 		if (gDriveFileId) {
 			const metadata = await this.#gDrive
 				.readFileMetadata(gDriveFileId, GDrive.MODIFIED_TIME_FIELD);
-			const modifiedTime = new Date(metadata[GDrive.MODIFIED_TIME_FIELD]).getTime();
+			const modifiedTime = metadata
+				? new Date(metadata[GDrive.MODIFIED_TIME_FIELD]).getTime()
+				: new Date().getTime();
 			if (localStorageFile.modified < modifiedTime) {
 				return { oldModified: localStorageFile.modified, newModified: modifiedTime };
 			}
 		}
 		return undefined;
+	}
+
+	/**
+	 * Reads file metadata from localStorage and GDrive.
+	 * Initializes an empty one in case none is found
+	 * @param {number} forMonth
+	 * @returns {Promise<GDriveFileInfo>}
+	 */
+	async #initializeGDriveFile(forMonth) {
+		// TODO merge together finding of file, reading modified date, and data.
+		// This will merge together multiple requests
+		if (!this.#initialized) await this.init();
+		const fileName = this.#buildFileName(forMonth);
+		return this.#initializeGdriveFileById(fileName);
+	}
+
+	async fileExists(forMonth) {
+		if (!this.#initialized) await this.init();
+		const fileName = this.#buildFileName(forMonth);
+		const gDriveId = await this.#gDrive.findFile(fileName, this.#gDriveFolderId);
+		const localStorageFile = await this.#initializeGDriveFile(forMonth);
+		localStorageFile.gDriveId = gDriveId;
+		this.#localStorage.store(localStorageFile);
+		return localStorageFile.gDriveId !== undefined;
 	}
 
 	async deleteFile(forMonth) {

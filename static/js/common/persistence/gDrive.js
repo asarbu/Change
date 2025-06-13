@@ -113,7 +113,6 @@ export default class GDrive {
 			const url = new URL(GDrive.#FILES_API);
 			url.searchParams.append('q', q);
 
-			// TODO do proper error handling
 			const response = await fetch(url, {
 				method: 'GET',
 				headers: header,
@@ -299,7 +298,7 @@ export default class GDrive {
 			});
 
 			if (!response.ok) {
-				throw Error(`Fetch error while reading metadata ${fileId}, ${fields}`);
+				return undefined;
 			}
 
 			const json = await response.json();

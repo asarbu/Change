@@ -77,7 +77,7 @@ export default class SpendingController {
 			return undefined;
 		}
 
-		this.#cachedReports = await this.#spendingPersistence.readAllFromCache();
+		this.#cachedReports = await this.#spendingPersistence.readAllFromCache() || [];
 		if (this.#cachedReports.length === 0 || !this.#cachedReports[this.#defaultMonth]) {
 			this.#cachedReports[this.#defaultMonth] = new SpendingReport(
 				this.#defaultYear,

@@ -69,6 +69,14 @@ export default class SpendingPersistence {
 	 * @param {number} forMonth
 	 */
 	async readFromGDrive(forMonth) {
+		const fileExists = await this.#spendingGDrive.fileExists(forMonth);
+		if (!fileExists) {
+			const cachedSpendings = await this.#spendingCache.readAllForMonth(forMonth);
+			if (cachedSpendings.length > 0) {
+				await this.#spendingGDrive.storeSpendings(cachedSpendings, forMonth);
+			}
+			return undefined;
+		}
 		const fileChanged = await this.#spendingGDrive.fileChanged(forMonth);
 		if (fileChanged) {
 			const gDriveSpendings = await this.#spendingGDrive.readAll(forMonth);
