@@ -9,6 +9,10 @@ Use camelCase when declaring IDs in HTML elements. This is especially useful in 
 Do not rely on non deterministic components (e.g. Random number generators, system clock, persistence or I/O), but rather inject it. it makes the code testable, loggable and repeatable.
 [Mark Seemann - Repeatable execution (personal blogpost-2020)](https://blog.ploeh.dk/2020/03/23/repeatable-execution/)
 [Mark Seemann - Repeatable execution (talk at NDC 2022)](https://youtu.be/Ak1hGQuGBhY)
+**Example**
+If you have a GUI component that creates a `Planning` object (which should receive a unique ID), you might think to use `new Date().getTime()` as a unique identifier.
+This is an incorrect approach as you will never be able to properly test behaviour, replicate past events and debug the code.
+A better approach would be to inject a `DateTimeProvider` interface in the GUI component that has a `getTime()` function. You can use a real `Date` object in production and a stubbed `DateTimeProvider` during tests. 
 
 ## Code
 ### Sizing
@@ -21,6 +25,10 @@ Each method should not have more than 7 concepts in scope (parameters, variables
 Each class should not have more than 7 attributes. 
 Exceptionally, some concepts might fit together so the number can increase if it makes sense.
 **Example** A GUI class might consider Edit/Save handling as a single concept, since they belong together.
+
+### Organizing classes / modules
+Put the static attributes, then static methods above the instance attributes and instance methods in the class declaration.
+Do not leave public attributes in classes. Make the objects immutable instead.
 
 ### Passing parameters to functions
 Parameters should not be of primitive types.
@@ -35,16 +43,38 @@ By splitting the function into `effects.slideTo(sliceIndex)` and `effects.jumpTo
 We have a class `Statement` that has a `type` string attribute. It is very easy for the user or the programmer to change the Stetement type to an invalid type.
 Instead, the `type` string attribute should be abstracted as an anumeration `StatementType` with the desired values: `Income`, `Expense`, `Saving`. This also avoids any potential typos in the code.
 
+### Binding
+Use arrow functions inside classes to avoid the necessity of binding them outside the class scope
+**Example**
+```
+class Foo {
+constructor (x) {
+      this.x = x;
+  }
+
+  foo = (v) => { // using arrow function to ensure this is bound
+    return this.x + v;
+  }
+}
+
+const s = new Foo(2);
+[1,2,3].map(s.foo); // no problem passing this as it is bound
+```
+
 ## Event handlers
 
-### Recommended Action verbs
+Every change in the state of the application should lead to the creation of an immutable entity. The entity is passed around using an observer pattern.
+Other layers / components should subscribe to the events (change, create, edit, delete, etc) by passing an event handler to the **on<event><objectName>** function. This new function might receive the new immutable entity.
+In case the event does not alter the state of the model but requries feedback (e.g display a modal when a button is clicked), no new entities should be created.
+
+### Recommended Event verbs
 
 Use **change** verb when you replace/swap one object with another
 Use **edit** verb when you when you alter the state of the same object
 Use **insert** in methods name instead of **add** for clarity. You may use **add** in interface if it saves space.
 
-Use **on<actionVerb><objectName>** when creating a subscribe method (callback setter)
-Use **on<actionVerb>ed<objectName>** when handling an action (event handler)
+Use **on<event><objectName>** when creating a subscribe method (callback setter)
+Use **on<event>ed<objectName>** when handling an action (event handler)
 **Example:**
 1. `onChangeStatement(handler)` for declaring a function that takes a handler for the event of changing a statement (subscribes to the event of changing a statement)
 2. `onChangedStatement(statement)` for declaring a function that handles the behaviour of the app when the statement is changed with the provided value

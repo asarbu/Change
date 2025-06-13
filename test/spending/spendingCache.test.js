@@ -22,9 +22,8 @@ describe('Spending cache', () => {
 	});
 
 	it('is initialized without providing IDB', async () => {
-		jest.useFakeTimers({ advanceTimers: true }).setSystemTime(new Date(2001, 0));
-		const now = new Date();
-		const spendingCache = new SpendingCache(now.getFullYear());
+		const now = new Date(2001, 0);
+		const spendingCache = SpendingCache.for(now.getFullYear());
 		const count = (await spendingCache.readAllForMonth(now.getMonth())).length;
 		expect(count).toBeGreaterThan(-1);
 	});

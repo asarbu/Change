@@ -74,7 +74,7 @@ export default class PlanningController {
 		const gDriveSettings = new SettingsController().currentSettings().gDriveSettings();
 		if (gDriveSettings.isEnabled()) {
 			this.#planningPersistence.enableGDrive(gDriveSettings.canRememberLogin());
-			screen = await this.initScreenFromGDrive();
+			screen = await this.initScreenFromGDrive() || screen;
 		}
 
 		if (!screen) {
@@ -95,7 +95,7 @@ export default class PlanningController {
 
 		const planning = await this.#planningPersistence.readFromCache(this.#defaultMonth);
 		if (planning) {
-			const screen = await this.initPlanningScreen(planning);
+			const screen = this.initPlanningScreen(planning);
 
 			const cachedYears = await this.#planningPersistence.cachedYears();
 			cachedYears.forEach((year) => screen.appendYear(year));
@@ -138,9 +138,9 @@ export default class PlanningController {
 
 	/**
 	 * @param {Planning} cache
-	 * @returns {Promise<PlanningScreen>}
+	 * @returns {PlanningScreen}
 	 */
-	async initPlanningScreen(planning) {
+	initPlanningScreen(planning) {
 		this.#planning = planning;
 		this.#defaultScreen = new PlanningScreen(planning);
 		this.#defaultScreen.onClickSavePlanning(this.onClickSavePlanning.bind(this));

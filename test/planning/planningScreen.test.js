@@ -17,7 +17,6 @@ describe('Planning screen', () => {
 	let defaultPlanningScreen;
 
 	beforeAll(async () => {
-		jest.useFakeTimers().setSystemTime(new Date(2000, 0));
 		// Fix structured clone bug.
 		// https://stackoverflow.com/questions/73607410/referenceerror-structuredclone-is-not-defined-using-jest-with-nodejs-typesc
 		global.structuredClone = (val) => JSON.parse(JSON.stringify(val));
@@ -26,11 +25,6 @@ describe('Planning screen', () => {
 		const main = document.createElement('main');
 		main.id = 'main';
 		document.body.appendChild(main);
-
-		const now = new Date();
-		const planning = new Planning(now.getTime(), now.getFullYear(), now.getMonth());
-		(await PlanningCache.get(now.getFullYear())).store(planning);
-		defaultPlanningScreen = await (new PlanningController().init());
 	});
 
 	function buildFullPlanning() {
@@ -45,9 +39,8 @@ describe('Planning screen', () => {
 		return planning;
 	}
 
-	it('builds no goal for no data', () => {
-		const goal = defaultPlanningScreen.buildGoal();
-		expect(goal).not.toBeDefined();
+	it('throws when no planning', () => {
+		expect(() => { new PlanningScreen(); }).toThrow();
 	});
 
 	it('builds one goal with correct goal data', () => {
@@ -63,7 +56,8 @@ describe('Planning screen', () => {
 	});
 
 	it('builds no categories for empty array', () => {
-		const categories = defaultPlanningScreen.buildCategories([]);
+		const screen = new PlanningScreen();
+		const categories = screen.buildCategories([]);
 		expect(categories.length).toBe(0);
 	});
 
@@ -173,7 +167,7 @@ describe('Planning screen', () => {
 		const screen = await planningController.init();
 
 		const modal = screen.onClickedDeletePlanning(planning);
-		await modal.clickYes();
+		modal.clickYes();
 		expect(cache.read(planning.id)).rejects.toThrowError();
 	});
 
