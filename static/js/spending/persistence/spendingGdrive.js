@@ -17,6 +17,9 @@ export default class SpendingGDrive {
 	/** @type {string} */
 	#gDriveFolderId = undefined;
 
+	/** @type {string} */
+	#spendingFolderId = undefined;
+
 	/** @type {LocalStorage} */
 	#localStorage = undefined;
 
@@ -88,6 +91,7 @@ export default class SpendingGDrive {
 			this.#localStorage.store(yearFolder);
 		}
 
+		this.#spendingFolderId = spendingFolder;
 		this.#gDriveFolderId = yearFolder.gDriveId;
 		this.#initialized = true;
 		return true;
@@ -280,5 +284,13 @@ export default class SpendingGDrive {
 
 	year() {
 		return this.#year;
+	}
+
+	async readYears() {
+		if (!this.#initialized) await this.init();
+		if (!this.#spendingFolderId) return [];
+		const yearFolders = await this.#gDrive.getChildren(this.#spendingFolderId);
+		if (!yearFolders) return [];
+		return yearFolders.files.map((yearFolder) => yearFolder.name);
 	}
 }

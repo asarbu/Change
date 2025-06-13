@@ -66,6 +66,9 @@ export default class SpendingController {
 			return planningMissingScreen;
 		}
 
+		const availableYears = await this.#spendingPersistence.availableYears();
+		availableYears.forEach((availableYear) => this.#screen.updateYear(+availableYear));
+
 		return this.#screen;
 	}
 
@@ -97,10 +100,6 @@ export default class SpendingController {
 		}
 
 		this.initSpendingScreen(this.#cachedReports);
-
-		const availableYears = await this.#spendingPersistence.cachedYears();
-		availableYears.forEach((availableYear) => this.#screen.updateYear(+availableYear));
-
 		return this.#screen;
 	}
 
