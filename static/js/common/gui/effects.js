@@ -128,8 +128,8 @@ export default class GraphicEffects {
 	moveSlider(e) {
 		if (!this.mouseDown) return;
 
-		const currentX = e.clientX || e.touches?.get(0).screenX;
-		const currentY = e.clientY || e.touches?.get(0).screenY;
+		const currentX = e.clientX || e.touches?.[0].screenX;
+		const currentY = e.clientY || e.touches?.[0].screenY;
 
 		if (!currentX && !currentY) return;
 
