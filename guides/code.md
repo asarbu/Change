@@ -26,6 +26,10 @@ Each class should not have more than 7 attributes.
 Exceptionally, some concepts might fit together so the number can increase if it makes sense.
 **Example** A GUI class might consider Edit/Save handling as a single concept, since they belong together.
 
+### Organizing classes / modules
+Put the static attributes, then static methods above the instance attributes and instance methods in the class declaration.
+Do not leave public attributes in classes. Make the objects immutable instead.
+
 ### Passing parameters to functions
 Parameters should not be of primitive types.
 [Kris Jenkins - Communicating in types (talk at GOTO 2024)](https://youtu.be/SOz66dcsuT8?list=PLchLtXZT9qlHDSBEEbIidQAoF60r1Pl8Y)
