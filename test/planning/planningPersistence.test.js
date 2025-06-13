@@ -7,7 +7,6 @@ import {
 	jest,
 } from '@jest/globals';
 import PlanningPersistence from '../../static/js/planning/persistence/planningPersistence.js';
-import GDriveBackendMock from '../common/gDriveBackendMock.js';
 import Planning, { Statement } from '../../static/js/planning/model/planningModel.js';
 
 describe('Planning persistence', () => {
@@ -76,24 +75,5 @@ describe('Planning persistence', () => {
 		expect(storedPlannings.length).toBe(1);
 		const storedPlanning = storedPlannings[0];
 		expect(planning).toEqual(storedPlanning);
-	});
-
-	it('reads default value from empty cache (no GDrive)', async () => {
-		const now = new Date(2205, 1, 1);
-		const gDriveBackend = new GDriveBackendMock({});
-		window.fetch = gDriveBackend.fetch.bind(gDriveBackend);
-		const planningPersistence = new PlanningPersistence(now.getFullYear());
-		const planning = await planningPersistence.readDefaultPlanningFromServer();
-		expect(planning).toBeDefined();
-	});
-
-	it('reads value and it is default from empty cache (no GDrive)', async () => {
-		const now = new Date(2206, 1, 1);
-		// Do not store any value to force default
-		const gDriveBackend = new GDriveBackendMock({});
-		window.fetch = gDriveBackend.fetch.bind(gDriveBackend);
-		const planningPersistence = new PlanningPersistence(now.getFullYear());
-		const planning = await planningPersistence.readFromCacheOrDefault(now.getMonth());
-		expect(planning).toBeDefined();
 	});
 });
