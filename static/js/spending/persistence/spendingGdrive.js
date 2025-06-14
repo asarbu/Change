@@ -91,7 +91,7 @@ export default class SpendingGDrive {
 			this.#localStorage.store(yearFolder);
 		}
 
-		this.#spendingFolderId = spendingFolder;
+		this.#spendingFolderId = spendingFolder.gDriveId;
 		this.#gDriveFolderId = yearFolder.gDriveId;
 		this.#initialized = true;
 		return true;

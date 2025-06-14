@@ -155,7 +155,7 @@ export default class SpendingPersistence {
 	 * @returns {Promise<Array<string>>}
 	 */
 	async availableYears() {
-		const mergedYears = await this.#spendingCache.readYears()
+		const mergedYears = (await this.#spendingCache.readYears())
 			.concat(await this.#spendingGDrive.readYears());
 		return [...new Set(mergedYears)];
 	}
