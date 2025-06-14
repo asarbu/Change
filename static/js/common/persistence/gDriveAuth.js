@@ -17,6 +17,10 @@ export default class GDriveAuth {
 		state: 'change-application-nonce',
 	};
 
+	constructor(rememberLogin) {
+		this.#rememberLogin = rememberLogin;
+	}
+
 	async init() {
 		await this.#processOAuth2Flow();
 	}
@@ -48,6 +52,9 @@ export default class GDriveAuth {
 			if (params.state && params.state === this.oauth2Properties.state) {
 				await this.#getRefreshToken(params);
 				await this.#refreshAccessToken();
+
+				// Refresh page to avoid storing this data a second time
+				window.location.href = window.location.pathname;
 			}
 		}
 	}
@@ -67,6 +74,8 @@ export default class GDriveAuth {
 				params.refreshed_at = new Date().getTime();
 				params.expires_at = params.refreshed_at + params.expires_in * 1000;
 				localStorage.setItem(this.oauth2Properties.token, JSON.stringify(params));
+				// Refresh page to avoid storing this data a second time
+				window.location.href = window.location.pathname;
 			}
 		} else if (!localStorage.getItem(this.oauth2Properties.token)) {
 			this.#oauth2OnlineSignIn();

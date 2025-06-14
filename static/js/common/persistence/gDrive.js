@@ -21,17 +21,16 @@ export default class GDrive {
 
 	/**
 	 * Constructs and initializes an instance of GDrive connector
-	 * TODO gtoup client data together
 	 * @returns {Promise<GDrive>}
 	 */
-	static async get() {
-		GDrive.#instance = new GDrive();
+	static async get(rememberLogin) {
+		GDrive.#instance = new GDrive(rememberLogin);
 		await GDrive.#instance.init();
 		return GDrive.#instance;
 	}
 
-	constructor() {
-		this.#gDriveAuth = new GDriveAuth();
+	constructor(rememberLogin) {
+		this.#gDriveAuth = new GDriveAuth(rememberLogin);
 	}
 
 	async init() {
