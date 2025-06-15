@@ -132,7 +132,8 @@ export default class SpendingSubmitModal extends Modal {
 		this.#focusInputField(this.#priceInput.toHtml());
 	}
 
-	#onClickedCategoryInput() {
+	#onClickedCategoryInput(event) {
+		event.preventDefault();
 		if (this.isOpen()) {
 			this.close();
 		}
