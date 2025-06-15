@@ -156,7 +156,7 @@ export default class SpendingPersistence {
 	 */
 	async availableYears() {
 		const mergedYears = (await this.#spendingCache.readYears())
-			.concat(await this.#spendingGDrive?.readYears());
+			.concat(await this.#spendingGDrive?.readYears() ?? []);
 		return [...new Set(mergedYears)];
 	}
 }
