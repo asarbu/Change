@@ -20,10 +20,10 @@ export default class SpendingPersistence {
 	}
 
 	/**
-	 * @param {GDriveSettings} rememberLogin
+	 * @param {GDriveSettings} gDriveSettings
 	 */
-	enableGdrive(rememberLogin) {
-		this.#spendingGDrive = new SpendingGDrive(this.#year, rememberLogin);
+	enableGdrive(gDriveSettings) {
+		this.#spendingGDrive = new SpendingGDrive(this.#year, gDriveSettings);
 	}
 
 	/**
