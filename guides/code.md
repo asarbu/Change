@@ -42,6 +42,9 @@ By splitting the function into `effects.slideTo(sliceIndex)` and `effects.jumpTo
 **Example** 
 We have a class `Statement` that has a `type` string attribute. It is very easy for the user or the programmer to change the Stetement type to an invalid type.
 Instead, the `type` string attribute should be abstracted as an anumeration `StatementType` with the desired values: `Income`, `Expense`, `Saving`. This also avoids any potential typos in the code.
+**Example**
+In the class `GDriveAuth` we need to have a boolean parameter to know if the user wants to have his login remembered or not.
+Instead of sending a boolean parameter called `rememberLogin` you should send a class together with all the settings needed for authentication (e.g. `GDriveSettings` class instance).
 
 ### Binding
 Use arrow functions inside classes to avoid the necessity of binding them outside the class scope

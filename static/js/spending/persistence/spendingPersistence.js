@@ -1,3 +1,4 @@
+import GDriveSettings from '../../settings/model/gDriveSettings.js';
 import Spending from '../model/spending.js';
 import SpendingReport from '../model/spendingReport.js';
 import SpendingCache from './spendingCache.js';
@@ -18,8 +19,11 @@ export default class SpendingPersistence {
 		this.#spendingCache = SpendingCache.for(forYear);
 	}
 
-	enableGdrive(rememberLogin) {
-		this.#spendingGDrive = new SpendingGDrive(this.#year, rememberLogin);
+	/**
+	 * @param {GDriveSettings} gDriveSettings
+	 */
+	enableGdrive(gDriveSettings) {
+		this.#spendingGDrive = new SpendingGDrive(this.#year, gDriveSettings);
 	}
 
 	/**
@@ -69,6 +73,14 @@ export default class SpendingPersistence {
 	 * @param {number} forMonth
 	 */
 	async readFromGDrive(forMonth) {
+		const fileExists = await this.#spendingGDrive.fileExists(forMonth);
+		if (!fileExists) {
+			const cachedSpendings = await this.#spendingCache.readAllForMonth(forMonth);
+			if (cachedSpendings.length > 0) {
+				await this.#spendingGDrive.storeSpendings(cachedSpendings, forMonth);
+			}
+			return undefined;
+		}
 		const fileChanged = await this.#spendingGDrive.fileChanged(forMonth);
 		if (fileChanged) {
 			const gDriveSpendings = await this.#spendingGDrive.readAll(forMonth);
@@ -146,7 +158,9 @@ export default class SpendingPersistence {
 	/**
 	 * @returns {Promise<Array<string>>}
 	 */
-	async cachedYears() {
-		return this.#spendingCache.readYears();
+	async availableYears() {
+		const mergedYears = (await this.#spendingCache.readYears())
+			.concat(await this.#spendingGDrive?.readYears() ?? []);
+		return [...new Set(mergedYears)];
 	}
 }

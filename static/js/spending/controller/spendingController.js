@@ -66,6 +66,9 @@ export default class SpendingController {
 			return planningMissingScreen;
 		}
 
+		const availableYears = await this.#spendingPersistence.availableYears();
+		availableYears.forEach((availableYear) => this.#screen.updateYear(+availableYear));
+
 		return this.#screen;
 	}
 
@@ -77,7 +80,7 @@ export default class SpendingController {
 			return undefined;
 		}
 
-		this.#cachedReports = await this.#spendingPersistence.readAllFromCache();
+		this.#cachedReports = await this.#spendingPersistence.readAllFromCache() || [];
 		if (this.#cachedReports.length === 0 || !this.#cachedReports[this.#defaultMonth]) {
 			this.#cachedReports[this.#defaultMonth] = new SpendingReport(
 				this.#defaultYear,
@@ -97,10 +100,6 @@ export default class SpendingController {
 		}
 
 		this.initSpendingScreen(this.#cachedReports);
-
-		const availableYears = await this.#spendingPersistence.cachedYears();
-		availableYears.forEach((availableYear) => this.#screen.updateYear(+availableYear));
-
 		return this.#screen;
 	}
 
@@ -113,7 +112,7 @@ export default class SpendingController {
 		}
 
 		Alert.show('Google Drive', 'Started synchronization with Google Drive...');
-		this.#spendingPersistence.enableGdrive(gDriveSettings.canRememberLogin());
+		this.#spendingPersistence.enableGdrive(gDriveSettings);
 		const gDriveReports = await this.#spendingPersistence.readAllFromGDrive();
 		if (gDriveReports.length === 0) {
 			return undefined;

@@ -42,7 +42,8 @@ export default class SpendingSubmitModal extends Modal {
 					new Dom('label').text('Date: '),
 				),
 				new Dom('div').cls('input-field').append(
-					new Dom('input').type('text').attr('required', '').onClick(onClickCategoryInput).onFocus(onClickCategoryInput).cloneTo(this.#categoryInput),
+					new Dom('input').type('text').attr('required', '').attr('inputmode', 'none').onClick(onClickCategoryInput).onFocus(onClickCategoryInput)
+						.cloneTo(this.#categoryInput),
 					new Dom('label').text('Category: '),
 				),
 				new Dom('div').cls('input-field').append(

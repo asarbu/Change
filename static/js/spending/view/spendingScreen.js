@@ -308,6 +308,8 @@ export default class SpendingScreen {
 	}
 
 	onClickEdit() {
+		// Disable sliding effects to avoid listener conflicts.
+		this.gfx.pause();
 		const elements = document.querySelectorAll('[hideable="true"]');
 		for (let i = 0; i < elements.length; i += 1) {
 			elements[i].style.display = '';
@@ -317,6 +319,8 @@ export default class SpendingScreen {
 	}
 
 	onClickedSave() {
+		// Resume effects as there will be no listener conflicts anymore.
+		this.gfx.resume();
 		const hideables = document.querySelectorAll('[hideable="true"]');
 		for (let i = 0; i < hideables.length; i += 1) {
 			hideables[i].style.display = 'none';

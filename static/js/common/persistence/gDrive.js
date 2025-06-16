@@ -1,3 +1,4 @@
+import GDriveSettings from '../../settings/model/gDriveSettings.js';
 import GDriveAuth from './gDriveAuth.js';
 
 export default class GDrive {
@@ -21,17 +22,19 @@ export default class GDrive {
 
 	/**
 	 * Constructs and initializes an instance of GDrive connector
-	 * TODO gtoup client data together
 	 * @returns {Promise<GDrive>}
 	 */
-	static async get() {
-		GDrive.#instance = new GDrive();
+	static async get(rememberLogin) {
+		GDrive.#instance = new GDrive(rememberLogin);
 		await GDrive.#instance.init();
 		return GDrive.#instance;
 	}
 
-	constructor() {
-		this.#gDriveAuth = new GDriveAuth();
+	/**
+	 * @param {GDriveSettings} gDriveSettings
+	 */
+	constructor(gDriveSettings) {
+		this.#gDriveAuth = new GDriveAuth(gDriveSettings);
 	}
 
 	async init() {
@@ -113,7 +116,6 @@ export default class GDrive {
 			const url = new URL(GDrive.#FILES_API);
 			url.searchParams.append('q', q);
 
-			// TODO do proper error handling
 			const response = await fetch(url, {
 				method: 'GET',
 				headers: header,
@@ -299,7 +301,7 @@ export default class GDrive {
 			});
 
 			if (!response.ok) {
-				throw Error(`Fetch error while reading metadata ${fileId}, ${fields}`);
+				return undefined;
 			}
 
 			const json = await response.json();

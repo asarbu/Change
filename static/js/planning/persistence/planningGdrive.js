@@ -2,9 +2,13 @@ import GDrive from '../../common/persistence/gDrive.js';
 import GDriveFileInfo from '../../common/persistence/gDriveFileInfo.js';
 import LocalStorage from '../../common/persistence/localStorage.js';
 import Utils from '../../common/utils/utils.js';
+import GDriveSettings from '../../settings/model/gDriveSettings.js';
 import Planning from '../model/planningModel.js';
 
 export default class PlanningGDrive {
+	/** @type {boolean} */
+	#initialized = false;
+
 	/** @type {number} */
 	#year = undefined;
 
@@ -20,25 +24,17 @@ export default class PlanningGDrive {
 	/** @type {GDrive} */
 	#gDrive = undefined;
 
-	/** @type {boolean} */
-	#rememberLogin = false;
-
-	/** @type {boolean} */
-	#initialized = false;
-
 	/**
 	 * @param {number} forYear
-	 * @param {boolean} rememberLogin
+	 * @param {GDriveSettings} gDriveSettings
 	 */
-	constructor(forYear, rememberLogin = false) {
+	constructor(forYear, gDriveSettings) {
 		this.#year = forYear;
-		this.#rememberLogin = rememberLogin;
+		this.#gDrive = new GDrive(gDriveSettings);
+		this.#localStorage = new LocalStorage(LocalStorage.GDRIVE_FILES_KEY);
 	}
 
 	async init() {
-		this.#gDrive = await GDrive.get(this.#rememberLogin);
-		this.#localStorage = new LocalStorage(LocalStorage.GDRIVE_FILES_KEY);
-
 		const changeAppFolder = await this.#initializeGdriveFileById(GDrive.APP_FOLDER);
 		if (!changeAppFolder.gDriveId) {
 			changeAppFolder.gDriveId = await this.#gDrive.findChangeAppFolder();

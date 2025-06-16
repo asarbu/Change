@@ -4,12 +4,18 @@ import LocalStorage from '../../common/persistence/localStorage.js';
 import { Statement } from '../../planning/model/planningModel.js';
 import Utils from '../../common/utils/utils.js';
 import Spending from '../model/spending.js';
+import GDriveSettings from '../../settings/model/gDriveSettings.js';
 
 export default class SpendingGDrive {
+	#initialized = false;
+
 	/**
 	 * @type {GDrive}
 	 */
 	#gDrive = undefined;
+
+	/** @type {LocalStorage} */
+	#localStorage = undefined;
 
 	/** @type {number} */
 	#year = undefined;
@@ -17,21 +23,8 @@ export default class SpendingGDrive {
 	/** @type {string} */
 	#gDriveFolderId = undefined;
 
-	/** @type {LocalStorage} */
-	#localStorage = undefined;
-
-	/** @type {boolean} */
-	#rememberLogin = false;
-
-	#initialized = false;
-
-	static async getAll() {
-		const gDrive = await GDrive.get(true);
-		await gDrive.init();
-		const root = await gDrive.findChangeAppFolder();
-		const children = await gDrive.getChildren(root);
-		return children;
-	}
+	/** @type {string} */
+	#spendingFolderId = undefined;
 
 	static async get(forYear) {
 		const spendingGDrive = new SpendingGDrive(forYear, true);
@@ -42,10 +35,12 @@ export default class SpendingGDrive {
 	/**
 	 * Use Get static factory method to instantiate this class
 	 * @param {number} forYear Year folder to bind the logic to
+	 * @param {GDriveSettings} gDriveSettings Configuration of GDrive connector
 	 */
-	constructor(forYear, rememberLogin) {
+	constructor(forYear, gDriveSettings) {
 		this.#year = forYear;
-		this.#rememberLogin = rememberLogin;
+		this.#gDrive = new GDrive(gDriveSettings);
+		this.#localStorage = new LocalStorage(LocalStorage.GDRIVE_FILES_KEY);
 	}
 
 	/**
@@ -53,9 +48,6 @@ export default class SpendingGDrive {
 	 */
 	async init(forceInit) {
 		if (!forceInit && this.#initialized) return true;
-
-		this.#gDrive = await GDrive.get(this.#rememberLogin);
-		this.#localStorage = new LocalStorage(LocalStorage.GDRIVE_FILES_KEY);
 
 		const changeAppFolder = await this.#initializeGdriveFileById(GDrive.APP_FOLDER);
 		if (!changeAppFolder.gDriveId) {
@@ -88,6 +80,7 @@ export default class SpendingGDrive {
 			this.#localStorage.store(yearFolder);
 		}
 
+		this.#spendingFolderId = spendingFolder.gDriveId;
 		this.#gDriveFolderId = yearFolder.gDriveId;
 		this.#initialized = true;
 		return true;
@@ -188,12 +181,38 @@ export default class SpendingGDrive {
 		if (gDriveFileId) {
 			const metadata = await this.#gDrive
 				.readFileMetadata(gDriveFileId, GDrive.MODIFIED_TIME_FIELD);
-			const modifiedTime = new Date(metadata[GDrive.MODIFIED_TIME_FIELD]).getTime();
+			const modifiedTime = metadata
+				? new Date(metadata[GDrive.MODIFIED_TIME_FIELD]).getTime()
+				: new Date().getTime();
 			if (localStorageFile.modified < modifiedTime) {
 				return { oldModified: localStorageFile.modified, newModified: modifiedTime };
 			}
 		}
 		return undefined;
+	}
+
+	/**
+	 * Reads file metadata from localStorage and GDrive.
+	 * Initializes an empty one in case none is found
+	 * @param {number} forMonth
+	 * @returns {Promise<GDriveFileInfo>}
+	 */
+	async #initializeGDriveFile(forMonth) {
+		// TODO merge together finding of file, reading modified date, and data.
+		// This will merge together multiple requests
+		if (!this.#initialized) await this.init();
+		const fileName = this.#buildFileName(forMonth);
+		return this.#initializeGdriveFileById(fileName);
+	}
+
+	async fileExists(forMonth) {
+		if (!this.#initialized) await this.init();
+		const fileName = this.#buildFileName(forMonth);
+		const gDriveId = await this.#gDrive.findFile(fileName, this.#gDriveFolderId);
+		const localStorageFile = await this.#initializeGDriveFile(forMonth);
+		localStorageFile.gDriveId = gDriveId;
+		this.#localStorage.store(localStorageFile);
+		return localStorageFile.gDriveId !== undefined;
 	}
 
 	async deleteFile(forMonth) {
@@ -254,5 +273,13 @@ export default class SpendingGDrive {
 
 	year() {
 		return this.#year;
+	}
+
+	async readYears() {
+		if (!this.#initialized) await this.init();
+		if (!this.#spendingFolderId) return [];
+		const yearFolders = await this.#gDrive.getChildren(this.#spendingFolderId);
+		if (!yearFolders) return [];
+		return yearFolders.files.map((yearFolder) => yearFolder.name);
 	}
 }

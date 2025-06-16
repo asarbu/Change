@@ -10,6 +10,10 @@
 
 The application is developed entirely in vanilla Javascript in order for me to understand the challenges of developing a large system in a dynamic manner.
 
+# Live Demo
+
+You can access the web application here: [Change](https://asarbu.pages.dev/)
+
 # Installation
 In order to start the application locally you need to have Node installed
 ### First, clone this repository:
@@ -38,6 +42,9 @@ Spending transactions are then registered acording to your goal categories. You 
 | Planning Demo     | Spending Demo |
 | :---------------- | :------: |
 |![PlanningDemoGif](https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExNDk1aHp3cWM3NWxvbmR0YXd6NWRwNmh0OGlmOGtoOHRza296NWN3dSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/cQ0VkgDu0N3Huaxv8d/giphy.gif)|![SpendingDemoGif](https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExNzh1bDY3ZWtiams0eHZ3bzFldTV1d2JseTRpc2hweTVkYmd0dDRmcSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/zvIeb2uA23NGRuIqC9/giphy.gif)       |
+
+# Open issues
+You can find a list of open issues by accessing [this Trello board](https://trello.com/b/sgxAno7r/change).
 
 # Buy me a coffee
 If you found this application helpful I would be extremely glad if you could give me a star and buy me a coffee!
