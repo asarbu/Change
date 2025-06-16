@@ -1,3 +1,4 @@
+import GDriveSettings from '../../settings/model/gDriveSettings.js';
 import GDriveAuth from './gDriveAuth.js';
 
 export default class GDrive {
@@ -29,8 +30,11 @@ export default class GDrive {
 		return GDrive.#instance;
 	}
 
-	constructor(rememberLogin) {
-		this.#gDriveAuth = new GDriveAuth(rememberLogin);
+	/**
+	 * @param {GDriveSettings} gDriveSettings
+	 */
+	constructor(gDriveSettings) {
+		this.#gDriveAuth = new GDriveAuth(gDriveSettings);
 	}
 
 	async init() {

@@ -1,6 +1,7 @@
 import PlanningCache from './planningCache.js';
 import Planning from '../model/planningModel.js';
 import PlanningGDrive from './planningGdrive.js';
+import GDriveSettings from '../../settings/model/gDriveSettings.js';
 
 export default class PlanningPersistence {
 	/** @type {number} */
@@ -17,8 +18,11 @@ export default class PlanningPersistence {
 		this.#planningIdb = new PlanningCache(forYear);
 	}
 
-	enableGDrive(rememberLogin) {
-		this.#planningGDrive = new PlanningGDrive(this.#defaultYear, rememberLogin);
+	/**
+	 * @param {GDriveSettings} gDriveSettings
+	 */
+	enableGDrive(gDriveSettings) {
+		this.#planningGDrive = new PlanningGDrive(this.#defaultYear, gDriveSettings);
 	}
 
 	/**

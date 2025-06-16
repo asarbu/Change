@@ -112,7 +112,7 @@ export default class SpendingController {
 		}
 
 		Alert.show('Google Drive', 'Started synchronization with Google Drive...');
-		this.#spendingPersistence.enableGdrive(gDriveSettings.canRememberLogin());
+		this.#spendingPersistence.enableGdrive(gDriveSettings);
 		const gDriveReports = await this.#spendingPersistence.readAllFromGDrive();
 		if (gDriveReports.length === 0) {
 			return undefined;

@@ -157,7 +157,7 @@ describe('Planning gDrive', () => {
 	it('reads unexisting file from GDrive', async () => {
 		jest.spyOn(GDriveAuth.prototype, 'init').mockImplementation(() => undefined);
 		localStorage.setItem('oauth2_token', JSON.stringify(validGDriveOAuthToken()));
-		const gDrive = await GDrive.get();
+		const gDrive = new GDrive();
 		expect(gDrive.readFile(undefined)).rejects.toThrow();
 	});
 
@@ -248,7 +248,7 @@ describe('Planning gDrive', () => {
 	it('reads reads file medatadata for innexistent file', async () => {
 		jest.spyOn(GDriveAuth.prototype, 'init').mockImplementation(() => undefined);
 		localStorage.setItem('oauth2_token', JSON.stringify(validGDriveOAuthToken()));
-		const gDrive = await GDrive.get();
+		const gDrive = new GDrive();
 		expect(gDrive.readFileMetadata(undefined)).rejects.toThrow();
 	});
 

@@ -1,3 +1,5 @@
+import GDriveSettings from '../../settings/model/gDriveSettings.js';
+
 export default class GDriveAuth {
 	// TODO put secret environment variables
 	#CLIENT_ID = '48008571695-vjj7lrnm4dv8i49ioi3a4tq3pbl1j67h.apps.googleusercontent.com';
@@ -6,8 +8,8 @@ export default class GDriveAuth {
 
 	#redirectUri = window.location.href;
 
-	/** @type {boolean} */
-	#rememberLogin = undefined;
+	/** @type {GDriveSettings} */
+	#gDriveSettings = undefined;
 
 	oauth2Properties = {
 		name: 'oauth2',
@@ -17,8 +19,12 @@ export default class GDriveAuth {
 		state: 'change-application-nonce',
 	};
 
-	constructor(rememberLogin) {
-		this.#rememberLogin = rememberLogin;
+	/**
+	 * @param {GDriveSettings} gDriveSettings
+	 * Defaults to GDrive being enabled and not remembering login (online mode)
+	 */
+	constructor(gDriveSettings = new GDriveSettings(true, false)) {
+		this.#gDriveSettings = gDriveSettings;
 	}
 
 	async init() {
@@ -26,7 +32,7 @@ export default class GDriveAuth {
 	}
 
 	async #processOAuth2Flow() {
-		if (this.#rememberLogin) {
+		if (this.#gDriveSettings.canRememberLogin()) {
 			await this.processOAuth2OfflineFlow();
 		} else {
 			this.processOAuth2OnlineFlow();
@@ -126,7 +132,7 @@ export default class GDriveAuth {
 		const now = new Date().getTime();
 		const tokenExpired = params.expires_at === undefined || params.expires_at < now;
 		if (tokenExpired) {
-			if (this.#rememberLogin) {
+			if (this.#gDriveSettings.canRememberLogin()) {
 				const refreshedToken = await this.#refreshAccessToken();
 				if (refreshedToken) {
 					return refreshedToken.access_token;
@@ -143,7 +149,7 @@ export default class GDriveAuth {
 	 * @returns {Promise<boolean>} logged in successfully
 	 */
 	async login() {
-		if (this.#rememberLogin) {
+		if (this.#gDriveSettings.canRememberLogin()) {
 			this.#oauth2OfflineSignIn();
 			// Stop the application from creating additional requests
 			throw new Error('Login required');

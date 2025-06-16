@@ -1,3 +1,4 @@
+import GDriveSettings from '../../settings/model/gDriveSettings.js';
 import Spending from '../model/spending.js';
 import SpendingReport from '../model/spendingReport.js';
 import SpendingCache from './spendingCache.js';
@@ -18,6 +19,9 @@ export default class SpendingPersistence {
 		this.#spendingCache = SpendingCache.for(forYear);
 	}
 
+	/**
+	 * @param {GDriveSettings} rememberLogin
+	 */
 	enableGdrive(rememberLogin) {
 		this.#spendingGDrive = new SpendingGDrive(this.#year, rememberLogin);
 	}
