@@ -29,7 +29,7 @@ export default class SubmitStatementModal extends Modal {
 		).body(
 			new Dom('form').append(
 				new Dom('div').cls('input-field').append(
-					new Dom('input').type('text').attr('required', '').cloneTo(this.#nameInput),
+					new Dom('input').type('search').attr('required', '').cloneTo(this.#nameInput),
 					new Dom('label').text('Statement name: '),
 				),
 				new Dom('div').cls('input-field').onClick().append(

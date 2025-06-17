@@ -51,7 +51,7 @@ export default class SpendingSubmitModal extends Modal {
 					new Dom('label').text('Price: '),
 				),
 				new Dom('div').cls('input-field').append(
-					new Dom('input').type('text').attr('required', '').cloneTo(this.#descriptionInput),
+					new Dom('input').type('search').attr('required', '').cloneTo(this.#descriptionInput),
 					new Dom('label').text('Description: '),
 				),
 				new Dom('input').type('submit').hide().onClick(this.#onClickedSave.bind(this)),
