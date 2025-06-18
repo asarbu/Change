@@ -39,7 +39,6 @@ export default class GDrive {
 
 	async init() {
 		if (this.initialized) return;
-		await this.#gDriveAuth.init();
 		this.initialized = true;
 	}
 

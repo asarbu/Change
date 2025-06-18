@@ -8,6 +8,10 @@ export default class GDriveAuth {
 
 	#redirectUri = window.location.href;
 
+	#initialized = false;
+
+	#submittingForms = false;
+
 	/** @type {GDriveSettings} */
 	#gDriveSettings = undefined;
 
@@ -27,19 +31,22 @@ export default class GDriveAuth {
 		this.#gDriveSettings = gDriveSettings;
 	}
 
-	async init() {
-		await this.#processOAuth2Flow();
+	async #ensureInitialized() {
+		if (!this.#initialized) {
+			await this.#processOAuth2Flow();
+			this.#initialized = true;
+		}
 	}
 
 	async #processOAuth2Flow() {
 		if (this.#gDriveSettings.canRememberLogin()) {
-			await this.processOAuth2OfflineFlow();
+			await this.#processOAuth2OfflineFlow();
 		} else {
-			this.processOAuth2OnlineFlow();
+			this.#processOAuth2OnlineFlow();
 		}
 	}
 
-	async processOAuth2OfflineFlow() {
+	async #processOAuth2OfflineFlow() {
 		const locationString = window.location.href;
 		const paramString = /(.*)[?](.*)/.exec(locationString);
 		if (paramString === null) return;
@@ -65,7 +72,7 @@ export default class GDriveAuth {
 		}
 	}
 
-	processOAuth2OnlineFlow() {
+	#processOAuth2OnlineFlow() {
 		const fragmentString = window.location.hash.substring(1);
 		// Parse query string to see if page request is coming from OAuth 2.0 server.
 		const params = {};
@@ -122,12 +129,13 @@ export default class GDriveAuth {
 	}
 
 	async getAccessToken() {
+		await this.#ensureInitialized();
 		const storedToken = localStorage.getItem(this.oauth2Properties.token);
 		const params = storedToken ? JSON.parse(storedToken) : undefined;
-		if (!params) return this.login();
+		if (!params) return this.#login();
 
 		const token = params[this.oauth2Properties.accessToken];
-		if (!token) return this.login();
+		if (!token) return this.#login();
 
 		const now = new Date().getTime();
 		const tokenExpired = params.expires_at === undefined || params.expires_at < now;
@@ -138,7 +146,7 @@ export default class GDriveAuth {
 					return refreshedToken.access_token;
 				}
 			}
-			await this.login();
+			await this.#login();
 		}
 
 		return token;
@@ -148,7 +156,7 @@ export default class GDriveAuth {
 	 * Handles the logic of automatic login or redirects to login screen, if necessary
 	 * @returns {Promise<boolean>} logged in successfully
 	 */
-	async login() {
+	async #login() {
 		if (this.#gDriveSettings.canRememberLogin()) {
 			this.#oauth2OfflineSignIn();
 			// Stop the application from creating additional requests
@@ -202,6 +210,10 @@ export default class GDriveAuth {
 	}
 
 	#oauth2OfflineSignIn() {
+		// Avoid sending multiple submits due to async nature of form.submit()
+		if (this.#submittingForms) return;
+		this.#submittingForms = true;
+
 		// Google's OAuth 2.0 endpoint for requesting an access token
 		const oauth2Endpoint = 'https://accounts.google.com/o/oauth2/v2/auth';
 
@@ -238,6 +250,10 @@ export default class GDriveAuth {
 	}
 
 	#oauth2OnlineSignIn() {
+		// Avoid sending multiple submits due to async nature of form.submit()
+		if (this.#submittingForms) return;
+		this.#submittingForms = true;
+
 		// Google's OAuth 2.0 endpoint for requesting an access token
 		const oauth2Endpoint = 'https://accounts.google.com/o/oauth2/v2/auth';
 
