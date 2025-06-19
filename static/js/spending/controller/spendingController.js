@@ -126,10 +126,8 @@ export default class SpendingController {
 			const planning = gDrivePlannings[month];
 			if (planning) {
 				gDriveReport.updatePlanning(planning);
-				this.#cachedReports[month] = gDriveReport;
-			} else {
-				Alert.show('Google Drive', `No planning found for month ${month + 1}`);
 			}
+			this.#cachedReports[month] = gDriveReport;
 		});
 
 		this.initSpendingScreen(this.#cachedReports);
