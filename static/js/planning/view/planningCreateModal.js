@@ -36,7 +36,7 @@ export default class PlanningCreateModal extends Modal {
 					new Dom('label').text('For year: '),
 				),
 				new Dom('div').cls('input-field').onClick().append(
-					new Dom('input').type('search').attr('required', '').onClick(onClickMonth).value(Utils.nameForMonth(dateTimeProvider.getMonth())).cloneTo(this.#monthInput),
+					new Dom('input').type('text').attr('required', '').onClick(onClickMonth).value(Utils.nameForMonth(dateTimeProvider.getMonth())).cloneTo(this.#monthInput),
 					new Dom('label').text('For Month: '),
 				),
 				new Dom('input').type('submit').hide().onClick(onClickSave),
