@@ -73,6 +73,11 @@ export default class Dom {
 		return this;
 	}
 
+	onChange(listener) {
+		this.elmt.addEventListener('change', listener);
+		return this;
+	}
+
 	onClick(listener) {
 		this.elmt.addEventListener('click', listener);
 		return this;
