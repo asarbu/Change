@@ -126,11 +126,13 @@ export default class PlanningNavbar {
 				this.#savePlanningButton.show();
 				this.#deletePlanningButton.show();
 				this.#deleteStatementButton.show();
+				this.#insertStatementButton.show();
 			} else {
 				this.#editPlanningButton.show();
 				this.#savePlanningButton.hide();
 				this.#deletePlanningButton.hide();
 				this.#deleteStatementButton.hide();
+				this.#insertStatementButton.hide();
 			}
 		} else {
 			this.#selectedStatement = new Statement(new Date().getTime(), 'No planning statements', Statement.EXPENSE, []);
