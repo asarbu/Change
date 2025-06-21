@@ -13,6 +13,8 @@ export default class SettingsScreen {
 
 	#onClickedRememberLoginHandler = undefined;
 
+	#onChangedThemeHandler = undefined;
+
 	/** @type {Settings} */
 	#settings = undefined;
 
@@ -25,6 +27,9 @@ export default class SettingsScreen {
 	/** @type {Dom} */
 	#sidenav = undefined;
 
+	/** @type {Dom} */
+	#themeSelect = new Dom();
+
 	#gDriveEnabledInput = new Dom();
 
 	#gDriveRememberLoginInput = new Dom();
@@ -36,6 +41,7 @@ export default class SettingsScreen {
 	init() {
 		this.buildSettingsScreen();
 		this.buildNavBar();
+		this.#selectThemeOption(this.#settings.themeName());
 		this.#sidenav = new Sidenav();
 
 		const main = document.getElementById('main');
@@ -79,8 +85,35 @@ export default class SettingsScreen {
 					),
 				),
 			),
+			new Dom('h2').text('Theme color'),
+			new Dom('div').cls('round').append(
+				new Dom('div').cls('accordion-secondary').append(
+					new Dom('span').text('Pick a color theme'),
+					new Dom('span').append(
+						new Dom('select').id('theme').onChange(this.#onChangedTheme).cloneTo(this.#themeSelect).append(
+							new Dom('option').value('red').text('Red'),
+							new Dom('option').value('green').text('Green'),
+							new Dom('option').value('blue').text('Blue'),
+							new Dom('option').value('purple').text('Purple'),
+							new Dom('option').value('black').text('Black'),
+						),
+					),
+				),
+			),
 		);
 		return this.#dom;
+	}
+
+	#onChangedTheme = (event) => {
+		this.#onChangedThemeHandler?.(event.target.value ?? '');
+	};
+
+	#selectThemeOption(value) {
+		this.#themeSelect.toHtml().childNodes.forEach((node) => {
+			if (node.value === value) {
+				node.setAttribute('selected', true);
+			}
+		});
 	}
 
 	buildNavBar() {
@@ -154,6 +187,11 @@ export default class SettingsScreen {
 
 	onClickedRememberLogin(handler) {
 		this.#onClickedRememberLoginHandler = handler;
+		return this;
+	}
+
+	onChangedTheme(handler) {
+		this.#onChangedThemeHandler = handler;
 		return this;
 	}
 

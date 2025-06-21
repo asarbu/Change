@@ -3,6 +3,7 @@ import SpendingCache from '../../spending/persistence/spendingCache.js';
 import LocalStorage from '../../common/persistence/localStorage.js';
 import Settings from '../model/settings.js';
 import SettingsScreen from '../view/settingsScreen.js';
+import Theme from '../model/theme.js';
 
 export default class SettingsController {
 	static #SETTINGS_LOCALSTORAGE_KEY = 'settings';
@@ -15,6 +16,7 @@ export default class SettingsController {
 
 	constructor() {
 		this.#localStorage = new LocalStorage();
+		this.apply();
 	}
 
 	init() {
@@ -22,7 +24,8 @@ export default class SettingsController {
 			.onClickDeleteDatabase(SettingsController.#onClickedDeleteDatabase.bind(this))
 			.onClickDeleteLocalStorage(this.#onClickedDeleteLocalStorage.bind(this))
 			.onClickSyncGdrive(this.#onClickedSyncGdrive.bind(this))
-			.onClickedRememberLogin(this.#onClickedRememberLogin.bind(this));
+			.onClickedRememberLogin(this.#onClickedRememberLogin.bind(this))
+			.onChangedTheme(this.#onChangedTheme);
 	}
 
 	/**
@@ -32,6 +35,13 @@ export default class SettingsController {
 	currentSettings() {
 		return Settings
 			.fromJson(this.#localStorage.getItem(SettingsController.#SETTINGS_LOCALSTORAGE_KEY));
+	}
+
+	apply() {
+		const currentSettings = this.currentSettings();
+		const main = document.getElementsByTagName('body')[0];
+		main.className = currentSettings.themeName();
+		return this;
 	}
 
 	static #onClickedDeleteDatabase() {
@@ -58,4 +68,13 @@ export default class SettingsController {
 			.setItem(SettingsController.#SETTINGS_LOCALSTORAGE_KEY, currentSettings.toJson());
 		this.#settingsScreen.refresh(this.currentSettings());
 	}
+
+	#onChangedTheme = (themeName) => {
+		const theme = Theme.fromJson({ name: themeName });
+		const currentSettings = this.currentSettings();
+		currentSettings.changeTheme(theme);
+		this.#localStorage
+			.setItem(SettingsController.#SETTINGS_LOCALSTORAGE_KEY, currentSettings.toJson());
+		this.apply();
+	};
 }

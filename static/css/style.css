@@ -8,13 +8,8 @@
 
 :root {
 	/*Sampled from Paint to avoid transparent sticky headers*/
-	--primary-900: #004D40;
-	--primary-700: #00796B;
-	--primary-light: #4D9D94;
-	--primary-300: #4DB6AC;
-	--primary-200: #80CBC4;
-	--primary-100: #B2DFDB;
-	--primary-50: #E0F2F1;
+	--primary-dark: #004D40;
+	--primary-light: #00796B;
 }
 html, body {
 	overflow: hidden;
@@ -22,7 +17,7 @@ html, body {
 
 body {
 	position: relative;
-	background: var(--primary-900);
+	background: var(--primary-dark);
 	display: grid;
 	place-items: center;
 	height: 100vh;
@@ -33,6 +28,32 @@ body {
 	font-size: 100%;
 }
 
+body.red {
+	--primary-dark: #880e0e;
+	--primary-light: #d81b1b;
+}
+
+
+body.purple {
+	--primary-dark: #311B92;
+	--primary-light: #7E57C2;
+}
+
+body.blue {
+	--primary-dark: #1A237E;
+	--primary-light: #5C6BC0;
+}
+
+body.green{
+	--primary-dark: #004D40;
+	--primary-light: #00796B;
+}
+
+body.black{
+	--primary-dark: #212121;
+	--primary-light: #757575;
+}
+
 main {
 	position: absolute;
 	top: 0;
@@ -40,7 +61,7 @@ main {
 	right: 0;
 	height: 100%;
 	overflow: hidden;
-	background: linear-gradient(0deg, var(--primary-900) 0%, var(--primary-700) 100%);
+	background: linear-gradient(0deg, var(--primary-dark) 0%, var(--primary-light) 100%);
 	transition: transform .2s;
 }
 
@@ -131,7 +152,7 @@ li {
 	left: 0;
 	top: 0;
 	z-index: 3;
-	background: var(--primary-900);
+	background: var(--primary-dark);
 	overflow: hidden;
 	transition: width .2s;
 	height: 100vh;
@@ -463,6 +484,8 @@ h3:hover {
 	margin: 0.5rem 1.5rem;
 	border-bottom: 1px solid white;
 	cursor: pointer;
+	display: flex;
+	justify-content: space-between;
 }
 
 label {

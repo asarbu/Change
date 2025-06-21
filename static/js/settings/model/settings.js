@@ -1,15 +1,20 @@
 import GDriveSettings from './gDriveSettings.js';
+import Theme from './theme.js';
 
 export default class Settings {
 	/** @type {GDriveSettings} */
 	#gDriveSettings = undefined;
 
-	constructor(gDriveSettings) {
-		if (gDriveSettings) {
-			this.#gDriveSettings = gDriveSettings;
-		} else {
-			this.#gDriveSettings = new GDriveSettings(false, false);
-		}
+	/** @type {Theme}} */
+	#theme = undefined;
+
+	/**
+	 * @param {GDriveSettings} gDriveSettings
+	 * @param {Theme} theme
+	 */
+	constructor(gDriveSettings, theme) {
+		this.#gDriveSettings = gDriveSettings || new GDriveSettings(false, false);
+		this.#theme = theme || Theme.GREEN;
 	}
 
 	/**
@@ -19,11 +24,22 @@ export default class Settings {
 		return this.#gDriveSettings;
 	}
 
-	static fromJson({ gDriveSettings } = {}) {
-		return new Settings(GDriveSettings.fromJson(gDriveSettings));
+	/**
+	 * @param {Theme} theme
+	 */
+	changeTheme(theme) {
+		this.#theme = theme;
+	}
+
+	themeName() {
+		return this.#theme.name();
+	}
+
+	static fromJson({ gDriveSettings, theme } = {}) {
+		return new Settings(GDriveSettings.fromJson(gDriveSettings), Theme.fromJson(theme));
 	}
 
 	toJson() {
-		return { gDriveSettings: this.#gDriveSettings.toJson() };
+		return { gDriveSettings: this.#gDriveSettings.toJson(), theme: this.#theme.toJson() };
 	}
 }
