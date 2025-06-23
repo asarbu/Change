@@ -27,7 +27,7 @@ export default class SettingsController {
 			.onClickedRememberLogin(this.#onClickedRememberLogin)
 			.onChangedTheme(this.#onChangedTheme);
 		return this.#settingsScreen;
-	}
+	};
 
 	/**
 	 * Reads and parses the user settings at the current time
@@ -62,7 +62,7 @@ export default class SettingsController {
 		this.#localStorage
 			.setItem(SettingsController.#SETTINGS_LOCALSTORAGE_KEY, currentSettings.toJson());
 		this.#settingsScreen.refresh(this.currentSettings());
-	}
+	};
 
 	#onClickedRememberLogin = (value) => {
 		const currentSettings = this.currentSettings();
@@ -70,7 +70,7 @@ export default class SettingsController {
 		this.#localStorage
 			.setItem(SettingsController.#SETTINGS_LOCALSTORAGE_KEY, currentSettings.toJson());
 		this.#settingsScreen.refresh(this.currentSettings());
-	}
+	};
 
 	#onChangedTheme = (themeName) => {
 		const theme = Theme.fromName(themeName);
