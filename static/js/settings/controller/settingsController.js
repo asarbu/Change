@@ -19,43 +19,44 @@ export default class SettingsController {
 		this.apply();
 	}
 
-	init() {
+	init = () => {
 		this.#settingsScreen = new SettingsScreen(this.currentSettings()).init()
-			.onClickDeleteDatabase(SettingsController.#onClickedDeleteDatabase.bind(this))
-			.onClickDeleteLocalStorage(this.#onClickedDeleteLocalStorage.bind(this))
-			.onClickSyncGdrive(this.#onClickedSyncGdrive.bind(this))
-			.onClickedRememberLogin(this.#onClickedRememberLogin.bind(this))
+			.onClickDeleteDatabase(this.#onClickedDeleteDatabase)
+			.onClickDeleteLocalStorage(this.#onClickedDeleteLocalStorage)
+			.onClickSyncGdrive(this.#onClickedSyncGdrive)
+			.onClickedRememberLogin(this.#onClickedRememberLogin)
 			.onChangedTheme(this.#onChangedTheme);
+		return this.#settingsScreen;
 	}
 
 	/**
 	 * Reads and parses the user settings at the current time
 	 * @returns {Settings} Current user settings
 	 */
-	currentSettings() {
-		return Settings
-			.fromJson(this.#localStorage.getItem(SettingsController.#SETTINGS_LOCALSTORAGE_KEY));
-	}
+	currentSettings = () => Settings
+		.fromJson(this.#localStorage.getItem(SettingsController.#SETTINGS_LOCALSTORAGE_KEY));
 
-	apply() {
+	apply = () => {
 		const theme = this.currentSettings().currentTheme();
 		document.querySelector('meta[name="theme-color"]').setAttribute('content', theme.primaryDarkColor());
 		const root = document.querySelector(':root');
 		root.style.setProperty('--primary-dark', theme.primaryDarkColor());
 		root.style.setProperty('--primary-light', theme.primaryLightColor());
 		return this;
-	}
+	};
 
-	static #onClickedDeleteDatabase() {
+	#onClickedDeleteDatabase = () => {
 		window.indexedDB.deleteDatabase(PlanningCache.DATABASE_NAME);
 		window.indexedDB.deleteDatabase(SpendingCache.DATABASE_NAME);
-	}
+		this.#settingsScreen.refresh(this.apply().currentSettings());
+	};
 
-	#onClickedDeleteLocalStorage() {
+	#onClickedDeleteLocalStorage = () => {
 		this.#localStorage.clear();
-	}
+		this.#settingsScreen.refresh(this.apply().currentSettings());
+	};
 
-	#onClickedSyncGdrive(value) {
+	#onClickedSyncGdrive = (value) => {
 		const currentSettings = this.currentSettings();
 		currentSettings.gDriveSettings().enable(value);
 		this.#localStorage
@@ -63,7 +64,7 @@ export default class SettingsController {
 		this.#settingsScreen.refresh(this.currentSettings());
 	}
 
-	#onClickedRememberLogin(value) {
+	#onClickedRememberLogin = (value) => {
 		const currentSettings = this.currentSettings();
 		currentSettings.gDriveSettings().rememberLogin(value);
 		this.#localStorage
