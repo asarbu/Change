@@ -28,32 +28,6 @@ body {
 	font-size: 100%;
 }
 
-body.red {
-	--primary-dark: #880e0e;
-	--primary-light: #d81b1b;
-}
-
-
-body.purple {
-	--primary-dark: #311B92;
-	--primary-light: #7E57C2;
-}
-
-body.blue {
-	--primary-dark: #1A237E;
-	--primary-light: #5C6BC0;
-}
-
-body.green{
-	--primary-dark: #004D40;
-	--primary-light: #00796B;
-}
-
-body.black{
-	--primary-dark: #212121;
-	--primary-light: #757575;
-}
-
 main {
 	position: absolute;
 	top: 0;
