@@ -91,8 +91,8 @@ export default class SettingsScreen {
 					new Dom('span').text('Pick a color theme'),
 					new Dom('span').append(
 						new Dom('select').id('theme').onChange(this.#onChangedTheme).cloneTo(this.#themeSelect).append(
-							new Dom('option').value('red').text('Red'),
 							new Dom('option').value('green').text('Green'),
+							new Dom('option').value('red').text('Red'),
 							new Dom('option').value('blue').text('Blue'),
 							new Dom('option').value('purple').text('Purple'),
 							new Dom('option').value('black').text('Black'),
