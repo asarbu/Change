@@ -4,15 +4,15 @@ export default class Theme {
 	 * TODO change RGB color space to OKLCH
 	 */
 
-	static RED = new Theme('red', 'oklch(0.3 0.15 20)', 'oklch(0.6 0.15 20)');
+	static RED = new Theme('red', 'oklch(0.3 0.15 20)', 'oklch(0.5 0.15 20)');
 
-	static GREEN = new Theme('green', 'oklch(0.3 0.15 180)', 'oklch(0.6 0.15 180)');
+	static GREEN = new Theme('green', 'oklch(0.3 0.15 180)', 'oklch(0.5 0.15 180)');
 
-	static BLUE = new Theme('blue', 'oklch(0.3 0.15 270)', 'oklch(0.6 0.15 270)');
+	static BLUE = new Theme('blue', 'oklch(0.3 0.15 270)', 'oklch(0.5 0.15 270)');
 
-	static PURPLE = new Theme('purple', 'oklch(0.3 0.15 290)', 'oklch(0.6 0.15 290)');
+	static PURPLE = new Theme('purple', 'oklch(0.3 0.15 290)', 'oklch(0.5 0.15 290)');
 
-	static BLACK = new Theme('black', 'oklch(0.3 0 0)', 'oklch(0.6 0 0)');
+	static BLACK = new Theme('black', 'oklch(0.3 0 0)', 'oklch(0.5 0 0)');
 
 	static fromJson({ name, primaryDarkColor, primaryLightColor } = {}) {
 		return new Theme(name, primaryDarkColor, primaryLightColor);
