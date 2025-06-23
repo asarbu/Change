@@ -1,13 +1,18 @@
 export default class Theme {
-	static RED = new Theme('red', '#880e0e', '#d81b1b');
+	/** Colors are chosen by using OKLCH color space with a 0.4 (dark) and 0.55 (light) luminance
+	 * The chroma is kept at .16 (where possible. For Green RGB caps at 0.1) and varying the hue.
+	 * TODO change RGB color space to OKLCH
+	 */
 
-	static GREEN = new Theme('green', '#004D40', '#00796B');
+	static RED = new Theme('red', 'oklch(0.4 0.15 20)', 'oklch(0.6 0.15 20)');
 
-	static BLUE = new Theme('blue', '#1A237E', '#5C6BC0');
+	static GREEN = new Theme('green', 'oklch(0.4 0.15 180)', 'oklch(0.6 0.15 180)');
 
-	static PURPLE = new Theme('purple', '#311B92', '#7E57C2');
+	static BLUE = new Theme('blue', 'oklch(0.4 0.15 270)', 'oklch(0.6 0.15 270)');
 
-	static BLACK = new Theme('black', '#212121', '#757575');
+	static PURPLE = new Theme('purple', 'oklch(0.4 0.15 290)', 'oklch(0.6 0.15 290)');
+
+	static BLACK = new Theme('black', 'oklch(0.4 0 0)', 'oklch(0.6 0 0)');
 
 	static fromJson({ name, primaryDarkColor, primaryLightColor } = {}) {
 		return new Theme(name, primaryDarkColor, primaryLightColor);
@@ -44,7 +49,7 @@ export default class Theme {
 	 * @param {string} primaryDarkColor Hex RGB value of the color
 	 * @param {string} primaryLightColor Hex RGB value of the color
 	 */
-	constructor(name = 'green', primaryDarkColor = '#004D40', primaryLightColor = '#00796B') {
+	constructor(name = 'green', primaryDarkColor = 'oklch(0.4 0.16 170)', primaryLightColor = 'oklch(0.55 0.16 170)') {
 		this.#name = name;
 		this.#primaryDarkColor = primaryDarkColor;
 		this.#primaryLightColor = primaryLightColor;
