@@ -31,6 +31,13 @@ export default class Settings {
 		this.#theme = theme;
 	}
 
+	/**
+	 * @returns {Theme}
+	 */
+	currentTheme() {
+		return this.#theme;
+	}
+
 	themeName() {
 		return this.#theme.name();
 	}
