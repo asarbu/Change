@@ -1,9 +1,4 @@
 export default class Theme {
-	/** Colors are chosen by using OKLCH color space with a 0.4 (dark) and 0.55 (light) luminance
-	 * The chroma is kept at .16 (where possible. For Green RGB caps at 0.1) and varying the hue.
-	 * TODO change RGB color space to OKLCH
-	 */
-
 	static RED = new Theme('red', 'oklch(0.3 0.15 20)', 'oklch(0.5 0.15 20)');
 
 	static GREEN = new Theme('green', 'oklch(0.3 0.15 180)', 'oklch(0.5 0.15 180)');
