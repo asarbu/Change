@@ -38,9 +38,11 @@ export default class SettingsController {
 	}
 
 	apply() {
-		const currentSettings = this.currentSettings();
-		const main = document.getElementsByTagName('body')[0];
-		main.className = currentSettings.themeName();
+		const theme = this.currentSettings().currentTheme();
+		document.querySelector('meta[name="theme-color"]').setAttribute('content', theme.primaryDarkColor());
+		const root = document.querySelector(':root');
+		root.style.setProperty('--primary-dark', theme.primaryDarkColor());
+		root.style.setProperty('--primary-light', theme.primaryLightColor());
 		return this;
 	}
 
@@ -70,7 +72,7 @@ export default class SettingsController {
 	}
 
 	#onChangedTheme = (themeName) => {
-		const theme = Theme.fromJson({ name: themeName });
+		const theme = Theme.fromName(themeName);
 		const currentSettings = this.currentSettings();
 		currentSettings.changeTheme(theme);
 		this.#localStorage
