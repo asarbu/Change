@@ -204,5 +204,6 @@ export default class SettingsScreen {
 		const gDriveSettings = settings.gDriveSettings();
 		this.#gDriveEnabledInput.checked(gDriveSettings.isEnabled());
 		this.#gDriveRememberLoginInput.checked(gDriveSettings.canRememberLogin());
+		this.#selectThemeOption(settings.currentTheme().name());
 	}
 }
