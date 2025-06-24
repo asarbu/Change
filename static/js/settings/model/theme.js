@@ -44,7 +44,7 @@ export default class Theme {
 	 * @param {string} primaryDarkColor Hex RGB value of the color
 	 * @param {string} primaryLightColor Hex RGB value of the color
 	 */
-	constructor(name = 'green', primaryDarkColor = 'oklch(0.4 0.16 170)', primaryLightColor = 'oklch(0.55 0.16 170)') {
+	constructor(name = 'green', primaryDarkColor = 'oklch(0.3 0.16 170)', primaryLightColor = 'oklch(0.5 0.16 170)') {
 		this.#name = name;
 		this.#primaryDarkColor = primaryDarkColor;
 		this.#primaryLightColor = primaryLightColor;
