@@ -47,6 +47,7 @@ export default class SpendingController {
 		this.#planningPersistence = new PlanningPersistence(this.#defaultYear);
 		this.#spendingPersistence = new SpendingPersistence(this.#defaultYear);
 		this.#routingController = new RoutingController();
+		this.#cachedReports = [];
 		this.#settings = settings;
 	}
 

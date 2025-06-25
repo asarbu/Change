@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<style>
+			:root {
+				/** Change this to change icon colors **/
+				--primary-dark: oklch(0.3 0.15 180);
+				--primary-light: oklch(0.5 0.15 180);
+			}
+			body {
+				text-align: center;
+				width: 100%;
+				height: 100%;
+				margin: 0;
+				padding: 0;
+			}
+			#background {
+				background: linear-gradient(0deg, var(--primary-dark) 0%, var(--primary-light) 100%);
+				width:1024px;
+				height:1024px;
+				display:flex;
+				align-items: center;
+				justify-content: center;
+			}
+
+			#note {
+				background: rgba(128, 128, 128, 0.5);
+				-webkit-backdrop-filter: blur(5px);
+				backdrop-filter: blur(5px);
+				border-top: 12px solid gainsboro;
+				width:768px;
+				height:512px;
+				border-radius:64px;
+			}
+
+			#note-edge {
+				width:544px;
+				height:288px;
+				border-radius:64px;
+				margin: 48px;
+				border: 64px solid gainsboro;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+			}
+
+			#top-left {
+				width:128px;
+				height:128px;
+				border-radius: 128px;
+				position: absolute;
+				top: 48px;
+				left: 48px;
+				background:gainsboro;
+			}
+
+			#top-right {
+				width:128px;
+				height:128px;
+				border-radius: 128px;
+				position: absolute;
+				top: 48px;
+				right: 48px;
+				background:gainsboro;
+			}
+
+			#bottom-left {
+				width:128px;
+				height:128px;
+				border-radius: 128px;
+				position: absolute;
+				bottom: 48px;
+				left: 48px;
+				background:gainsboro;
+			}
+
+			#bottom-right {
+				width:128px;
+				height:128px;
+				border-radius: 64px;
+				position: absolute;
+				bottom: 48px;
+				right: 48px;
+				background:gainsboro;
+			}
+
+			#circle {
+				width: 224px;
+				height: 224px;
+				border-radius: 128px; 
+				background-color: rgba(0, 0, 0, 0.2);
+				border-top: 12px solid gainsboro;
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				font-size: 200px;
+				color: gainsboro;
+				font-family: 'Be Vietnam Pro';
+				font-weight: 900;
+			}
+		</style>
+	</head>
+	<body>		
+		<div id='background'>
+			<div id='note'>
+				<div id='note-edge'>
+					<div id='top-left'></div>
+					<div id='top-right'></div>
+					<div id='bottom-left'></div>
+					<div id='bottom-right'></div>
+					<div id='circle'>
+						C
+					</div>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>
