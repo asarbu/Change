@@ -30,10 +30,9 @@ export default class Modal {
 	 * @param {Function} yesCallback
 	 */
 	static areYouSureModal(id, message, yesCallback) {
-		const areYouSureModal = new Modal(id).header(
+		return new Modal(id).header(
 			new Dom('h1').text(message),
 		).#addCancelYesFooter(yesCallback);
-		return areYouSureModal;
 	}
 
 	header(...domElements) {

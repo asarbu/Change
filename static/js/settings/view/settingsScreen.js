@@ -153,21 +153,19 @@ export default class SettingsScreen {
 	}
 
 	#onClickedDeleteDatabase() {
-		const areYouSureModal = Modal.areYouSureModal(
+		return Modal.areYouSureModal(
 			'delete-databases',
 			'Are you sure you want to delete all local databases?',
 			this.#onClickedDeleteDatabaseHandler,
-		);
-		areYouSureModal.open();
+		).open();
 	}
 
 	#onClickedDeleteLocalStorage() {
-		const areYouSureModal = Modal.areYouSureModal(
+		return Modal.areYouSureModal(
 			'delete-local-storage',
 			'Are you sure you want to delete all local storage?',
 			this.#onClickedDeleteLocalStorageHandler,
-		);
-		areYouSureModal.open();
+		).open();
 	}
 
 	onClickDeleteDatabase(handler) {
