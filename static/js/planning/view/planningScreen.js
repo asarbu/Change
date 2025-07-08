@@ -284,14 +284,11 @@ export default class PlanningScreen {
 
 	onClickedDeletePlanning(planning) {
 		if (this.#onClickedDeletePlanning) {
-			const areYouSureModal = Modal.areYouSureModal(
+			return Modal.areYouSureModal(
 				'are-you-sure-delete-planning',
 				'Are you sure you want to delete planning?',
 				this.#onClickedDeletePlanning.bind(this, planning),
 			).open();
-			const main = document.getElementById('main');
-			main.appendChild(areYouSureModal.toHtml());
-			return areYouSureModal;
 		}
 		return undefined;
 	}

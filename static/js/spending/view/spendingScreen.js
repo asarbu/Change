@@ -273,15 +273,14 @@ export default class SpendingScreen {
 		/** @type {Spending} */
 		const spending = row.userData;
 
-		const modal = Modal.areYouSureModal(
+		Modal.areYouSureModal(
 			'delete-spending-modal',
 			'Are you sure you want to delete this spending?',
 			() => {
 				spending.deleted = true;
 				tBody.removeChild(row);
 			},
-		);
-		modal.open();
+		).open();
 	}
 
 	onClickDeleteSlice(event) {
@@ -290,7 +289,7 @@ export default class SpendingScreen {
 		const table = (event.currentTarget.parentNode.parentNode.parentNode.parentNode);
 		const spendingReport = table.userData;
 
-		const modal = Modal.areYouSureModal(
+		Modal.areYouSureModal(
 			'delete-report-modal',
 			'Are you sure you want to delete this report?',
 			() => {
@@ -299,8 +298,7 @@ export default class SpendingScreen {
 				}
 				table.parentNode.removeChild(table);
 			},
-		);
-		modal.open();
+		).open();
 	}
 
 	onClickedSpending(event) {
