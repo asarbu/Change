@@ -7,6 +7,7 @@ import Modal from '../../common/gui/modal.js';
 import GraphicEffects from '../../common/gui/effects.js';
 import Alert from '../../common/gui/alert.js';
 import SubmitStatementModal from './submitStatementModal.js';
+import TableDom from '../../common/gui/tableDom.js';
 
 export default class PlanningScreen {
 	#onClickSavePlanning = undefined;
@@ -158,8 +159,8 @@ export default class PlanningScreen {
 
 		for (let i = 0; i < planningCategories.length; i += 1) {
 			const category = planningCategories[i];
-			const categoryDom = new Dom('table').id(`${category.id}`).append(
-				new Dom('thead').append(
+			const categoryDom = new TableDom().id(`${category.id}`)
+				.thead(
 					new Dom('tr').append(
 						new Dom('th').text(category.name).editable().contentEditable(this.#editMode)
 							.onKeyUp(onKeyUpCategoryName),
@@ -170,14 +171,13 @@ export default class PlanningScreen {
 							Dom.imageButton('Delete row', icons.delete),
 						),
 					),
-				),
-				new Dom('tbody').append(
+				)
+				.tbody(
 					...category.goals.map((goal) => this.buildGoal(goal)),
-				),
-				new Dom('tfoot').append(
+				)
+				.tfoot(
 					this.buildTotalRow(category),
-				),
-			).userData(category);
+				).userData(category);
 			categories.push(categoryDom);
 			this.#categoryDoms.set(category.id, categoryDom);
 		}

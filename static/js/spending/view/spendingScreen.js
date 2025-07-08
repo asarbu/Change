@@ -9,6 +9,7 @@ import SpendingNavbar from './spendingNavbar.js';
 import SpendingNavbarEventHandlers from './spendingNavbarHandlers.js';
 import SpendingSummaryModal from './spendingSummaryModal.js';
 import SpendingSubmitModal from './spendingSubmitModal.js';
+import TableDom from '../../common/gui/tableDom.js';
 
 export default class SpendingScreen {
 	/** @type {(spending: Spending) => any} */
@@ -182,8 +183,8 @@ export default class SpendingScreen {
 	buildTable(spendingReport) {
 		const onClickDelete = this.onClickDeleteSlice.bind(this);
 		const buildSpendingRow = this.buildSpendingRow.bind(this);
-		const spendingsDom = new Dom('table').id(`table-${spendingReport.month()}`).append(
-			new Dom('thead').append(
+		const spendingsDom = new TableDom().id(`table-${spendingReport.month()}`)
+			.thead(
 				new Dom('tr').append(
 					new Dom('th').cls('narrow-col').text('Date'),
 					new Dom('th').text(spendingReport),
@@ -195,14 +196,14 @@ export default class SpendingScreen {
 						),
 					),
 				),
-			),
-			new Dom('tbody').append(
+			)
+			.tbody(
 				...spendingReport.spendings().map(buildSpendingRow),
-			),
-			new Dom('tfoot').append(
+			)
+			.tfoot(
 				this.buildTotalRow(spendingReport.totalAsSpending()),
-			),
-		).userData(spendingReport);
+			)
+			.userData(spendingReport);
 		this.spendingsHtml = spendingsDom.toHtml();
 
 		return spendingsDom;

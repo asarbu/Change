@@ -1,6 +1,7 @@
 import Alert from '../../common/gui/alert.js';
 import Dom from '../../common/gui/dom.js';
 import Modal from '../../common/gui/modal.js';
+import TableDom from '../../common/gui/tableDom.js';
 import SpendingReport from '../model/spendingReport.js';
 
 export default class SpendingSummaryModal extends Modal {
@@ -32,19 +33,19 @@ export default class SpendingSummaryModal extends Modal {
 		this.header(
 			new Dom('h2').text('Expenses summary'),
 		).body(
-			new Dom('table').id(`summary-table-${spendingReport}`).append(
-				new Dom('thead').append(
+			new TableDom().id(`summary-table-${spendingReport}`)
+				.thead(
 					new Dom('tr').append(
 						new Dom('th').text('Category'),
 						new Dom('th').cls('normal-col').text('Spending'),
 						new Dom('th').cls('normal-col').text('Budget'),
 						new Dom('th').cls('normal-col').text('Percent'),
 					),
-				),
-				new Dom('tbody').append(
+				)
+				.tbody(
 					...spentGoalsName.map((goalName) => this.#buildRowForGoal(goalName)),
-				),
-				new Dom('tfoot').append(
+				)
+				.tfoot(
 					new Dom('tr').append(
 						new Dom('td').text('Total'),
 						new Dom('td').text(spendingTotal),
@@ -52,7 +53,6 @@ export default class SpendingSummaryModal extends Modal {
 						new Dom('td').text(((100 * spendingTotal) / budgetTotal).toFixed(2)),
 					),
 				),
-			),
 		).addCancelFooter();
 	}
 
