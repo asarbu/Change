@@ -9,6 +9,7 @@
     "build": "node ./node_scripts/build.cjs",
     "dev": "node ./node_scripts/dev.cjs",
     "clean": "node node_scripts/clean.cjs",
+    "compress": "node ./node_scripts/compress.cjs",
     "start": "http-server ./dist",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx"
   },
@@ -34,7 +35,7 @@
     "jsdom": "^26.1.0",
     "npm": "^10.5.2",
     "rollup": "^4.12.0",
-    "uglify-js": "^3.17.4"
+    "uglify-js": "^3.19.3"
   },
   "jest": {
     "testEnvironment": "jest-environment-node",
