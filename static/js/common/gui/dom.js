@@ -45,12 +45,8 @@ export default class Dom {
 		return this;
 	}
 
-	contentEditable(value) {
-		let isEditable = true;
-		if (value !== undefined) {
-			isEditable = value;
-		}
-		this.elmt.setAttribute('contenteditable', isEditable);
+	contentEditable(value = true) {
+		this.elmt.setAttribute('contenteditable', value);
 		return this;
 	}
 
