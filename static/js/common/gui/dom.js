@@ -17,9 +17,11 @@ export default class Dom {
 	 * @returns {Dom}
 	 */
 	append(...children) {
-		children.forEach((child) => {
-			this.elmt.appendChild(child.toHtml ? child.toHtml() : child);
-		});
+		children
+			.filter((x) => x)
+			.forEach((child) => {
+				this.elmt.appendChild(child?.toHtml ? child.toHtml() : child);
+			});
 		return this;
 	}
 
