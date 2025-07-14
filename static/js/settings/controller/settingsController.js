@@ -25,7 +25,8 @@ export default class SettingsController {
 			.onClickDeleteLocalStorage(this.#onClickedDeleteLocalStorage)
 			.onClickSyncGdrive(this.#onClickedSyncGdrive)
 			.onClickedRememberLogin(this.#onClickedRememberLogin)
-			.onChangedTheme(this.#onChangedTheme);
+			.onChangedTheme(this.#onChangedTheme)
+			.onChangedPlanningTableVisibleColumns(this.#onChangedPlanningTableVisibleColumns);
 		return this.#settingsScreen;
 	};
 
@@ -79,5 +80,13 @@ export default class SettingsController {
 		this.#localStorage
 			.setItem(SettingsController.#SETTINGS_LOCALSTORAGE_KEY, currentSettings.toJson());
 		this.apply();
+	};
+
+	#onChangedPlanningTableVisibleColumns = (newVisibleColumns) => {
+		const currentSettings = this.currentSettings();
+		currentSettings.planningTableSettings().changeVisibleColumns(newVisibleColumns);
+		this.#localStorage
+			.setItem(SettingsController.#SETTINGS_LOCALSTORAGE_KEY, currentSettings.toJson());
+		this.#settingsScreen.refresh(currentSettings);
 	};
 }

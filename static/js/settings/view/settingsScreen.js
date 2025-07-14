@@ -2,6 +2,8 @@ import Dom from '../../common/gui/dom.js';
 import icons from '../../common/gui/icons.js';
 import Modal from '../../common/gui/modal.js';
 import Sidenav from '../../common/gui/sidenav.js';
+import TableDom from '../../common/gui/tableDom.js';
+import PlanningTableSettings from '../model/planiningTableSettings.js';
 import Settings from '../model/settings.js';
 
 export default class SettingsScreen {
@@ -14,6 +16,8 @@ export default class SettingsScreen {
 	#onClickedRememberLoginHandler = undefined;
 
 	#onChangedThemeHandler = undefined;
+
+	#onChangedPlanningTableVisibleColumnsHandler = undefined;
 
 	/** @type {Settings} */
 	#settings = undefined;
@@ -34,11 +38,15 @@ export default class SettingsScreen {
 
 	#gDriveRememberLoginInput = new Dom();
 
+	/** @type {Modal} */
+	#planningTableHeaderModal = undefined;
+
 	constructor(settings) {
 		this.#settings = settings;
 	}
 
 	init() {
+		this.buildModals();
 		this.buildSettingsScreen();
 		this.buildNavBar();
 		this.#selectThemeOption(this.#settings.themeName());
@@ -49,6 +57,36 @@ export default class SettingsScreen {
 		main.appendChild(this.#navbar.toHtml());
 
 		return this;
+	}
+
+	buildModals() {
+		const visibleColumns = this.#settings.planningTableSettings().visibleColumns();
+
+		const modalContent = new Dom('div').cls('round').append(
+			...PlanningTableSettings.COLUMN_NAMES.map((columnName) => new Dom('div').cls('accordion-secondary', 'no-scroll').append(
+				new Dom('span').text(columnName),
+				new Dom('span').append(
+					new Dom('label').cls('setting').append(
+						new Dom('input').cls('setting-state')
+							.type('checkbox').checked(visibleColumns.includes(columnName))
+							.hide(),
+						new Dom('span').cls('setting-outline'),
+						new Dom('i').cls('setting-indicator'),
+					),
+				),
+			)),
+		);
+
+		this.#planningTableHeaderModal = new Modal('planning-columns-modal')
+			.header(new Dom('h2').text('Planning columns'))
+			.body(new Dom('div').append(modalContent))
+			.addFooterWithActionButton('Save', () => {
+				const checkedColumns = Array.from(modalContent.toHtml().querySelectorAll('input[type="checkbox"]'))
+					.map((input, idx) => ({ input, idx }))
+					.filter(({ input }) => input.checked)
+					.map(({ idx }) => PlanningTableSettings.COLUMN_NAMES[idx]);
+				this.#onChangedPlanningTableVisibleColumnsHandler?.(checkedColumns);
+			});
 	}
 
 	buildSettingsScreen() {
@@ -100,6 +138,12 @@ export default class SettingsScreen {
 					),
 				),
 			),
+			// --- Planning Table Columns Section ---
+			new Dom('h2').text('Planning Table Columns'),
+			new Dom('div').cls('accordion-secondary').append(
+				new Dom('span').text('Visible columns'),
+				new Dom('span').text('▲'),
+			).onClick(this.#planningTableHeaderModal.open.bind(this.#planningTableHeaderModal)),
 		);
 		return this.#dom;
 	}
@@ -190,6 +234,11 @@ export default class SettingsScreen {
 
 	onChangedTheme(handler) {
 		this.#onChangedThemeHandler = handler;
+		return this;
+	}
+
+	onChangedPlanningTableVisibleColumns(handler) {
+		this.#onChangedPlanningTableVisibleColumnsHandler = handler;
 		return this;
 	}
 
