@@ -10,6 +10,9 @@ export default class TableDom extends Dom {
 	/** @type {Dom} */
 	#tfoot = undefined;
 
+	/** @type {boolean} */
+	#pausedSorting = undefined;
+
 	constructor() {
 		super('table');
 		this.#thead = new Dom('thead');
@@ -33,8 +36,12 @@ export default class TableDom extends Dom {
 		return this;
 	}
 
+	tbodyDom() {
+		return this.#tbody;
+	}
+
 	tfoot(...domElements) {
-		this.#tfoot.append(...domElements);
+		this.#tfoot.clear().append(...domElements);
 		return this;
 	}
 
@@ -44,7 +51,18 @@ export default class TableDom extends Dom {
 		return this;
 	}
 
+	pauseSorting() {
+		this.#pausedSorting = true;
+		return this;
+	}
+
+	resumeSorting() {
+		this.#pausedSorting = false;
+		return this;
+	}
+
 	#sortTableByColumnAsc = (columnIndex) => {
+		if (this.#pausedSorting) return;
 		Array.from(this.#tbody.toHtml().querySelectorAll('tr'))
 			// TODO Instead of text, filter by internal data (e.g timestamp instead of Date column value)
 			.sort((a, b) => {
