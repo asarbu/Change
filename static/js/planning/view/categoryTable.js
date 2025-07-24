@@ -28,7 +28,7 @@ export default class CategoryTable extends TableDom {
 		const visibleColumns = this.#settings.planningTableSettings().visibleColumns();
 
 		const tableHeadRow = [
-			new Dom('th').text(this.category.name).editable().contentEditable(this.toEditMode).onKeyUp(this.#onKeyUpCategoryName.bind(this.category)),
+			new Dom('th').text(this.category.name).editable().contentEditable(false).onKeyUp((e) => { this.category = e.currentTarget.textContent; }),
 			...visibleColumns.filter((col) => col !== 'Name').map((col) => new Dom('th').text(col)),
 			new Dom('th').cls('narrow-col').hideable(this.toEditMode).onClick(this.#onClickedDeleteCategory).append(
 				Dom.imageButton('Delete row', icons.delete),
@@ -36,7 +36,7 @@ export default class CategoryTable extends TableDom {
 		];
 
 		const tableBodyRows = this.category.goals.map((goal) => new Dom('tr').id(`Goal_${goal.id}`).userData(goal).append(
-			...visibleColumns.map((col) => new Dom('td').text(goal[col.toLowerCase()]).editable().onKeyUp(this.#onKeyUpGoal)),
+			...visibleColumns.map((col) => new Dom('td').text(goal[col.toLowerCase()]).editable().onKeyUp(this.#onKeyUpGoal.bind(col))),
 			new Dom('td').hideable(this.toEditMode).onClick(this.onClickedDeleteGoal).append(
 				Dom.imageButton('Delete goal', icons.delete),
 			),
@@ -91,36 +91,18 @@ export default class CategoryTable extends TableDom {
 		categoryTbody.insertBefore(goalDom.toHtml(), categoryTbody.children[lastIndex]);
 	}
 
-	#onKeyUpGoal = (event) => {
-		//TODO bind goal to avoid searching for it
+	#onKeyUpGoal = (propertyName, event) => {
 		const cell = event.currentTarget;
 		const row = cell.parentNode;
-		const { cellIndex } = event.currentTarget;
-		const oldGoal = row.userData;
-		switch (cellIndex) {
-		case 0:
-			oldGoal.name = cell.textContent;
-			break;
-		case 1:
-			oldGoal.daily(+cell.textContent);
-			//TODO move refresh outside switch
-			cell.parentNode.cells[2].textContent = newGoal.monthly;
-			cell.parentNode.cells[3].textContent = newGoal.yearly;
-			break;
-		case 2:
-			newGoal = Goal.fromMonthlyAmount(+cell.textContent);
-			cell.parentNode.cells[1].textContent = newGoal.daily;
-			cell.parentNode.cells[3].textContent = newGoal.yearly;
-			break;
-		case 3:
-			newGoal = Goal.fromYearlyAmount(+cell.textContent);
-			cell.parentNode.cells[1].textContent = newGoal.daily;
-			cell.parentNode.cells[2].textContent = newGoal.monthly;
-			break;
-		default:
-			throw Error(`Did not expect cell index ${cellIndex} on key up goal`);
-		}
-		row.userData = newGoal;
+		const goal = row.userData;
+		const { textContent } = cell;
+		const parsedContent = Number.parseInt(textContent, 10);
+		goal[propertyName] = Number.isNaN(parsedContent)
+			? textContent
+			: parsedContent;
+		this.#settings.planningTableSettings().visibleColumns().forEach((col, index) => {
+			cell.parentNode.cells[index] = goal[col];
+		});
 		this.tfoot(this.totalsRow());
 	};
 
