@@ -1,6 +1,6 @@
 /* eslint-disable class-methods-use-this */
 import Dom from '../../common/gui/dom.js';
-import Planning, { Statement, Category, Goal } from '../model/planningModel.js';
+import Planning, { Statement, Category } from '../model/planningModel.js';
 import icons from '../../common/gui/icons.js';
 import PlanningNavbar from './planningNavbar.js';
 import Modal from '../../common/gui/modal.js';
@@ -142,7 +142,7 @@ export default class PlanningScreen {
 			new Dom('h1').text(statement.name).onKeyUp(onKeyUp).onClick(this.#onClickedEditStatement.bind(this)),
 			new Dom('h2').text(`${statement.type} `).hideable(this.#editMode).onClick(this.#onClickedEditStatement.bind(this)),
 			new Dom('h3').text('Remember to save any changes before exiting.').hideable(this.#editMode),
-			...this.buildCategories(statement.categories),
+			...statement.categories.map(this.buildCategory),
 			Dom.imageButton('Add Category', icons.add_table).hideable(this.#editMode).onClick(onClickAddCategory),
 		);
 
@@ -155,20 +155,9 @@ export default class PlanningScreen {
 	 * @param {Array<Category>} planningCategories Categories to draw inside parent statement
 	 * @returns {Array<Dom>} Document fragment with all of the created tables
 	 */
-	buildCategories(planningCategories) {
-		//TODO build only one category
-		if (!planningCategories || planningCategories.length === 0) {
-			return [new Dom('h3').text('No categories defined. Click the button below to define a category of goals')];
-		}
-
-		const categories = [];
-		for (let i = 0; i < planningCategories.length; i += 1) {
-			const category = planningCategories[i];
-			const table = new CategoryTable(category).buildTable();
-			categories.push(table);
-			this.categoryTables.set(category.id, table);
-		}
-		return categories;
+	buildCategory(category) {
+		const table = new CategoryTable(category).buildTable();
+		this.categoryTables.set(category.id, table);
 	}
 
 	// #endregion
