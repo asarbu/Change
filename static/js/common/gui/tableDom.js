@@ -36,8 +36,16 @@ export default class TableDom extends Dom {
 		return this;
 	}
 
+	theadDom() {
+		return this.#thead;
+	}
+
 	tbodyDom() {
 		return this.#tbody;
+	}
+
+	tfootDom() {
+		return this.#tfoot;
 	}
 
 	tfoot(...domElements) {
