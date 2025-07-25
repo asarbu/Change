@@ -155,10 +155,11 @@ export default class PlanningScreen {
 	 * @param {Array<Category>} planningCategories Categories to draw inside parent statement
 	 * @returns {Array<Dom>} Document fragment with all of the created tables
 	 */
-	buildCategory(category) {
+	buildCategory = (category) => {
 		const table = new CategoryTable(category).buildTable();
 		this.categoryTables.set(category.id, table);
-	}
+		return table;
+	};
 
 	// #endregion
 

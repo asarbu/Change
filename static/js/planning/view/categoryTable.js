@@ -12,6 +12,8 @@ export default class CategoryTable extends TableDom {
 	/** @type {Object<string, Goal>}} */
 	#goals = undefined;
 
+	#editMode = false;
+
 	/**
 	 * @param {Category} category
 	 * @param {Settings} settings
@@ -30,14 +32,14 @@ export default class CategoryTable extends TableDom {
 		const tableHeadRow = [
 			new Dom('th').text(this.category.name).editable().contentEditable(false).onKeyUp((e) => { this.category = e.currentTarget.textContent; }),
 			...visibleColumns.filter((col) => col !== 'Name').map((col) => new Dom('th').text(col)),
-			new Dom('th').cls('narrow-col').hideable(this.toEditMode).onClick(this.#onClickedDeleteCategory).append(
+			new Dom('th').cls('narrow-col').hideable(this.#editMode).onClick(this.#onClickedDeleteCategory).append(
 				Dom.imageButton('Delete row', icons.delete),
 			),
 		];
 
 		const tableBodyRows = this.category.goals.map((goal) => new Dom('tr').id(`Goal_${goal.id}`).userData(goal).append(
 			...visibleColumns.map((col) => new Dom('td').text(goal[col.toLowerCase()]).editable().onKeyUp(this.#onKeyUpGoal.bind(col))),
-			new Dom('td').hideable(this.toEditMode).onClick(this.onClickedDeleteGoal).append(
+			new Dom('td').hideable(this.#editMode).onClick(this.onClickedDeleteGoal).append(
 				Dom.imageButton('Delete goal', icons.delete),
 			),
 		));
@@ -61,7 +63,7 @@ export default class CategoryTable extends TableDom {
 		return new Dom('tr').append(
 			new Dom('td').text('Total'),
 			...visibleColumns.filter((col) => col !== 'Name').map((col) => new Dom('td').text(totalValues[col])),
-			new Dom('td').hideable(this.toEditMode).onClick(this.#onClickedAddGoal).append(
+			new Dom('td').hideable(this.#editMode).onClick(this.#onClickedAddGoal).append(
 				Dom.imageButton('Add row', icons.add_row),
 			),
 		);
@@ -123,29 +125,31 @@ export default class CategoryTable extends TableDom {
 		return new Dom('tr').id(`Goal_${goal.id}`).userData(goal).append(
 			...visibleColumns
 				.map((col) => CategoryTable.columnRenderers[col]?.(goal, editMode, this.#onKeyUpGoal)),
-			new Dom('td').hideable(editMode).onClick(this.onClickedDeleteGoal).append(
+			new Dom('td').hideable(this.#editMode).onClick(this.onClickedDeleteGoal).append(
 				Dom.imageButton('Delete goal', icons.delete),
 			),
 		);
 	}
 
 	toEditMode() {
-		//TODO replace this generic query selector with a table based one
-		const tableDefs = document.querySelectorAll('[editable="true"]');
-		for (let i = 0; i < tableDefs.length; i += 1) {
-			tableDefs[i].contentEditable = 'true';
-		}
+		this.#editMode = true;
+		// TODO Remove editable content. Replace with modals
+		[...this.theadDom().toHtml().querySelectorAll('[editable="true"]'),
+			...this.tbodyDom().toHtml().querySelectorAll('[editable="true"]'),
+			...this.tfootDom().toHtml().querySelectorAll('[editable="true"]')]
+			.forEach((tableDef) => { tableDef.contentEditable = 'true'; });
 
-		const elements = document.querySelectorAll('[hideable="true"]');
-		for (let i = 0; i < elements.length; i += 1) {
-			elements[i].style.display = '';
-		}
+		[...this.theadDom().toHtml().querySelectorAll('[hideable="true"]'),
+			...this.tbodyDom().toHtml().querySelectorAll('[hideable="true"]'),
+			...this.tfootDom().toHtml().querySelectorAll('[hideable="true"]')]
+			.forEach((element) => { element.style.display = ''; });
 
 		this.pauseSorting();
 		return this;
 	}
 
 	toNormalMode() {
+		this.#editMode = false;
 		const editableElmts = document.querySelectorAll('[editable="true"]');
 		for (let i = 0; i < editableElmts.length; i += 1) {
 			editableElmts[i].contentEditable = 'false';
