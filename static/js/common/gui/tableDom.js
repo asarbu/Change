@@ -26,13 +26,13 @@ export default class TableDom extends Dom {
 	}
 
 	thead(...domElements) {
-		this.#thead.append(...domElements);
+		this.#thead.clear().append(...domElements);
 		this.sortable();
 		return this;
 	}
 
 	tbody(...domElements) {
-		this.#tbody.append(...domElements);
+		this.#tbody.clear().append(...domElements);
 		return this;
 	}
 
