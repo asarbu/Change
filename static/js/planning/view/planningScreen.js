@@ -9,7 +9,7 @@ import Alert from '../../common/gui/alert.js';
 import SubmitStatementModal from './submitStatementModal.js';
 import Settings from '../../settings/model/settings.js';
 import SettingsController from '../../settings/controller/settingsController.js';
-import CategoryTable from './categoryTable.js';
+import PlanningCategoryTable from './planningCategoryTable.js';
 
 export default class PlanningScreen {
 	#onClickSavePlanning = undefined;
@@ -20,7 +20,7 @@ export default class PlanningScreen {
 
 	#onClickedDeletePlanning = undefined;
 
-	/** @type {Map<string, CategoryTable>} */
+	/** @type {Map<string, PlanningCategoryTable>} */
 	categoryTables = new Map();
 
 	/** @type {Planning} */
@@ -140,7 +140,7 @@ export default class PlanningScreen {
 		const onClickAddCategory = this.onClickedAddCategory.bind(this, statement);
 		const slice = new Dom('div').id(statement.id).cls('slice').userData(statement).append(
 			new Dom('h1').text(statement.name).onKeyUp(onKeyUp).onClick(this.#onClickedEditStatement.bind(this)),
-			new Dom('h2').text(`${statement.type} `).hideable(this.#editMode).onClick(this.#onClickedEditStatement.bind(this)),
+			new Dom('h2').text(`${statement.type} `).hideable(this.#editMode).onClick(this.#onClickedEditStatement.bind(this, statement)),
 			new Dom('h3').text('Remember to save any changes before exiting.').hideable(this.#editMode),
 			...statement.categories.map(this.buildCategory),
 			Dom.imageButton('Add Category', icons.add_table).hideable(this.#editMode).onClick(onClickAddCategory),
@@ -149,14 +149,14 @@ export default class PlanningScreen {
 		return slice;
 	}
 
-	/**
-	 * Creates a Dom array containing all of the tables constructed from the categories.
-	 * Only visible columns are rendered, based on settings.
-	 * @param {Array<Category>} planningCategories Categories to draw inside parent statement
-	 * @returns {Array<Dom>} Document fragment with all of the created tables
-	 */
 	buildCategory = (category) => {
-		const table = new CategoryTable(category).buildTable();
+		const table = new PlanningCategoryTable(category)
+			.onDeleteCategory((deletedCategory) => {
+				// TODO Remove editedStatement extraction from here. Maybe store it
+				const editedStatement = this.#gfx.selectedSlice().userData;
+				editedStatement.categories.splice(editedStatement.categories.indexOf(deletedCategory), 1);
+				table.toHtml().parentElement.removeChild(table.toHtml());
+			}).refresh();
 		this.categoryTables.set(category.id, table);
 		return table;
 	};
@@ -191,17 +191,6 @@ export default class PlanningScreen {
 		const { scrollTop } = statementHtml;
 		statementHtml.parentElement.replaceChild(statementDom.toHtml(), statementHtml);
 		statementDom.toHtml().scrollTop = scrollTop;
-	}
-
-	/**
-	 * @param {Category} category
-	 */
-	refreshCategory(category) {
-		const categoryHtml = document.getElementById(`${category.id}`);
-		const categoryDom = this.#buildStatementDom(category);
-		const { scrollTop } = categoryHtml;
-		categoryHtml.parentElement.replaceChild(categoryDom.toHtml(), categoryHtml);
-		categoryDom.toHtml().scrollTop = scrollTop;
 	}
 
 	onClickedAddCategory(statement) {
