@@ -88,3 +88,58 @@ Use **<actionVerb><objectName>** when exposing an event publicly.
 
 ### Grouping handlers together
 Put handler that are related in their own region.
+
+# Testing
+## Testing methods 
+### Mocks
+Mocks verify interactions . They are programmed with expected method calls and arguments. The tests asserts that the calls are made with the right data or the calls return the right data. Mocks should be avoided at all costs (due to coupling implementation details to the test) and mocking should be considered a code smell.
+### Stubs
+Stubs provide predetermined responses. They don't assert interactions, but return dummy values so the test can continue. They are prefferable to mocks. They can be used for calling slow dependencies (e.g. APIs, datbases, etc.).
+### Fakes
+Fakes are lightweight working implementations, but simpler, usually in-memory.
+They can only be used if a dependency is not available, or if a stub is more difficult to implement (e.g. IndexedDB is not available in in Jest, and it is difficult to stub).
+
+## Building tests
+Tests should be built using AAA pattern.
+### Arrange
+The tests should not be fragile and they should be resistant to refactoring. To ensure this, the tester should create builders for most common tested objects. This ensures the tests are easy to read, the creation of the elements can be autocompleted and the builder itseld is reusable.
+When the underlying model changes, we only update the builder.
+### Act
+The acting part of the test should be a one liner, testing the operation at hand.
+### Assert
+One may have multiple asserts at the end of the tests, if it makes sense (e.g. to avoid duplication)
+
+**Example** While testing planning operations, we might need multiple types of objects, so the builder might return those common plannings:
+```
+describe('Planning cache', () => {
+  it('stores one empty Planning object', async () => {
+    // Arrange
+    const countBeforeInsert = (await planningCache.count());
+    const planning = planningBuilder.create();
+    
+    // Act
+    await planningCache.create(planning);
+
+    // Assert
+    const countAfterInsert = (await planningCache.count());
+    expect(countAfterInsert - countBeforeInsert).toBe(1);
+  });
+
+  it('stores one complex Planning object', async () => {
+    // Arrange
+    const countBeforeInsert = (await planningCache.count());
+    const planning = planningBuilder
+      .create()
+      .withEmptyStatement()
+      .withLargeStatement();
+    
+    // Act
+    const storedPlanning = await planningCache.create(planning);
+
+    // Assert
+    const countAfterInsert = (await planningCache.count());
+    expect(countAfterInsert - countBeforeInsert).toBe(1);
+    expect(planning).toEqual(storedPlanning);
+  });
+});
+```
