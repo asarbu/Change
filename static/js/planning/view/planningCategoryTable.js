@@ -7,23 +7,19 @@ import SettingsController from '../../settings/controller/settingsController.js'
 import SubmitGoalModal from './submitGoal.js';
 
 export default class PlanningCategoryTable extends TableDom {
-	/** @type {Settings} */
-	#settings = undefined;
-
-	#editMode = false;
+	/** @type {string[]} */
+	#visibleColumns = [];
 
 	#onDeletedCategoryHandler = undefined;
 
 	/**
 	 * @param {Category} category
 	 * @param {Settings} settings
-	 * @param {*} options
 	 */
-	constructor(category, settings = new SettingsController().currentSettings(), options = {}) {
+	constructor(category, visibleColumns = []) {
 		super();
 		this.category = category;
-		this.#settings = settings;
-		this.editMode = options.editMode || false;
+		this.#visibleColumns = visibleColumns;
 	}
 
 	onDeleteCategory = (handler) => {
@@ -32,7 +28,12 @@ export default class PlanningCategoryTable extends TableDom {
 	};
 
 	refresh() {
-		const visibleColumns = this.#settings.planningTableSettings().visibleColumns();
+		if (!this.category
+			|| !this.#visibleColumns
+			|| this.#visibleColumns.length === 0) {
+			this.clear();
+			return this;
+		}
 
 		const totalValues = {
 			Name: 'Total',
@@ -45,25 +46,24 @@ export default class PlanningCategoryTable extends TableDom {
 			.thead(
 				new Dom('tr').append(
 					// TODO Handle edit for category and add here visible columns
-					new Dom('th').text(this.category.name).onKeyUp((e) => { this.category = e.currentTarget.textContent; }),
-					...visibleColumns.filter((col) => col !== 'Name').map((col) => new Dom('th').text(col)),
-					new Dom('th').cls('narrow-col').hideable(this.#editMode).onClick(this.#onClickedDeleteCategory).append(
+					...this.#visibleColumns.map((col) => new Dom('th').text(col)),
+					new Dom('th').cls('narrow-col').hideable().onClick(this.#onClickedDeleteCategory).append(
 						Dom.imageButton('Delete row', icons.delete),
 					),
 				),
 			).tbody(
 				...this.category.goals.map(
 					(goal) => new Dom('tr').append(
-						...visibleColumns.map((col) => new Dom('td').text(goal[col.toLowerCase()]).onClick(() => this.#onClickedGoal(goal))),
-						new Dom('td').hideable(this.#editMode).onClick(() => this.#onClickedDeleteGoal(goal)).append(
+						...this.#visibleColumns.map((col) => new Dom('td').text(goal[col.toLowerCase()]).onClick(() => this.#onClickedGoal(goal))),
+						new Dom('td').hideable().onClick(() => this.#onClickedDeleteGoal(goal)).append(
 							Dom.imageButton('Delete goal', icons.delete),
 						),
 					),
 				),
 			).tfoot(
 				new Dom('tr').append(
-					...visibleColumns.map((col) => new Dom('td').text(totalValues[col])),
-					new Dom('td').hideable(this.#editMode).onClick(this.#onClickedAddGoal).append(
+					...this.#visibleColumns.map((col) => new Dom('td').text(totalValues[col])),
+					new Dom('td').hideable().onClick(this.#onClickedAddGoal).append(
 						Dom.imageButton('Add row', icons.add_row),
 					),
 				),
@@ -101,8 +101,6 @@ export default class PlanningCategoryTable extends TableDom {
 	};
 
 	toEditMode() {
-		this.#editMode = true;
-
 		[...this.theadDom().toHtml().querySelectorAll('[hideable="true"]'),
 			...this.tbodyDom().toHtml().querySelectorAll('[hideable="true"]'),
 			...this.tfootDom().toHtml().querySelectorAll('[hideable="true"]')]
