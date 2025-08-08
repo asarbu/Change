@@ -150,7 +150,7 @@ export default class PlanningScreen {
 	}
 
 	buildCategory = (category) => {
-		const table = new PlanningCategoryTable(category)
+		const table = new PlanningCategoryTable(category, this.#settings.planningTableSettings().visibleColumns())
 			.onDeleteCategory((deletedCategory) => {
 				// TODO Remove editedStatement extraction from here. Maybe store it
 				const editedStatement = this.#gfx.selectedSlice().userData;
