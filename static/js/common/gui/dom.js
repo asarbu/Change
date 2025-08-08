@@ -60,7 +60,7 @@ export default class Dom {
 		return this;
 	}
 
-	hideable(isVisible) {
+	hideable(isVisible = false) {
 		this.elmt.setAttribute('hideable', true);
 		this.elmt.style.display = isVisible ? '' : 'none';
 		return this;
