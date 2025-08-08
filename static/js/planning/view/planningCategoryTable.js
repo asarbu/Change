@@ -3,7 +3,6 @@ import Dom from '../../common/gui/dom.js';
 import icons from '../../common/gui/icons.js';
 import { Category, Goal } from '../model/planningModel.js';
 import Settings from '../../settings/model/settings.js';
-import SettingsController from '../../settings/controller/settingsController.js';
 import SubmitGoalModal from './submitGoal.js';
 
 export default class PlanningCategoryTable extends TableDom {
@@ -11,6 +10,8 @@ export default class PlanningCategoryTable extends TableDom {
 	#visibleColumns = [];
 
 	#onDeletedCategoryHandler = undefined;
+
+	#editMode = false;
 
 	/**
 	 * @param {Category} category
@@ -86,6 +87,8 @@ export default class PlanningCategoryTable extends TableDom {
 	 * @param {Goal} goal
 	 */
 	#onClickedGoal = (goal) => {
+		if (!this.#editMode) return;
+
 		new SubmitGoalModal().editMode(goal).onSubmitGoal((newGoal) => {
 			goal.name = newGoal.name;
 			goal.daily = newGoal.daily;
@@ -101,6 +104,8 @@ export default class PlanningCategoryTable extends TableDom {
 	};
 
 	toEditMode() {
+		this.#editMode = true;
+
 		[...this.theadDom().toHtml().querySelectorAll('[hideable="true"]'),
 			...this.tbodyDom().toHtml().querySelectorAll('[hideable="true"]'),
 			...this.tfootDom().toHtml().querySelectorAll('[hideable="true"]')]
@@ -111,6 +116,8 @@ export default class PlanningCategoryTable extends TableDom {
 	}
 
 	toNormalMode() {
+		this.#editMode = false;
+
 		[...this.theadDom().toHtml().querySelectorAll('[hideable="true"]'),
 			...this.tbodyDom().toHtml().querySelectorAll('[hideable="true"]'),
 			...this.tfootDom().toHtml().querySelectorAll('[hideable="true"]')]
