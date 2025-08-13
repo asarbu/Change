@@ -143,3 +143,16 @@ describe('Planning cache', () => {
   });
 });
 ```
+### Input validation
+Always use a submit type input for a form, to ensure that proper form validation is performed (e.g. `required` inputs are not left empty).
+If the submit button has attached behabior, you should check beforehand if the form is valid
+**Example**
+```
+new Dom('input').type('submit').attr('form', form-id').onClick(() => {
+  const form = document.getElementById('form-id');
+  if(form && form.checkValidity()) {
+    this.doStuff();
+    this.close();
+  }
+})
+```
