@@ -128,6 +128,7 @@ export default class Modal {
 	}
 
 	close = () => {
+		this.#isOpen = false;
 		requestAnimationFrame(() => {
 			this.modalBackdropHtml.classList.remove('show-modal-backdrop');
 			this.contentHtml.classList.remove('show-modal-content');
@@ -140,7 +141,6 @@ export default class Modal {
 		this.contentHtml.removeEventListener('transitionend', this.closeModalEventListener);
 		const main = document.getElementById('main');
 		main.removeChild(this.modalHtml);
-		this.#isOpen = false;
 	}
 
 	scrollable() {
