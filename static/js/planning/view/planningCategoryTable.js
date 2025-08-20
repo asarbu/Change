@@ -48,15 +48,15 @@ export default class PlanningCategoryTable extends TableDom {
 				new Dom('tr').append(
 					// TODO Handle edit for category and add here visible columns
 					...this.#visibleColumns.map((col) => new Dom('th').text(col)),
-					new Dom('th').cls('narrow-col').hideable().onClick(this.#onClickedDeleteCategory).append(
+					new Dom('th').cls('narrow-col').hideable(this.#editMode).onClick(this.#onClickedDeleteCategory).append(
 						Dom.imageButton('Delete row', icons.delete),
 					),
 				),
 			).tbody(
 				...this.category.goals.map(
 					(goal) => new Dom('tr').append(
-						...this.#visibleColumns.map((col) => new Dom('td').text(goal[col.toLowerCase()]).onClick(() => this.#onClickedGoal(goal))),
-						new Dom('td').hideable().onClick(() => this.#onClickedDeleteGoal(goal)).append(
+						...this.#visibleColumns.map((col) => new Dom('td').text(goal[col.toLowerCase()]).onClick(this.#onClickedGoal.bind(this, goal))),
+						new Dom('td').hideable(this.#editMode).onClick(() => this.#onClickedDeleteGoal(goal)).append(
 							Dom.imageButton('Delete goal', icons.delete),
 						),
 					),
@@ -64,7 +64,7 @@ export default class PlanningCategoryTable extends TableDom {
 			).tfoot(
 				new Dom('tr').append(
 					...this.#visibleColumns.map((col) => new Dom('td').text(totalValues[col])),
-					new Dom('td').hideable().onClick(this.#onClickedAddGoal).append(
+					new Dom('td').hideable(this.#editMode).onClick(this.#onClickedAddGoal).append(
 						Dom.imageButton('Add row', icons.add_row),
 					),
 				),
@@ -77,10 +77,11 @@ export default class PlanningCategoryTable extends TableDom {
 	};
 
 	#onClickedAddGoal = () => {
-		new SubmitGoalModal().insertMode().onSubmitGoal((newGoal) => {
+		const submitGoalModal = new SubmitGoalModal().insertMode().onSubmitGoal((newGoal) => {
 			this.category.goals.push(newGoal);
 			this.refresh();
 		}).open();
+		return submitGoalModal;
 	};
 
 	/**
@@ -89,13 +90,15 @@ export default class PlanningCategoryTable extends TableDom {
 	#onClickedGoal = (goal) => {
 		if (!this.#editMode) return;
 
-		new SubmitGoalModal().editMode(goal).onSubmitGoal((newGoal) => {
+		const submitGoalModal = new SubmitGoalModal().editMode(goal).onSubmitGoal((newGoal) => {
 			goal.name = newGoal.name;
 			goal.daily = newGoal.daily;
 			goal.monthly = newGoal.monthly;
 			goal.yearly = newGoal.yearly;
 			this.refresh();
 		}).open();
+
+		return submitGoalModal;
 	};
 
 	#onClickedDeleteGoal = (goal) => {
@@ -106,10 +109,13 @@ export default class PlanningCategoryTable extends TableDom {
 	toEditMode() {
 		this.#editMode = true;
 
-		[...this.theadDom().toHtml().querySelectorAll('[hideable="true"]'),
+		const hideableElements = 
+			[...this.theadDom().toHtml().querySelectorAll('[hideable="true"]'),
 			...this.tbodyDom().toHtml().querySelectorAll('[hideable="true"]'),
-			...this.tfootDom().toHtml().querySelectorAll('[hideable="true"]')]
-			.forEach((element) => { element.style.display = ''; });
+			...this.tfootDom().toHtml().querySelectorAll('[hideable="true"]')];
+		hideableElements.forEach((element) => {
+			element.style.display = '';
+		});
 
 		this.pauseSorting();
 		return this;
