@@ -77,7 +77,7 @@ export default class Dom {
 	}
 
 	onClick(listener) {
-		this.elmt.addEventListener('click', listener);
+		this.elmt.onclick = listener;
 		return this;
 	}
 
