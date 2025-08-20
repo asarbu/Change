@@ -68,7 +68,7 @@ export default class SubmitGoalModal extends Modal {
 			)
 		.footer(
 			new Dom('h3').text('Cancel').onClick(this.close),
-			new Dom('input').id('action-button').attr('form', 'goal-submit-modal-form').type('submit').value('Save').onClick(() => {
+			new Dom('input').id('submit-goal').attr('form', 'goal-submit-modal-form').type('submit').value('Save').onClick(() => {
 				const form = document.getElementById('goal-submit-modal-form');
 				if(form.checkValidity()) {
 					this.#saveGoal();
@@ -83,7 +83,6 @@ export default class SubmitGoalModal extends Modal {
 	 * Save the goal and call the handler
 	 */
 	#saveGoal = () => {
-		const form = document.getElementById('goal-submit-modal-form');
 		const newGoal = new Goal(
 			this.#inputs.name.toHtml().value,
 			+this.#inputs.daily.toHtml().value,
