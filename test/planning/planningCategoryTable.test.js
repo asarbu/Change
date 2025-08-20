@@ -2,12 +2,13 @@
  * @jest-environment jsdom
  */
 import { expect, it } from "@jest/globals";
-import PlanningCategoryTable from "../../static/js/planning/view/planningCategoryTable";
 import GDriveSettings from "../../static/js/settings/model/gDriveSettings";
 import PlanningTableSettings from "../../static/js/settings/model/planiningTableSettings";
 import Settings from "../../static/js/settings/model/settings";
 import Theme from "../../static/js/settings/model/theme";
 import { CategoryBuilder } from "./builders";
+import PlanningCategoryTableFake from "./fakes/planningCategoryTableFake";
+import SubmitGoalModal from "../../static/js/planning/view/submitGoal";
 
 describe('Planning Category Table', () => {
     const settings = new Settings(new GDriveSettings(false, false), Theme.BLACK, new PlanningTableSettings([PlanningTableSettings.COLUMN_NAMES]));
@@ -26,7 +27,7 @@ describe('Planning Category Table', () => {
     it('should render no table when no categories are present', () => {
         const visibleColumns = ['Name', 'Daily', 'Monthly', 'Yearly'];
 
-        const tableElement = new PlanningCategoryTable(undefined, visibleColumns).refresh().toHtml();
+        const tableElement = new PlanningCategoryTableFake(undefined, visibleColumns).refresh().toHtml();
 
         //There is one hidden delete column
         expect(tableElement.querySelectorAll('thead').length).toBe(0);
@@ -36,7 +37,7 @@ describe('Planning Category Table', () => {
         const visibleColumns = ['Name', 'Daily', 'Monthly', 'Yearly'];
         const category = new CategoryBuilder().build();
         
-        const tableElement = new PlanningCategoryTable(category, visibleColumns).refresh().toHtml();
+        const tableElement = new PlanningCategoryTableFake(category, visibleColumns).refresh().toHtml();
         
         expect(tableElement.querySelectorAll('thead tr th').length).toBe(5); // 4 visible columns + 1 delete column
         expect(tableElement.querySelectorAll('tbody tr').length).toBe(0);
@@ -46,7 +47,7 @@ describe('Planning Category Table', () => {
         const visibleColumns = ['Name', 'Daily', 'Monthly', 'Yearly'];
         const category = new CategoryBuilder().withOneGoal().build();
         
-        const tableElement = new PlanningCategoryTable(category, visibleColumns).refresh().toHtml();
+        const tableElement = new PlanningCategoryTableFake(category, visibleColumns).refresh().toHtml();
         
         expect(tableElement.querySelectorAll('thead tr th').length).toBe(5); // 4 visible columns + 1 delete column
         expect(tableElement.querySelectorAll('tbody tr').length).toBe(1);
@@ -57,7 +58,7 @@ describe('Planning Category Table', () => {
         const visibleColumns = ['Name', 'Daily', 'Monthly', 'Yearly'];
         const category = new CategoryBuilder().withFourGoals().build();
         
-        const tableElement = new PlanningCategoryTable(category, visibleColumns).refresh().toHtml();
+        const tableElement = new PlanningCategoryTableFake(category, visibleColumns).refresh().toHtml();
         
         expect(tableElement.querySelectorAll('thead tr th').length).toBe(5); // 4 visible columns + 1 delete column
         expect(tableElement.querySelectorAll('tbody tr').length).toBe(4);
@@ -68,7 +69,7 @@ describe('Planning Category Table', () => {
         const visibleColumns = ['Name'];
         const category = new CategoryBuilder().withOneGoal().build();
         
-        const tableElement = new PlanningCategoryTable(category, visibleColumns).refresh().toHtml();
+        const tableElement = new PlanningCategoryTableFake(category, visibleColumns).refresh().toHtml();
         
         expect(tableElement.querySelectorAll('thead tr th').length).toBe(2); // 1 visible column + 1 delete column
         expect(tableElement.querySelectorAll('tbody tr').length).toBe(1);
@@ -79,7 +80,7 @@ describe('Planning Category Table', () => {
         const visibleColumns = ['Daily'];
         const category = new CategoryBuilder().withOneGoal().build();
         
-        const tableElement = new PlanningCategoryTable(category, visibleColumns).refresh().toHtml();
+        const tableElement = new PlanningCategoryTableFake(category, visibleColumns).refresh().toHtml();
         
         expect(tableElement.querySelectorAll('thead tr th').length).toBe(2);
         expect(tableElement.querySelectorAll('tbody tr').length).toBe(1);
@@ -90,7 +91,7 @@ describe('Planning Category Table', () => {
         const visibleColumns = ['Monthly'];
         const category = new CategoryBuilder().withOneGoal().build();
         
-        const tableElement = new PlanningCategoryTable(category, visibleColumns).refresh().toHtml();
+        const tableElement = new PlanningCategoryTableFake(category, visibleColumns).refresh().toHtml();
         
         expect(tableElement.querySelectorAll('thead tr th').length).toBe(2);
         expect(tableElement.querySelectorAll('tbody tr').length).toBe(1);
@@ -101,7 +102,7 @@ describe('Planning Category Table', () => {
         const visibleColumns = ['Yearly'];
         const category = new CategoryBuilder().withOneGoal().build();
         
-        const tableElement = new PlanningCategoryTable(category, visibleColumns).refresh().toHtml();
+        const tableElement = new PlanningCategoryTableFake(category, visibleColumns).refresh().toHtml();
         
         expect(tableElement.querySelectorAll('thead tr th').length).toBe(2);
         expect(tableElement.querySelectorAll('tbody tr').length).toBe(1);
@@ -112,7 +113,7 @@ describe('Planning Category Table', () => {
         const visibleColumns = [];
         const category = new CategoryBuilder().withOneGoal().build();
         
-        const tableElement = new PlanningCategoryTable(category, visibleColumns).refresh().toHtml();
+        const tableElement = new PlanningCategoryTableFake(category, visibleColumns).refresh().toHtml();
         
         expect(tableElement.querySelectorAll('thead tr th').length).toBe(0); // Do not render header if no columns are visible
         expect(tableElement.querySelectorAll('tbody tr').length).toBe(0);
@@ -121,7 +122,7 @@ describe('Planning Category Table', () => {
     it('should handle undefined category gracefully', () => {
         const visibleColumns = ['Name', 'Daily', 'Monthly', 'Yearly']; 
 
-        const tableElement = new PlanningCategoryTable(undefined, visibleColumns).refresh().toHtml();
+        const tableElement = new PlanningCategoryTableFake(undefined, visibleColumns).refresh().toHtml();
 
         expect(tableElement.querySelectorAll('thead tr th').length).toBe(0); //
         expect(tableElement.querySelectorAll('tbody tr').length).toBe(0);
@@ -130,7 +131,7 @@ describe('Planning Category Table', () => {
     it('should handle undefined visible columns gracefully', () => {
         const category = new CategoryBuilder().withOneGoal().build();
 
-        const tableElement = new PlanningCategoryTable(category).refresh().toHtml();
+        const tableElement = new PlanningCategoryTableFake(category).refresh().toHtml();
 
         expect(tableElement.querySelectorAll('thead tr th').length).toBe(0); // Do not render header if no columns are visible
         expect(tableElement.querySelectorAll('tbody tr').length).toBe(0);
@@ -140,7 +141,7 @@ describe('Planning Category Table', () => {
         const visibleColumns = ['Name', 'Daily', 'Monthly', 'Yearly'];
         const category = new CategoryBuilder().withFourGoals().build();
         
-        const tableElement = new PlanningCategoryTable(category, visibleColumns).refresh().toHtml();
+        const tableElement = new PlanningCategoryTableFake(category, visibleColumns).refresh().toHtml();
         
         const footerRow = tableElement.querySelector('tfoot tr');
         expect(footerRow.querySelectorAll('td').length).toBe(5); // 4 visible columns + 1 add column
@@ -156,7 +157,7 @@ describe('Planning Category Table', () => {
         const onDeleteCategoryHandler = () => { 
             expect(true).toBeTruthy(); 
         };
-        const tableElement = new PlanningCategoryTable(category, visibleColumns)
+        const tableElement = new PlanningCategoryTableFake(category, visibleColumns)
             .onDeleteCategory(onDeleteCategoryHandler)
             .refresh()
             .toHtml();
@@ -165,11 +166,14 @@ describe('Planning Category Table', () => {
         deleteButton.click();
     });
 
-        it('Should not display delete button when edit mode is disabled', () => {
+    it('Should not display delete button when edit mode is disabled', () => {
         const visibleColumns = ['Name', 'Daily', 'Monthly', 'Yearly'];
         const category = new CategoryBuilder().withOneGoal().build();
 
-        const tableElement = new PlanningCategoryTable(category, visibleColumns).refresh().toNormalMode().toHtml();
+        const tableElement = new PlanningCategoryTableFake(category, visibleColumns)
+            .refresh()
+            .toNormalMode()
+            .toHtml();
 
         const deleteTh = tableElement.querySelectorAll('th')[4];
         expect(deleteTh.style.display).toBe('none');
@@ -179,15 +183,22 @@ describe('Planning Category Table', () => {
         const visibleColumns = ['Name', 'Daily', 'Monthly', 'Yearly'];
         const category = new CategoryBuilder().withOneGoal().build();
 
-        const tableElement = new PlanningCategoryTable(category, visibleColumns).toEditMode().refresh().toHtml();
-
-        expect(tableElement.querySelector('th.narrow-col button').style.display).not.toBe('none');
+        const tableElement = new PlanningCategoryTableFake(category, visibleColumns)
+            .refresh()
+            .toEditMode()
+            .toHtml();
+        
+        const headerCells = tableElement.querySelectorAll('thead tr th');
+        expect(headerCells.length).toBe(5); // 4 visible columns + 1 delete column
+        headerCells.forEach((cell) => {
+            expect(cell.style.display).not.toBe('none'); // All columns should be visible
+        });
     });
 
     it('should delete the only goal when delete button is clicked', () => {
         const visibleColumns = ['Name', 'Daily', 'Monthly', 'Yearly'];
         const category = new CategoryBuilder().withOneGoal().build();
-        const tableElement = new PlanningCategoryTable(category, visibleColumns)
+        const tableElement = new PlanningCategoryTableFake(category, visibleColumns)
             .refresh()
             .toHtml();
         const deleteButton = tableElement.querySelector('tbody tr td button');
@@ -200,7 +211,7 @@ describe('Planning Category Table', () => {
     it('should delete a specific goal when its delete button is clicked', () => {
         const visibleColumns = ['Name', 'Daily', 'Monthly', 'Yearly'];
         const category = new CategoryBuilder().withFourGoals().build();
-        const tableElement = new PlanningCategoryTable(category, visibleColumns)
+        const tableElement = new PlanningCategoryTableFake(category, visibleColumns)
             .refresh()
             .toHtml();
         const deleteButtons = tableElement.querySelectorAll('tbody tr td button');
@@ -208,5 +219,60 @@ describe('Planning Category Table', () => {
         deleteButtons[1].click(); // Click the delete button for 'Sample Goal 2'
         expect(category.goals.length).toBe(3); // One goal should be deleted
         expect(category.goals.some(goal => goal.name === 'Sample Goal 2')).toBe(false); // 'Sample Goal 2' should not be present
+    });
+
+    it('should open submit goal modal when a goal is clicked in edit mode', () => {
+        const visibleColumns = ['Name', 'Daily', 'Monthly', 'Yearly'];
+        const category = new CategoryBuilder().withOneGoal().build();
+        const tableElement = new PlanningCategoryTableFake(category, visibleColumns)
+            .toEditMode()
+            .refresh();
+
+        const modal = tableElement.clickGoalName(category.goals[0]);
+
+        expect(modal).toBeDefined();
+    });
+
+    it('should not open modal when clicking a goal in normal mode', () => {
+        const visibleColumns = ['Name', 'Daily', 'Monthly', 'Yearly'];
+        const category = new CategoryBuilder().withOneGoal().build();
+        const tableElement = new PlanningCategoryTableFake(category, visibleColumns)
+            .refresh();
+
+        const modal = tableElement.clickGoalName(category.goals[0]);
+
+        expect(modal).toBeUndefined(); // No modal should be opened in normal mode
+    });
+
+    it('should add a new goal when "Add Goal" button is clicked', () => {
+        const visibleColumns = ['Name', 'Daily', 'Monthly', 'Yearly'];
+        const category = new CategoryBuilder().withOneGoal().build();
+        const tableElement = new PlanningCategoryTableFake(category, visibleColumns)
+            .refresh()
+            .toEditMode();
+
+        /** @type {SubmitGoalModal} */
+        const modal = tableElement.clickAddGoal();
+        modal.toHtml().querySelector('#submit-goal').onclick();
+
+        expect(category.goals.length).toBe(2);
+    });
+
+    it('should edit goal when a goal is clicked in edit mode', () => {
+        const visibleColumns = ['Name', 'Daily', 'Monthly', 'Yearly'];
+        const category = new CategoryBuilder().withOneGoal().build();
+        const tableElement = new PlanningCategoryTableFake(category, visibleColumns)
+            .toEditMode()
+            .refresh();
+
+        /** @type {SubmitGoalModal} */
+        const modal = tableElement.clickGoalName(category.goals[0]);
+        modal.toHtml().querySelector('#goal-submit-modal-name').value = 'Updated Goal';
+        modal.toHtml().querySelector('#goal-submit-modal-daily').value = '2';
+        modal.toHtml().querySelector('#submit-goal').onclick();
+
+        expect(category.goals.length).toBe(1);
+        expect(category.goals[0].name).toBe('Updated Goal');
+        expect(category.goals[0].daily).toBe(2);
     });
 });
