@@ -116,12 +116,12 @@ export default class Modal {
 	}
 
 	open() {
+		this.#isOpen = true;
 		const main = document.getElementById('main');
 		main.appendChild(this.modalHtml);
 		requestAnimationFrame(() => {
 			this.modalBackdropHtml.classList.add('show-modal-backdrop');
 			this.contentHtml.classList.add('show-modal-content');
-			this.#isOpen = true;
 		});
 
 		return this;
