@@ -109,13 +109,10 @@ export default class PlanningCategoryTable extends TableDom {
 	toEditMode() {
 		this.#editMode = true;
 
-		const hideableElements = 
-			[...this.theadDom().toHtml().querySelectorAll('[hideable="true"]'),
-			...this.tbodyDom().toHtml().querySelectorAll('[hideable="true"]'),
-			...this.tfootDom().toHtml().querySelectorAll('[hideable="true"]')];
-		hideableElements.forEach((element) => {
-			element.style.display = '';
-		});
+		[...this.theadDom().toHtml().querySelectorAll('[hideable="true"]'),
+		...this.tbodyDom().toHtml().querySelectorAll('[hideable="true"]'),
+		...this.tfootDom().toHtml().querySelectorAll('[hideable="true"]')]
+		.forEach((element) => { element.style.display = ''; });
 
 		this.pauseSorting();
 		return this;
