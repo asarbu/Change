@@ -152,8 +152,9 @@ describe('Planning cache', () => {
 ```
 ### Input validation
 Always use a submit type input for a form, to ensure that proper form validation is performed (e.g. `required` inputs are not left empty).
-If the submit button has attached behabior, you should check beforehand if the form is valid.
-When using Jest, mock the checkValidity function because the form validation is not implemented in Jest. 
+Always return false for `onSubmit()` in forms to avoid page reloads.
+If the submit button has attached behavior, you must check beforehand if the form is valid.
+When using Jest, mock the `checkValidity()` function because the form validation is not implemented in Jest. 
 **Example**
 ```
 new Dom('input').type('submit').attr('form', form-id').onClick(() => {
