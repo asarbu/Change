@@ -2,9 +2,9 @@ import Dom from '../../common/gui/dom.js';
 import icons from '../../common/gui/icons.js';
 import Modal from '../../common/gui/modal.js';
 import Sidenav from '../../common/gui/sidenav.js';
-import TableDom from '../../common/gui/tableDom.js';
 import PlanningTableSettings from '../model/planiningTableSettings.js';
 import Settings from '../model/settings.js';
+import SpendingTableSettings from '../model/spendingTableSettings.js';
 
 export default class SettingsScreen {
 	#onClickedDeleteDatabaseHandler = undefined;
@@ -18,6 +18,8 @@ export default class SettingsScreen {
 	#onChangedThemeHandler = undefined;
 
 	#onChangedPlanningTableVisibleColumnsHandler = undefined;
+
+	#onChangedSpendingTableVisibleColumnsHandler = undefined;
 
 	/** @type {Settings} */
 	#settings = undefined;
@@ -40,6 +42,9 @@ export default class SettingsScreen {
 
 	/** @type {Modal} */
 	#planningTableHeaderModal = undefined;
+	
+	/** @type {Modal} */
+	#spendingTableHeaderModal = undefined;
 
 	constructor(settings) {
 		this.#settings = settings;
@@ -60,15 +65,31 @@ export default class SettingsScreen {
 	}
 
 	buildModals() {
-		const visibleColumns = this.#settings.planningTableSettings().visibleColumns();
+		const visiblePlanningColumns = this.#settings.planningTableSettings().visibleColumns();
 
-		const modalContent = new Dom('div').cls('round').append(
+		const planningModalContent = new Dom('div').cls('round').append(
 			...PlanningTableSettings.COLUMN_NAMES.map((columnName) => new Dom('div').cls('accordion-secondary', 'no-scroll').append(
 				new Dom('span').text(columnName),
 				new Dom('span').append(
 					new Dom('label').cls('setting').append(
 						new Dom('input').cls('setting-state')
-							.type('checkbox').checked(visibleColumns.includes(columnName))
+							.type('checkbox').checked(visiblePlanningColumns.includes(columnName))
+							.hide(),
+						new Dom('span').cls('setting-outline'),
+						new Dom('i').cls('setting-indicator'),
+					),
+				),
+			)),
+		);
+
+		const visibleSpendingColumns = this.#settings.spendingTableSettings().visibleColumns();
+		const spendingModalContent = new Dom('div').cls('round').append(
+			...SpendingTableSettings.COLUMN_NAMES.map((columnName) => new Dom('div').cls('accordion-secondary', 'no-scroll').append(
+				new Dom('span').text(columnName),
+				new Dom('span').append(
+					new Dom('label').cls('setting').append(
+						new Dom('input').cls('setting-state')
+							.type('checkbox').checked(visibleSpendingColumns.includes(columnName))
 							.hide(),
 						new Dom('span').cls('setting-outline'),
 						new Dom('i').cls('setting-indicator'),
@@ -79,13 +100,24 @@ export default class SettingsScreen {
 
 		this.#planningTableHeaderModal = new Modal('planning-columns-modal')
 			.header(new Dom('h2').text('Planning columns'))
-			.body(new Dom('div').append(modalContent))
+			.body(new Dom('div').append(planningModalContent))
 			.addFooterWithActionButton('Save', () => {
-				const checkedColumns = Array.from(modalContent.toHtml().querySelectorAll('input[type="checkbox"]'))
+				const checkedColumns = Array.from(planningModalContent.toHtml().querySelectorAll('input[type="checkbox"]'))
 					.map((input, idx) => ({ input, idx }))
 					.filter(({ input }) => input.checked)
 					.map(({ idx }) => PlanningTableSettings.COLUMN_NAMES[idx]);
 				this.#onChangedPlanningTableVisibleColumnsHandler?.(checkedColumns);
+			});
+
+		this.#spendingTableHeaderModal = new Modal('spending-columns-modal')
+			.header(new Dom('h2').text('Spending columns'))
+			.body(new Dom('div').append(spendingModalContent))
+			.addFooterWithActionButton('Save', () => {
+				const checkedColumns = Array.from(spendingModalContent.toHtml().querySelectorAll('input[type="checkbox"]'))
+					.map((input, idx) => ({ input, idx }))
+					.filter(({ input }) => input.checked)
+					.map(({ idx }) => SpendingTableSettings.COLUMN_NAMES[idx]);
+				this.#onChangedSpendingTableVisibleColumnsHandler?.(checkedColumns);
 			});
 	}
 
@@ -144,6 +176,12 @@ export default class SettingsScreen {
 				new Dom('span').text('Visible columns'),
 				new Dom('span').text('▲'),
 			).onClick(this.#planningTableHeaderModal.open.bind(this.#planningTableHeaderModal)),
+			// --- Spending Table Columns Section ---
+			new Dom('h2').text('Spending Table Columns'),
+			new Dom('div').cls('accordion-secondary').append(
+				new Dom('span').text('Visible columns'),
+				new Dom('span').text('▲'),
+			).onClick(this.#spendingTableHeaderModal.open.bind(this.#spendingTableHeaderModal)),
 		);
 		return this.#dom;
 	}
@@ -239,6 +277,11 @@ export default class SettingsScreen {
 
 	onChangedPlanningTableVisibleColumns(handler) {
 		this.#onChangedPlanningTableVisibleColumnsHandler = handler;
+		return this;
+	}
+
+	onChangedSpendingTableVisibleColumns(handler) {
+		this.#onChangedSpendingTableVisibleColumnsHandler = handler;
 		return this;
 	}
 
