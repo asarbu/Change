@@ -47,7 +47,7 @@ export default class SubmitGoalModal extends Modal {
 
 		this.header(new Dom('h2').text('Insert Goal'))
 			.body(
-				new Dom('form').id('goal-submit-modal-form').append(
+				new Dom('form').id('goal-submit-modal-form').onSubmit(() => false).append(
 					new Dom('div').cls('input-field').append(
 						this.#inputs.name,
 						new Dom('label').attr('for', 'goal-submit-modal-name').text('Name: '),

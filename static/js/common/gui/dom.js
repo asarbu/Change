@@ -96,6 +96,11 @@ export default class Dom {
 		return this;
 	}
 
+	onSubmit(listener) {
+		this.elmt.onsubmit = listener;
+		return this;
+	}
+
 	show() {
 		this.elmt.style.display = '';
 		return this;
