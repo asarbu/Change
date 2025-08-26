@@ -9,7 +9,9 @@ import SpendingNavbar from './spendingNavbar.js';
 import SpendingNavbarEventHandlers from './spendingNavbarHandlers.js';
 import SpendingSummaryModal from './spendingSummaryModal.js';
 import SpendingSubmitModal from './spendingSubmitModal.js';
-import TableDom from '../../common/gui/tableDom.js';
+import SpendingCategoryTable from './spendingCategoryTable.js';
+import Settings from '../../settings/model/settings.js';
+import SettingsController from '../../settings/controller/settingsController.js';
 
 export default class SpendingScreen {
 	/** @type {(spending: Spending) => any} */
@@ -37,15 +39,19 @@ export default class SpendingScreen {
 	/** @type {number} */
 	#year = undefined;
 
+	/** @type {Settings} */
+	#settings = undefined;
+
 	/**
 	 * @param {number} defaultYear
 	 * @param {number} defaultMonth
 	 * @param {Array<SpendingReport>} spendingReports
 	 */
-	constructor(defaultYear, defaultMonth, spendingReports) {
+	constructor(defaultYear, defaultMonth, spendingReports, settings = new SettingsController().currentSettings()) {
 		this.#year = defaultYear;
 		this.#month = defaultMonth;
 		this.spendingReports = spendingReports;
+		this.#settings = settings;
 	}
 
 	init() {
@@ -183,7 +189,8 @@ export default class SpendingScreen {
 	buildTable(spendingReport) {
 		const onClickDelete = this.onClickDeleteSlice.bind(this);
 		const buildSpendingRow = this.buildSpendingRow.bind(this);
-		const spendingsDom = new TableDom().id(`table-${spendingReport.month()}`)
+		const spendingsDom = new SpendingCategoryTable(spendingReport, this.#settings.spendingTableSettings().visibleColumns()).refresh();
+		/** new TableDom().id(`table-${spendingReport.month()}`)
 			.thead(
 				new Dom('tr').append(
 					new Dom('th').cls('narrow-col').text('Date'),
@@ -203,7 +210,7 @@ export default class SpendingScreen {
 			.tfoot(
 				this.buildTotalRow(spendingReport.totalAsSpending()),
 			)
-			.userData(spendingReport);
+			.userData(spendingReport);*/ 
 		this.spendingsHtml = spendingsDom.toHtml();
 
 		return spendingsDom;
