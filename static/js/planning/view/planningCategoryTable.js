@@ -32,8 +32,7 @@ export default class PlanningCategoryTable extends TableDom {
 		if (!this.category
 			|| !this.#visibleColumns
 			|| this.#visibleColumns.length === 0) {
-			this.clear();
-			return this;
+			return this.clear();
 		}
 
 		const totalValues = {
@@ -47,6 +46,7 @@ export default class PlanningCategoryTable extends TableDom {
 			.thead(
 				new Dom('tr').append(
 					// TODO Handle edit for category and add here visible columns
+					// TODO Handle column name to display category name
 					...this.#visibleColumns.map((col) => new Dom('th').text(col)),
 					new Dom('th').cls('narrow-col').hideable(this.#editMode).onClick(this.#onClickedDeleteCategory).append(
 						Dom.imageButton('Delete row', icons.delete),
