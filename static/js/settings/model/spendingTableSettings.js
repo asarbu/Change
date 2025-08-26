@@ -1,6 +1,6 @@
 export default class SpendingTableSettings {
 	// TODO Create a column class to store these strings?
-	static #COLUMN_NAME = 'Name';
+	static #COLUMN_DESCRIPTION = 'Description';
 
 	static #COLUMN_DATE = 'Date';
 
@@ -10,7 +10,7 @@ export default class SpendingTableSettings {
 
 	static COLUMN_NAMES = Object.freeze([
 		SpendingTableSettings.#COLUMN_DATE,
-		SpendingTableSettings.#COLUMN_NAME,
+		SpendingTableSettings.#COLUMN_DESCRIPTION,
 		SpendingTableSettings.#COLUMN_CATEGORY,
 		SpendingTableSettings.#COLUMN_AMOUNT,
 	]);
@@ -21,7 +21,7 @@ export default class SpendingTableSettings {
 	{
 		visibleColumns: [
 			SpendingTableSettings.#COLUMN_DATE,
-			SpendingTableSettings.#COLUMN_NAME,
+			SpendingTableSettings.#COLUMN_DESCRIPTION,
 			SpendingTableSettings.#COLUMN_CATEGORY,
 			SpendingTableSettings.#COLUMN_AMOUNT,
 		],
