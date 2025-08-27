@@ -260,15 +260,15 @@ th:first-child, td:first-child {
 	padding-left: 0.75rem;
 }
 
-.wide-col {
+th.wide {
 	width: 30vw;
 }
 
-.narrow-col {
+th.narrow {
 	width: 11vw;
 }
 
-.normal-col {
+th.normal {
 	width: 21vw;
 }
 
