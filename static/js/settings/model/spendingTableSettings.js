@@ -1,31 +1,17 @@
+import SpendingTableColumn from "../../spending/view/spendingTableColumn.js";
+
 export default class SpendingTableSettings {
-	// TODO Create a column class to store these strings?
-	static #COLUMN_DESCRIPTION = 'Description';
 
-	static #COLUMN_DATE = 'Date';
-
-	static #COLUMN_CATEGORY = 'Category';
-
-	static #COLUMN_AMOUNT = 'Amount';
-
-	static COLUMN_NAMES = Object.freeze([
-		SpendingTableSettings.#COLUMN_DATE,
-		SpendingTableSettings.#COLUMN_DESCRIPTION,
-		SpendingTableSettings.#COLUMN_CATEGORY,
-		SpendingTableSettings.#COLUMN_AMOUNT,
-	]);
-
+	/** @type {Array<import("../../spending/view/spendingTableColumn.js").SpendingTableColumn>} */
 	#visibleColumns = undefined;
 
-	static fromJson({ visibleColumns } =
-	{
-		visibleColumns: [
-			SpendingTableSettings.#COLUMN_DATE,
-			SpendingTableSettings.#COLUMN_DESCRIPTION,
-			SpendingTableSettings.#COLUMN_CATEGORY,
-			SpendingTableSettings.#COLUMN_AMOUNT,
-		],
-	}) {
+	/**
+	 * @param {Object} json
+	 * @param {Array<string>} json.visibleColumns
+	 * @returns {SpendingTableSettings}
+	 */
+	static fromJson({ visibleColumns }) {
+		visibleColumns = visibleColumns.map(SpendingTableColumn.fromName).filter(c => c);
 		return new SpendingTableSettings(visibleColumns);
 	}
 
@@ -45,6 +31,6 @@ export default class SpendingTableSettings {
 	}
 
 	toJson() {
-		return { visibleColumns: this.#visibleColumns };
+		return { visibleColumns: this.#visibleColumns.map(c => c.name)};
 	}
 }
