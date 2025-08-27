@@ -16,6 +16,14 @@ export default class Spending {
 		this.price = price;
 	}
 
+	get dayOfMonth() {
+		return this.spentOn.toLocaleString('en-GB', { day: 'numeric' });
+	}
+
+	get fixedPrice() {
+		return this.price.toFixed(2);
+	}
+
 	/**
 	 * Function to convert string data to properly initialized objects
 	 * @param {string} key Key that identifies property to revive
