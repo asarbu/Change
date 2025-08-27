@@ -2,9 +2,9 @@ import Dom from '../../common/gui/dom.js';
 import icons from '../../common/gui/icons.js';
 import Modal from '../../common/gui/modal.js';
 import Sidenav from '../../common/gui/sidenav.js';
+import SpendingTableColumn from '../../spending/view/spendingTableColumn.js';
 import PlanningTableSettings from '../model/planiningTableSettings.js';
 import Settings from '../model/settings.js';
-import SpendingTableSettings from '../model/spendingTableSettings.js';
 
 export default class SettingsScreen {
 	#onClickedDeleteDatabaseHandler = undefined;
@@ -84,12 +84,12 @@ export default class SettingsScreen {
 
 		const visibleSpendingColumns = this.#settings.spendingTableSettings().visibleColumns();
 		const spendingModalContent = new Dom('div').cls('round').append(
-			...SpendingTableSettings.COLUMN_NAMES.map((columnName) => new Dom('div').cls('accordion-secondary', 'no-scroll').append(
-				new Dom('span').text(columnName),
+			...SpendingTableColumn.ALL.map((col) => new Dom('div').cls('accordion-secondary', 'no-scroll').append(
+				new Dom('span').text(col.name),
 				new Dom('span').append(
 					new Dom('label').cls('setting').append(
 						new Dom('input').cls('setting-state')
-							.type('checkbox').checked(visibleSpendingColumns.includes(columnName))
+							.type('checkbox').checked(visibleSpendingColumns.includes(col))
 							.hide(),
 						new Dom('span').cls('setting-outline'),
 						new Dom('i').cls('setting-indicator'),
@@ -116,7 +116,7 @@ export default class SettingsScreen {
 				const checkedColumns = Array.from(spendingModalContent.toHtml().querySelectorAll('input[type="checkbox"]'))
 					.map((input, idx) => ({ input, idx }))
 					.filter(({ input }) => input.checked)
-					.map(({ idx }) => SpendingTableSettings.COLUMN_NAMES[idx]);
+					.map(({ idx }) => SpendingTableColumn.ALL[idx]);
 				this.#onChangedSpendingTableVisibleColumnsHandler?.(checkedColumns);
 			});
 	}

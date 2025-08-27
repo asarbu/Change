@@ -7,44 +7,40 @@ export default class SpendingCategoryTable extends TableDom {
 	/** @type {SpendingReport} */
 	#spendingReport = undefined;
 
-	/** @type {Array<string>} */
+	/** @type {Array<import("./spendingTableColumn.js").SpendingTableColumn>} */
 	#visibleColumns = undefined;
 
 	#editMode = false;
 
-	constructor(spendingReport, visibleColumns) {
+	#spendings = [];
+
+	constructor(name, spendingReport, visibleColumns) {
 		super();
 		this.#spendingReport = spendingReport;
 		this.#visibleColumns = visibleColumns;
+		this.#spendings = this.#spendingReport.spendings();
 	}
 
 	refresh() {
-		if(!this.#spendingReport || !this.#visibleColumns || this.#visibleColumns.length === 0) {
+		if(!this.#spendings || this.#spendings.length === 0 || !this.#visibleColumns || this.#visibleColumns.length === 0) {
 			return this.clear();
 		}
-
 		const totalSpending = this.#spendingReport.totalAsSpending();
-		const totalValues = {
-			date: totalSpending.toLocaleString('en-GB', { day: 'numeric' }),
-			name: totalSpending.description,
-			category: totalSpending.category,
-			price: totalSpending.price.toFixed(2),
-		};
 
 		this.id(`table-${this.#spendingReport.month()}`)
 			.thead(
 				new Dom('tr').append(
-					...this.#visibleColumns.map(col => new Dom('th').text(col)),
-					new Dom('th').cls('narrow-col').hideable(this.#editMode).append(
+					...this.#visibleColumns.map(col => new Dom('th').cls(col.size).text(col)),
+					new Dom('th').cls('narrow').hideable(this.#editMode).append(
 						new Dom('button').onClick(this.onClickDelete).append(
 							new Dom('img').cls('white-fill').text('Delete').attr('alt', 'Delete').attr('src', icons.delete),
 						),
 					),
 				),
 			).tbody(
-				...this.#spendingReport.spendings().map(
+				...this.#spendings.map(
 					(spending) => new Dom('tr').id(spending.id).userData(spending).append(
-						...this.#visibleColumns.map(col => new Dom('td').text(spending[col.toLowerCase()]).onClick(this.onClickedSpending)),
+						...this.#visibleColumns.map(col => new Dom('td').text(spending[col.type]).onClick(this.onClickedSpending)),
 						new Dom('td').hideable(this.#editMode).append(
 							new Dom('button').onClick(this.onClickDelete).append(
 								new Dom('img').cls('white-fill').text('Delete').attr('alt', 'Delete').attr('src', icons.delete),
@@ -53,7 +49,7 @@ export default class SpendingCategoryTable extends TableDom {
 					)),
 			).tfoot(
 				new Dom('tr').append(
-					...this.#visibleColumns.map((col) => new Dom('td').text(totalValues[col])),
+					...this.#visibleColumns.map((col) => new Dom('td').text(totalSpending[col.type])),
 					new Dom('td').hideable(this.#editMode),
 				),
 			).userData(this.#spendingReport);
@@ -66,5 +62,13 @@ export default class SpendingCategoryTable extends TableDom {
 
 	onClickedSpending = (spending) => {
 		return;
+	}
+
+	editMode() {
+		this.#editMode = true;
+	}
+
+	normalMode() {
+		this.#editMode = false;
 	}
 }
