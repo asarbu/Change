@@ -24,14 +24,8 @@ export default class SpendingScreen {
 	/** @type {Array<Category>} */
 	categories = undefined;
 
-	/** @type {Map<number, Dom} */
-	#drawnSlices = new Map();
-
-	/** @type {SpendingSubmitModal} */
-	#spendingSubmitModal = undefined;
-
-	/** @type {Modal} */
-	#categoryModal = undefined;
+	/** @type {Map<number, SpendingCategoryTable>} */
+	#drawnMonths = new Map();
 
 	/** @type {number} */
 	#month = undefined;
@@ -68,22 +62,25 @@ export default class SpendingScreen {
 		document.getElementById('main').replaceChildren();
 
 		this.buildNavbar(defaultReport);
-		this.buildSubmitSpendingModal(defaultReport.plannedCategories());
 		const screen = this.buildScreen(defaultReport);
 		this.gfx = new GraphicEffects();
 		this.gfx.init(screen);
 		this.gfx.onSliceChange(this.navbar.selectMonth.bind(this.navbar));
 
-		this.spendingReports.forEach((spendingReport) => this.refreshMonth(spendingReport));
+		this.spendingReports.sort((a, b) => a.month() - b.month()).forEach((spendingReport) => this.refreshMonth(spendingReport));
 	}
 
+	/**
+	 * 
+	 * @param {SpendingReport} spendingReport 
+	 */
 	buildNavbar(spendingReport) {
 		const eventHandlers = new SpendingNavbarEventHandlers();
-		eventHandlers.onClickAddSpending = this.onClickAddSpending.bind(this);
-		eventHandlers.onClickEdit = this.onClickEdit.bind(this);
-		eventHandlers.onClickSave = this.onClickedSave.bind(this);
-		eventHandlers.onClickSummary = this.onClickedSummary.bind(this);
-		eventHandlers.onMonthChanged = this.slideToMonth.bind(this);
+		eventHandlers.onClickAddSpending = this.onClickAddSpending;
+		eventHandlers.onClickEdit = this.onClickEdit;
+		eventHandlers.onClickSave = this.onClickedSave;
+		eventHandlers.onClickSummary = this.onClickedSummary;
+		eventHandlers.onMonthChanged = this.slideToMonth.bind(this, spendingReport.month());
 
 		this.navbar = new SpendingNavbar(this.#year, spendingReport.month(), eventHandlers);
 		const main = document.getElementById('main');
@@ -97,38 +94,21 @@ export default class SpendingScreen {
 	 * @param {SpendingReport} spendingReport
 	 */
 	refreshMonth(spendingReport) {
-		let reportSlice = this.#drawnSlices.get(spendingReport.month());
-		const sliceId = `slice_${spendingReport.month()}`;
-		if (!reportSlice) {
-			reportSlice = new Dom('div').id(sliceId).cls('slice').userData(spendingReport).append(
-				new Dom('h1').text(`${spendingReport} spending`),
-			);
+		let spendingsTable = this.#drawnMonths.get(spendingReport.month());
+		if (!spendingsTable) {
+			spendingsTable = new SpendingCategoryTable(spendingReport.toString(), spendingReport.spendings(), this.categories, this.#settings.spendingTableSettings().visibleColumns());
 
-			// Insert the slice in calendaristic order
-			const sectionHtml = this.section.toHtml();
-			const slices = Array.from(sectionHtml.children);
-			const insertIndex = slices.findIndex(
-				(slice) => slice.userData && slice.userData.month() > spendingReport.month(),
+			this.section.clear().append(
+				new Dom('div').id(`slice_${spendingReport.month()}`).cls('slice').userData(spendingReport).append(
+					new Dom('h1').text(`${spendingReport} spending`),
+				).append(spendingsTable)
 			);
-			if (insertIndex === -1) {
-				this.section.append(reportSlice);
-			} else {
-				sectionHtml.insertBefore(reportSlice.toHtml(), slices[insertIndex]);
-			}
-
 			this.navbar.appendMonth(spendingReport.month());
-			// Screen changed, effects need reinitialization
-			this.gfx.init(this.screen.toHtml());
-		} else {
-			const sliceTable = document.getElementById(`table-${spendingReport.month()}`);
-			reportSlice.toHtml().removeChild(sliceTable);
+			this.#drawnMonths.set(spendingReport.month(), spendingsTable);
 		}
-
-		reportSlice.append(
-			this.buildTable(spendingReport),
-		);
-
-		this.#drawnSlices.set(spendingReport.month(), reportSlice);
+		spendingsTable.refresh();
+		// Screen changed, effects need reinitialization
+		//this.gfx.init(this.screen.toHtml());
 	}
 
 	/**
@@ -144,7 +124,7 @@ export default class SpendingScreen {
 	 * @param {number} month
 	 */
 	slideToMonth(month) {
-		const reportSlice = this.#drawnSlices.get(month);
+		const reportSlice = this.#drawnMonths.get(month);
 		const sliceIndex = Array.prototype.indexOf.call(
 			this.section.toHtml().childNodes,
 			reportSlice.toHtml(),
@@ -157,11 +137,7 @@ export default class SpendingScreen {
 	 * @param {number} month
 	 */
 	jumpToMonth(month) {
-		const reportSlice = this.#drawnSlices.get(month);
-		const sliceIndex = Array.prototype.indexOf.call(
-			this.section.toHtml().childNodes,
-			reportSlice.toHtml(),
-		);
+		const sliceIndex = Array.from(this.#drawnMonths.keys()).sort((a, b) => a - b).indexOf(month);
 		this.gfx.jumpTo(sliceIndex);
 	}
 
@@ -176,94 +152,8 @@ export default class SpendingScreen {
 
 		const main = document.getElementById('main');
 		main.appendChild(this.screen.toHtml());
-		// main.appendChild(this.buildTable(spendingReport).toHtml());
 
 		return this.screen.toHtml();
-	}
-
-	/**
-	 * Builds the {Dom} object associated with this report
-	 * @param {SpendingReport} spendingReport
-	 * @returns {Dom}
-	 */
-	buildTable(spendingReport) {
-		const onClickDelete = this.onClickDeleteSlice.bind(this);
-		const buildSpendingRow = this.buildSpendingRow.bind(this);
-		const spendingsDom = new SpendingCategoryTable(spendingReport, this.#settings.spendingTableSettings().visibleColumns()).refresh();
-		/** new TableDom().id(`table-${spendingReport.month()}`)
-			.thead(
-				new Dom('tr').append(
-					new Dom('th').cls('narrow-col').text('Date'),
-					new Dom('th').text(spendingReport),
-					new Dom('th').cls('normal-col').text('Category'),
-					new Dom('th').cls('normal-col').text('Amount'),
-					new Dom('th').cls('narrow-col').hideable(this.editMode).append(
-						new Dom('button').onClick(onClickDelete).append(
-							new Dom('img').cls('white-fill').text('Delete').attr('alt', 'Delete').attr('src', icons.delete),
-						),
-					),
-				),
-			)
-			.tbody(
-				...spendingReport.spendings().map(buildSpendingRow),
-			)
-			.tfoot(
-				this.buildTotalRow(spendingReport.totalAsSpending()),
-			)
-			.userData(spendingReport);*/ 
-		this.spendingsHtml = spendingsDom.toHtml();
-
-		return spendingsDom;
-	}
-
-	buildSubmitSpendingModal(forCategories) {
-		this.#spendingSubmitModal = new SpendingSubmitModal(forCategories);
-		this.#spendingSubmitModal.onInsertSpending(this.onInsertedSpending.bind(this));
-		this.#spendingSubmitModal.onEditSpending(this.onEditedSpending.bind(this));
-
-		return this.#spendingSubmitModal;
-	}
-
-	/**
-	 * Appends a new row with the current spending to the slice table.
-	 * The row is clickable and can be deleted.
-	 * @param {Spending} spending Spending to append
-	 */
-	buildSpendingRow(spending) {
-		const onClickDelete = this.onClickedDeleteSpending.bind(this);
-		const onClickedSpending = this.onClickedSpending.bind(this);
-		const spentOn = spending.spentOn.toLocaleString('en-GB', { day: 'numeric' });
-		const newRow = new Dom('tr').id(spending.id).userData(spending).append(
-			new Dom('td').text(spentOn).onClick(onClickedSpending),
-			new Dom('td').text(spending.description).onClick(onClickedSpending),
-			new Dom('td').text(spending.category).onClick(onClickedSpending),
-			new Dom('td').text(spending.price).onClick(onClickedSpending),
-			new Dom('td').hideable(this.editMode).append(
-				new Dom('button').onClick(onClickDelete).append(
-					new Dom('img').cls('white-fill').text('Delete').attr('alt', 'Delete').attr('src', icons.delete),
-				),
-			),
-		);
-
-		return newRow;
-		// this.spendingsHtml.tBodies[0].appendChild(newRow.toHtml());
-	}
-
-	/**
-	 * Appends a new row with the current spending to the slice table.
-	 * The row cannot be edited nor deleted.
-	 * @param {Spending} total
-	 */
-	buildTotalRow(total) {
-		const spentOn = total.spentOn.toLocaleString('en-GB', { day: 'numeric' });
-		const newRow = new Dom('tr').id(total.id).userData(total).append(
-			new Dom('td').text(spentOn),
-			new Dom('td').text(total.description),
-			new Dom('td').text(total.category),
-			new Dom('td').text(total.price.toFixed(2)),
-			new Dom('td').hideable(this.editMode),
-		);
-		return newRow;
 	}
 
 	// #region event handlers
@@ -271,24 +161,6 @@ export default class SpendingScreen {
 		if (this.onCreateSpendingCallback) {
 			this.onCreateSpendingCallback(newSpending);
 		}
-	}
-
-	onClickedDeleteSpending(event) {
-		if (!this.editMode) return;
-
-		const row = event.currentTarget.parentNode.parentNode;
-		const tBody = row.parentNode;
-		/** @type {Spending} */
-		const spending = row.userData;
-
-		Modal.areYouSureModal(
-			'delete-spending-modal',
-			'Are you sure you want to delete this spending?',
-			() => {
-				spending.deleted = true;
-				tBody.removeChild(row);
-			},
-		).open();
 	}
 
 	onClickDeleteSlice(event) {
@@ -309,17 +181,6 @@ export default class SpendingScreen {
 		).open();
 	}
 
-	onClickedSpending(event) {
-		if (!this.editMode) return;
-
-		const cell = event.currentTarget;
-		const row = cell.parentNode;
-		/** @type {Spending} */
-		const spending = row.userData;
-		this.#spendingSubmitModal.open();
-		this.#spendingSubmitModal.editMode(spending);
-	}
-
 	onEditedSpending(spending) {
 		const row = document.getElementById(spending.id);
 		// TODO Extract slice to its own class and get user data directly from it according to month
@@ -327,28 +188,20 @@ export default class SpendingScreen {
 		this.refreshMonth(spendingReport);
 	}
 
-	onClickEdit() {
+	onClickEdit = () => {
 		// Disable sliding effects to avoid listener conflicts.
 		this.gfx.pause();
-		const elements = document.querySelectorAll('[hideable="true"]');
-		for (let i = 0; i < elements.length; i += 1) {
-			elements[i].style.display = '';
-		}
+		this.#drawnMonths.get(this.#month).editMode();
 
 		this.editMode = true;
 	}
 
-	onClickedSave() {
+	onClickedSave = () => {
 		// Resume effects as there will be no listener conflicts anymore.
 		this.gfx.resume();
-		const hideables = document.querySelectorAll('[hideable="true"]');
-		for (let i = 0; i < hideables.length; i += 1) {
-			hideables[i].style.display = 'none';
-		}
-
 		this.editMode = false;
 
-		this.#drawnSlices.forEach((slice) => {
+		this.#drawnMonths.forEach((slice) => {
 			/** @type {SpendingReport} */
 			const spendingReport = slice.toHtml().userData;
 			if (spendingReport) {
@@ -364,14 +217,13 @@ export default class SpendingScreen {
 		});
 	}
 
-	onClickedSummary() {
+	onClickedSummary = () => {
 		const selectedSlice = this.gfx.selectedSlice();
 		new SpendingSummaryModal(selectedSlice.userData).open();
 	}
 
-	onClickAddSpending() {
-		this.#spendingSubmitModal.open();
-		this.#spendingSubmitModal.insertMode();
+	onClickAddSpending = () => {
+		new SpendingSubmitModal(this.categories.planningCategories()).insertMode().open();
 	}
 
 	// #endregion
