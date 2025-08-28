@@ -84,6 +84,8 @@ export default class SpendingSubmitModal extends Modal {
 		this.#descriptionInput.toHtml().value = spending.description;
 		this.#categoryInput.toHtml().value = spending.category;
 		this.#priceInput.toHtml().value = spending.price;
+
+		return this;
 	}
 
 	insertMode() {
@@ -95,14 +97,17 @@ export default class SpendingSubmitModal extends Modal {
 		this.#descriptionInput.toHtml().value = '';
 		this.#categoryInput.toHtml().value = '';
 		this.#priceInput.toHtml().value = '';
+		return this;
 	}
 
 	onEditSpending(handler) {
 		this.#onEditHandler = handler;
+		return this;
 	}
 
 	onInsertSpending(handler) {
 		this.#onInsertHandler = handler;
+		return this;
 	}
 
 	#onClickedSave(event) {
