@@ -198,7 +198,7 @@ export default class SpendingScreen {
 	#onClickedSummary = () => {
 		const selectedSlice = this.gfx.selectedIndex();
 		const spendings = this.#spendings.filter(a => a)[selectedSlice];
-		new SpendingSummaryModal(spendings, this.#availableCategories.flatMap(category => category.goals())).open();
+		new SpendingSummaryModal(spendings, this.#availableCategories[this.#month].flatMap((category) => category.goals)).open();
 	}
 
 	#onClickAddSpending = () => {
