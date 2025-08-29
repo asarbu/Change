@@ -12,20 +12,22 @@ import SpendingSubmitModal from './spendingSubmitModal.js';
 import SpendingCategoryTable from './spendingCategoryTable.js';
 import Settings from '../../settings/model/settings.js';
 import SettingsController from '../../settings/controller/settingsController.js';
+import Utils from '../../common/utils/utils.js';
 
 export default class SpendingScreen {
 	/** @type {(spending: Spending) => any} */
-	onCreateSpendingCallback = undefined;
+	#onCreateSpendingHandler = undefined;
 
-	onSaveReportCallback = undefined;
-
-	onDeleteReportCallback = undefined;
+	#onSaveHandler = undefined;
 
 	/** @type {Array<Category>} */
 	categories = undefined;
 
-	/** @type {Map<number, SpendingCategoryTable>} */
-	#drawnMonths = new Map();
+	/** 
+	 * The 0-based index of the array represents the month of the table
+	 * @type {Array<SpendingCategoryTable>} 
+	 */
+	#drawnTables = Array(12).fill(undefined);
 
 	/** @type {number} */
 	#month = undefined;
@@ -36,27 +38,34 @@ export default class SpendingScreen {
 	/** @type {Settings} */
 	#settings = undefined;
 
+	/** @type {Array<Spending>} */
+	#spendings = undefined;
+
+	/** @type {Array<Category>} */
+	#availableCategories = undefined;
+
 	/**
 	 * @param {number} defaultYear
 	 * @param {number} defaultMonth
-	 * @param {Array<SpendingReport>} spendingReports
+	 * @param {Array<SpendingReport>} spendings
 	 */
-	constructor(defaultYear, defaultMonth, spendingReports, settings = new SettingsController().currentSettings()) {
+	constructor(defaultYear, defaultMonth, spendings, availableCategories, settings = new SettingsController().currentSettings()) {
 		this.#year = defaultYear;
 		this.#month = defaultMonth;
-		this.spendingReports = spendingReports;
+		this.#spendings = spendings;
+		this.#availableCategories = availableCategories;
 		this.#settings = settings;
 	}
 
 	init() {
-		let defaultReport = this.spendingReports[this.#month];
+		let defaultReport = this.#spendings[this.#month];
 		if (!defaultReport) {
 			defaultReport = new SpendingReport(
 				this.#year,
 				this.#month,
 				new Planning(this.#year, this.#month, []),
 			);
-			this.spendingReports.push(defaultReport);
+			this.#spendings.push(defaultReport);
 		}
 
 		document.getElementById('main').replaceChildren();
@@ -66,23 +75,18 @@ export default class SpendingScreen {
 		this.gfx = new GraphicEffects();
 		this.gfx.init(screen);
 		this.gfx.onSliceChange(this.navbar.selectMonth.bind(this.navbar));
-
-		this.spendingReports.sort((a, b) => a.month() - b.month()).forEach((spendingReport) => this.refreshMonth(spendingReport));
+		return this;
 	}
 
-	/**
-	 * 
-	 * @param {SpendingReport} spendingReport 
-	 */
-	buildNavbar(spendingReport) {
+	buildNavbar() {
 		const eventHandlers = new SpendingNavbarEventHandlers();
-		eventHandlers.onClickAddSpending = this.onClickAddSpending;
+		eventHandlers.onClickAddSpending = this.#onClickAddSpending;
 		eventHandlers.onClickEdit = this.onClickEdit;
-		eventHandlers.onClickSave = this.onClickedSave;
-		eventHandlers.onClickSummary = this.onClickedSummary;
-		eventHandlers.onMonthChanged = this.slideToMonth.bind(this, spendingReport.month());
+		eventHandlers.onClickSave = this.#onClickedSave;
+		eventHandlers.onClickSummary = this.#onClickedSummary;
+		eventHandlers.onMonthChanged = this.slideToMonth.bind(this, this.#month);
 
-		this.navbar = new SpendingNavbar(this.#year, spendingReport.month(), eventHandlers);
+		this.navbar = new SpendingNavbar(this.#year, this.#month, eventHandlers);
 		const main = document.getElementById('main');
 		// TODO move append children to the end of init
 		main.appendChild(this.navbar.toHtml());
@@ -91,24 +95,28 @@ export default class SpendingScreen {
 	}
 
 	/**
-	 * @param {SpendingReport} spendingReport
+	 * @param {number} month
+	 * @param {Array<Spending>} spendings
+	 * @param {Array<string>} categories
 	 */
-	refreshMonth(spendingReport) {
-		let spendingsTable = this.#drawnMonths.get(spendingReport.month());
-		if (!spendingsTable) {
-			spendingsTable = new SpendingCategoryTable(spendingReport.toString(), spendingReport.spendings(), this.categories, this.#settings.spendingTableSettings().visibleColumns());
+	refreshMonth(month, spendings, categories) {
+		if (!categories || categories.length === 0) {
+			return;
+		}
 
+		let spendingsTable = this.#drawnTables[month];
+		if (!spendingsTable) {
+			spendingsTable = new SpendingCategoryTable(this.#settings.spendingTableSettings().visibleColumns());
+			
 			this.section.clear().append(
-				new Dom('div').id(`slice_${spendingReport.month()}`).cls('slice').userData(spendingReport).append(
-					new Dom('h1').text(`${spendingReport} spending`),
+				new Dom('div').id(`slice_${month}`).cls('slice').userData(spendingsTable).append(
+					new Dom('h1').text(`${Utils.MONTH_NAMES[month]} spending`),
 				).append(spendingsTable)
 			);
-			this.navbar.appendMonth(spendingReport.month());
-			this.#drawnMonths.set(spendingReport.month(), spendingsTable);
+			this.navbar.appendMonth(month);
+			this.#drawnTables[month] = spendingsTable;
 		}
-		spendingsTable.refresh();
-		// Screen changed, effects need reinitialization
-		//this.gfx.init(this.screen.toHtml());
+		spendingsTable.refresh(month, spendings, categories);
 	}
 
 	/**
@@ -124,12 +132,9 @@ export default class SpendingScreen {
 	 * @param {number} month
 	 */
 	slideToMonth(month) {
-		const reportSlice = this.#drawnMonths.get(month);
-		const sliceIndex = Array.prototype.indexOf.call(
-			this.section.toHtml().childNodes,
-			reportSlice.toHtml(),
-		);
+		const sliceIndex = this.#drawnTables.filter(a => a).indexOf(this.#drawnTables[month]);
 		this.gfx.slideTo(sliceIndex);
+		this.#month = month;
 	}
 
 	/**
@@ -137,8 +142,10 @@ export default class SpendingScreen {
 	 * @param {number} month
 	 */
 	jumpToMonth(month) {
-		const sliceIndex = Array.from(this.#drawnMonths.keys()).sort((a, b) => a - b).indexOf(month);
+		const sliceIndex = this.#drawnTables.filter(a => a).indexOf(this.#drawnTables[month]);
 		this.gfx.jumpTo(sliceIndex);
+		this.#month = month;
+		return this;
 	}
 
 	/**
@@ -153,77 +160,57 @@ export default class SpendingScreen {
 		const main = document.getElementById('main');
 		main.appendChild(this.screen.toHtml());
 
+		for(var index = 0; index < this.#spendings.length; index++) {
+			this.refreshMonth(index, this.#spendings[index], this.#availableCategories[index]);
+		}
+
 		return this.screen.toHtml();
 	}
 
 	// #region event handlers
-	onInsertedSpending(newSpending) {
-		if (this.onCreateSpendingCallback) {
-			this.onCreateSpendingCallback(newSpending);
-		}
+
+	onClickSave(handler) {
+		this.#onSaveHandler = handler;
+		return this;
 	}
 
-	onClickDeleteSlice(event) {
-		if (!this.editMode) return;
-
-		const table = (event.currentTarget.parentNode.parentNode.parentNode.parentNode);
-		const spendingReport = table.userData;
-
-		Modal.areYouSureModal(
-			'delete-report-modal',
-			'Are you sure you want to delete this report?',
-			() => {
-				if (this.onDeleteReportCallback) {
-					this.onDeleteReportCallback(spendingReport);
-				}
-				table.parentNode.removeChild(table);
-			},
-		).open();
-	}
-
-	onEditedSpending(spending) {
-		const row = document.getElementById(spending.id);
-		// TODO Extract slice to its own class and get user data directly from it according to month
-		const spendingReport = row.parentNode.parentNode.userData;
-		this.refreshMonth(spendingReport);
+	onCreateSpending(handler) {
+		this.#onCreateSpendingHandler = handler;
+		return this;
 	}
 
 	onClickEdit = () => {
 		// Disable sliding effects to avoid listener conflicts.
 		this.gfx.pause();
-		this.#drawnMonths.get(this.#month).editMode();
+		this.#drawnTables.get(this.#month).editMode();
 
 		this.editMode = true;
 	}
 
-	onClickedSave = () => {
+	#onClickedSave = () => {
 		// Resume effects as there will be no listener conflicts anymore.
 		this.gfx.resume();
 		this.editMode = false;
 
-		this.#drawnMonths.forEach((slice) => {
-			/** @type {SpendingReport} */
-			const spendingReport = slice.toHtml().userData;
-			if (spendingReport) {
-				const reportChanged = spendingReport.applyChanges();
-				// Do not call the handler if the report did not change
-				if (this.onSaveReportCallback && reportChanged) {
-					slice.toHtml().getElementsByTagName('table')[0].tFoot.replaceChildren(
-						this.buildTotalRow(spendingReport.totalAsSpending()).toHtml(),
-					);
-					this.onSaveReportCallback(spendingReport);
-				}
-			}
-		});
+		this.#onSaveHandler?.(this.#month, this.#spendings.find((report) => report.month() === this.#month));
+	};
+
+	#onClickedSummary = () => {
+		const selectedSlice = this.gfx.selectedIndex();
+		const spendings = this.#spendings.filter(a => a)[selectedSlice];
+		new SpendingSummaryModal(spendings, this.#availableCategories.flatMap(category => category.goals())).open();
 	}
 
-	onClickedSummary = () => {
-		const selectedSlice = this.gfx.selectedSlice();
-		new SpendingSummaryModal(selectedSlice.userData).open();
-	}
-
-	onClickAddSpending = () => {
-		new SpendingSubmitModal(this.categories.planningCategories()).insertMode().open();
+	#onClickAddSpending = () => {
+		const today = new Date();
+		const day = today.getFullYear() === this.#year && today.getMonth() === this.#month ? today.getDate() : 1;
+		new SpendingSubmitModal(this.#availableCategories[this.#month], this.#year, this.#month, day)
+			.insertMode()
+			.onInsertSpending((spending) => {
+				this.#spendings[this.#month].push(spending);
+				this.refreshMonth(this.#month, this.#spendings[this.#month], this.#availableCategories[this.#month]);
+				this.#onCreateSpendingHandler?.(spending);
+			}).open();
 	}
 
 	// #endregion

@@ -2,17 +2,15 @@ import Dom from "../../common/gui/dom.js";
 import icons from "../../common/gui/icons.js";
 import Modal from "../../common/gui/modal.js";
 import TableDom from "../../common/gui/tableDom.js";
+import { Category } from "../../planning/model/planningModel.js";
 import Spending from "../model/spending.js";
-import SpendingReport from "../model/spendingReport.js";
 import SpendingSubmitModal from "./spendingSubmitModal.js";
 
 export default class SpendingCategoryTable extends TableDom {
-	/** @type {SpendingReport} */
-	#spendingReport = undefined;
-
 	/** @type {Array<import("./spendingTableColumn.js").SpendingTableColumn>} */
 	#visibleColumns = undefined;
 
+	/** @type {boolean} */
 	#editMode = false;
 
 	/** @type {Array<Spending>} */
@@ -21,29 +19,34 @@ export default class SpendingCategoryTable extends TableDom {
 	/** @type {Array<string>} */
 	#availableCategories = undefined;
 
-	/** @type {string} */
-	#name = undefined;
-
-	constructor(name, spendings, availableCategories, visibleColumns) {
+	/**
+	 * 
+	 * @param {number} month 
+	 * @param {Array<Spending>} spendings 
+	 * @param {Array<Category>} availableCategories 
+	 * @param {Array<string>} visibleColumns 
+	 */
+	constructor(visibleColumns) {
 		super();
-		this.#name = name;
 		this.#visibleColumns = visibleColumns;
-		this.#spendings = spendings;
-		this.#availableCategories = availableCategories;
 	}
 
-	refresh() {
-		if(!this.#spendings || this.#spendings.length === 0 || !this.#visibleColumns || this.#visibleColumns.length === 0) {
+	refresh(month, spendings, availableCategories) {
+		if(!spendings || spendings.length === 0 || !this.#visibleColumns || this.#visibleColumns.length === 0) {
 			return this.clear();
 		}
-		const totalSpending = new Spending(`total-${this.#name}`, '-', '-', '-', 'Total', this.#spendings.reduce((acc, spending) => acc + spending.price, 0));
+		
+		this.#spendings = spendings;
+		this.#availableCategories = availableCategories;
 
-		this.id(`table-${this.#name}`)
+		const totalSpending = new Spending(`total-${month}`, '-', '-', '-', 'Total', spendings.reduce((acc, spending) => acc + spending.price, 0));
+
+		this.id(`table-${month}`)
 			.thead(
 				new Dom('tr').append(
 					...this.#visibleColumns.map(col => new Dom('th').cls(col.size).text(col)),
 					new Dom('th').cls('narrow').hideable(this.#editMode).append(
-						new Dom('button').onClick(this.onClickDelete).append(
+						new Dom('button').onClick(this.onClickedDeleteTable).append(
 							new Dom('img').cls('white-fill').text('Delete').attr('alt', 'Delete').attr('src', icons.delete),
 						),
 					),
@@ -53,7 +56,7 @@ export default class SpendingCategoryTable extends TableDom {
 					(spending) => new Dom('tr').id(spending.id).userData(spending).append(
 						...this.#visibleColumns.map(col => new Dom('td').text(spending[col.type]).onClick(this.onClickedSpending.bind(this, spending))),
 						new Dom('td').hideable(this.#editMode).append(
-							new Dom('button').onClick(this.onClickDelete.bind(spending)).append(
+							new Dom('button').onClick(this.onClickedDelete.bind(this, spending)).append(
 								new Dom('img').cls('white-fill').text('Delete').attr('alt', 'Delete').attr('src', icons.delete),
 							),
 						),
@@ -63,12 +66,24 @@ export default class SpendingCategoryTable extends TableDom {
 					...this.#visibleColumns.map((col) => new Dom('td').text(totalSpending[col.type])),
 					new Dom('td').hideable(this.#editMode),
 				),
-			).userData(this.#spendingReport);
+			);
 		return this;
 	}
 
-	onClickDelete = (spending) => {
-		Modal.areYouSureModal(
+	onClickedDeleteTable = () => {
+		return Modal.areYouSureModal(
+			'delete-spending-modal',
+			'Are you sure you want to delete this month\'s spendings?',
+			() => {
+				this.#spendings.forEach((spending) => spending.deleted = true);
+				this.#spendings = [];
+				this.refresh();
+			},
+		).open();
+	}
+
+	onClickedDelete = (spending) => {
+		return Modal.areYouSureModal(
 			'delete-spending-modal',
 			'Are you sure you want to delete this spending?',
 			() => {
@@ -77,7 +92,6 @@ export default class SpendingCategoryTable extends TableDom {
 				this.refresh();
 			},
 		).open();
-		return;
 	};
 
 	/**
@@ -88,13 +102,17 @@ export default class SpendingCategoryTable extends TableDom {
 	onClickedSpending = (spending) => {
 		if (!this.#editMode) return;
 		
-		new SpendingSubmitModal(this.#availableCategories).editMode(spending).onEditSpending((editedSpending) => {
-			spending.category = editedSpending.category;
-			spending.description = editedSpending.description;
-			spending.price = editedSpending.price;
-			spending.spentOn = editedSpending.spentOn;
-			spending.edited = true;
-		}).open();
+		new SpendingSubmitModal(this.#availableCategories)
+			.editMode(spending)
+			.onEditSpending((editedSpending) => {
+				spending.category = editedSpending.category;
+				spending.description = editedSpending.description;
+				spending.price = editedSpending.price;
+				spending.spentOn = editedSpending.spentOn;
+				spending.edited = true;
+			}).onSubmit(() => {
+				this.refresh();
+			}).open();
 	}
 
 	editMode() {

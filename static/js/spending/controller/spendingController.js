@@ -137,63 +137,35 @@ export default class SpendingController {
 		return this.#screen;
 	}
 
+	/**
+	 * 
+	 * @param {Array<SpendingReport>} reports 
+	 * @returns 
+	 */
 	initSpendingScreen(reports) {
-		this.#screen = new SpendingScreen(this.#defaultYear, this.#defaultMonth, reports);
-		this.#screen.init();
-		// TODO transform assignments to methods
-		this.#screen.onCreateSpendingCallback = this.onCreatedSpending.bind(this);
-		this.#screen.onSaveReportCallback = this.onSavedReport.bind(this);
-		this.#screen.onDeleteReportCallback = this.onDeletedReport.bind(this);
-		this.#screen.jumpToMonth(this.#defaultMonth);
+		const spendings = reports.map((report) => report.spendings());
+		const availableCategories = reports.map((report) => report.plannedCategories());
+		this.#screen = new SpendingScreen(this.#defaultYear, this.#defaultMonth, spendings, availableCategories)
+			.onClickSave(this.onSavedReport)
+			.onCreateSpending(this.onCreatedSpending)
+			.init()
+			.jumpToMonth(this.#defaultMonth);
 		return this.#screen;
 	}
 
 	/**
 	 * @param {Spending} spending
 	 */
-	async onCreatedSpending(spending) {
-		const report = this.#cachedReports.filter((item) => item).find(
-			(spendingReport) =>	spendingReport.year() === spending.spentOn.getFullYear()
-				&& spendingReport.month() === spending.spentOn.getMonth(),
-		);
-
-		if (report) {
-			// A report was found, we need to update the whole screen
-			report.appendSpending(spending);
-			this.#screen.refreshMonth(report);
-		} else if (spending.spentOn.getFullYear() === this.#defaultYear) {
-			// No report found, we need to create a new one
-			const newReport = new SpendingReport(
-				spending.spentOn.getFullYear(),
-				spending.spentOn.getMonth(),
-				spending.planning,
-			);
-			newReport.appendSpending(spending);
-			this.#cachedReports[spending.spentOn.getMonth()] = newReport;
-			this.#screen.refreshMonth(newReport);
-			this.#screen.slideToMonth(spending.spentOn.getMonth());
-		} else {
-			// Spending is from a different year, no need to create a new report
-			this.#screen.updateYear(spending.spentOn.getFullYear());
-		}
+	onCreatedSpending = async (spending) => {
 		return this.#spendingPersistence.store(spending);
 	}
 
 	/**
 	 * @param {SpendingReport} spendingReport
 	 */
-	async onDeletedReport(spendingReport) {
-		// We can only select delete for current year, so send only month
-		// TODO Show Are you sure? Modal
-		this.#spendingPersistence.deleteAll(spendingReport);
-	}
-
-	/**
-	 * @param {SpendingReport} spendingReport
-	 */
-	async onSavedReport(spendingReport) {
+	onSavedReport = async (spendingReport) => {
 		await this.#spendingPersistence.updateAll(spendingReport);
-	}
+	};
 
 	onClickedFetchDefaultPlanning() {
 		const storePlanning = this.#planningPersistence.store.bind(this.#planningPersistence);

@@ -28,21 +28,23 @@ export default class SpendingSubmitModal extends Modal {
 	/** @type {Dom} */
 	#priceInput = new Dom();
 
-	constructor(forCategories) {
+	constructor(forCategories, duringYear, duringMonth, duringDay = 1) {
 		super('spending-submit-modal');
-
-		const onClickCategoryInput = this.#onClickedCategoryInput.bind(this);
+		
+		const minDate = new Date(duringYear, duringMonth, 1).toLocaleDateString("en-CA");
+		const maxDate = new Date(duringYear, duringMonth + 1, 0).toLocaleDateString("en-CA");
+		const date = new Date(duringYear, duringMonth, duringDay).toLocaleDateString("en-CA");
 
 		this.header(
 			new Dom('h2').text('Insert Spending'),
 		).body(
 			new Dom('form').append(
 				new Dom('div').cls('input-field').append(
-					new Dom('input').type('date').attr('required', '').attr('value', new Date().toISOString().substring(0, 10)).cloneTo(this.#dateInput),
+					new Dom('input').type('date').attr('required', '').attr('min', minDate).attr('max', maxDate).attr('value', date).cloneTo(this.#dateInput),
 					new Dom('label').text('Date: '),
 				),
 				new Dom('div').cls('input-field').append(
-					new Dom('input').type('text').attr('required', '').attr('inputmode', 'none').onClick(onClickCategoryInput).onFocus(onClickCategoryInput)
+					new Dom('input').type('text').attr('required', '').attr('inputmode', 'none').onClick(this.#onClickedCategoryInput).onFocus(this.#onClickedCategoryInput)
 						.cloneTo(this.#categoryInput),
 					new Dom('label').text('Category: '),
 				),
@@ -54,11 +56,11 @@ export default class SpendingSubmitModal extends Modal {
 					new Dom('input').type('text').attr('required', '').cloneTo(this.#descriptionInput),
 					new Dom('label').text('Description: '),
 				),
-				new Dom('input').type('submit').hide().onClick(this.#onClickedSave.bind(this)),
+				new Dom('input').type('submit').hide().onClick(this.#onClickedSave),
 			),
 		).footer(
 			new Dom('h3').text('Cancel').onClick(this.close.bind(this)),
-			new Dom('h3').text('Save').onClick(this.#onClickedSave.bind(this)),
+			new Dom('h3').text('Save').onClick(this.#onClickedSave),
 		);
 
 		this.#buildCategoryModal(forCategories);
@@ -69,8 +71,7 @@ export default class SpendingSubmitModal extends Modal {
 	 * @returns {Dom}
 	 */
 	#buildCategoryModal(forCategories) {
-		const onClickCategory = this.#onClickedCategory.bind(this);
-		this.#categoryModal = new SpendingCategoryModal(forCategories, onClickCategory);
+		this.#categoryModal = new SpendingCategoryModal(forCategories, this.#onClickedCategory);
 		return this.#categoryModal;
 	}
 
@@ -110,7 +111,7 @@ export default class SpendingSubmitModal extends Modal {
 		return this;
 	}
 
-	#onClickedSave(event) {
+	#onClickedSave = (event) => {
 		event.preventDefault();
 		this.#spending.spentOn = this.#dateInput.toHtml().valueAsDate;
 		this.#spending.description = this.#descriptionInput.toHtml().value;
@@ -129,21 +130,21 @@ export default class SpendingSubmitModal extends Modal {
 		} else if (this.#onInsertHandler) {
 			this.#onInsertHandler(this.#spending);
 		}
-	}
+	};
 
-	#onClickedCategory(event) {
+	#onClickedCategory = (event) => {
 		this.#categoryModal.close();
 		this.open();
 		this.#categoryInput.toHtml().value = event.target.textContent;
 		this.#focusInputField(this.#priceInput.toHtml());
 	}
 
-	#onClickedCategoryInput() {
+	#onClickedCategoryInput = () => {
 		if (this.isOpen()) {
 			this.close();
 		}
 		this.#categoryModal.open();
-	}
+	};
 
 	#focusInputField(htmlElement) {
 		/* Focus cannot be applied to invisible elements.
