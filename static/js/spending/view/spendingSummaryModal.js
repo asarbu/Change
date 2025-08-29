@@ -2,33 +2,32 @@ import Alert from '../../common/gui/alert.js';
 import Dom from '../../common/gui/dom.js';
 import Modal from '../../common/gui/modal.js';
 import TableDom from '../../common/gui/tableDom.js';
-import SpendingReport from '../model/spendingReport.js';
+import { Category, Goal } from '../../planning/model/planningModel.js';
+import Spending from '../model/spending.js';
 
 export default class SpendingSummaryModal extends Modal {
-	/** @type {Dom} */
-	#modalDom = undefined;
+	/** @type {Spending[]} */
+	#spendings = undefined;
 
-	/** @type {SpendingReport} */
-	#spendingReport = undefined;
-
-	/**
-	 * @param {SpendingReport} spendingReport
-	 */
-	constructor(spendingReport) {
-		super(spendingReport.id());
-		this.#spendingReport = spendingReport;
-		this.build(this.#spendingReport);
-	}
+	/** @type {Goal[]} */
+	#goals = undefined;
 
 	/**
-	 * @param {SpendingReport} spendingReport
+	 * @param {Spending[]} spendings
+	 * @param {Goal[]} goals
 	 */
-	build(spendingReport) {
-		// TODO. Build summary modal according to currently clicked month
-		const spentGoalsName = spendingReport.spentGoals();
-		const goals = spendingReport.plannedGoals();
-		const budgetTotal = goals.reduce((accumulator, current) => accumulator + current.monthly, 0);
-		const spendingTotal = spendingReport.total();
+	constructor(spendings, goals) {
+		super('expenses_summary');
+		this.#spendings = spendings;
+		this.#goals = goals;
+		
+		// TODO There is a mismatch of concepts here. From spending we get categories, but they should be named goals
+		const totals = new Map();
+		const spentGoalNames = new Set(spendings.map(spending => spending.category));
+		spentGoalNames.forEach((spentGoalName) => totals.set(spentGoalName, goals.filter((goal) => goal.name === spentGoalName).reduce((acc, curr) => acc + curr.monthly, 0)));
+
+		const spendingTotal = 0;
+		const budgetTotal = 0;
 
 		this.header(
 			new Dom('h2').text('Expenses summary'),
@@ -43,7 +42,19 @@ export default class SpendingSummaryModal extends Modal {
 					),
 				)
 				.tbody(
-					...spentGoalsName.map((goalName) => this.#buildRowForGoal(goalName)),
+					...spentGoalNames.map((goalName) => {
+						const spentForGoal = spendings.filter((spending) => spending.category === goalName).reduce((acc, curr) => acc + curr.amount, 0);
+						spendingTotal += spentForGoal;
+						const budgetForGoal = goals.find((goal) => goal.name === goalName)?.monthly || 0;
+						budgetTotal += budgetForGoal;
+
+						return new Dom('tr').append(
+							new Dom('td').text(goalName),
+							new Dom('td').text(spentForGoal),
+							new Dom('td').text(budgetForGoal),
+							new Dom('td').text(((100 * spentForGoal) / budgetForGoal).toFixed(2)),
+						);
+					}),
 				)
 				.tfoot(
 					new Dom('tr').append(
@@ -54,23 +65,5 @@ export default class SpendingSummaryModal extends Modal {
 					),
 				),
 		).addCancelFooter();
-	}
-
-	#buildRowForGoal(goalName) {
-		const spentForGoal = this.#spendingReport.totalForGoal(goalName).toFixed(2);
-		const plannedGoals = this.#spendingReport.plannedGoals();
-		const foundGoal = plannedGoals.find((plannedGoal) => plannedGoal.name === goalName);
-		let budgetForGoal = 1;
-		if (!foundGoal) {
-			Alert.show('Planning error', `Goal not found in planning: ${goalName}`);
-		} else {
-			budgetForGoal = foundGoal.monthly;
-		}
-		return new Dom('tr').append(
-			new Dom('td').text(goalName),
-			new Dom('td').text(spentForGoal),
-			new Dom('td').text(budgetForGoal),
-			new Dom('td').text(((100 * spentForGoal) / budgetForGoal).toFixed(2)),
-		);
 	}
 }
