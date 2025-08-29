@@ -26,13 +26,13 @@ export default class SpendingSummaryModal extends Modal {
 		const spentGoalNames = new Set(spendings.map(spending => spending.category));
 		spentGoalNames.forEach((spentGoalName) => totals.set(spentGoalName, goals.filter((goal) => goal.name === spentGoalName).reduce((acc, curr) => acc + curr.monthly, 0)));
 
-		const spendingTotal = 0;
-		const budgetTotal = 0;
+		var spendingTotal = 0;
+		var budgetTotal = 0;
 
 		this.header(
 			new Dom('h2').text('Expenses summary'),
 		).body(
-			new TableDom().id(`summary-table-${spendingReport}`)
+			new TableDom().id(`summary-table`)
 				.thead(
 					new Dom('tr').append(
 						new Dom('th').text('Category'),
@@ -42,8 +42,8 @@ export default class SpendingSummaryModal extends Modal {
 					),
 				)
 				.tbody(
-					...spentGoalNames.map((goalName) => {
-						const spentForGoal = spendings.filter((spending) => spending.category === goalName).reduce((acc, curr) => acc + curr.amount, 0);
+					...[...spentGoalNames].map((goalName) => {
+						const spentForGoal = spendings.filter((spending) => spending.category === goalName).reduce((acc, curr) => acc + curr.price, 0);
 						spendingTotal += spentForGoal;
 						const budgetForGoal = goals.find((goal) => goal.name === goalName)?.monthly || 0;
 						budgetTotal += budgetForGoal;
