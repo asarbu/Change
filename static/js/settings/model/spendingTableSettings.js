@@ -10,7 +10,9 @@ export default class SpendingTableSettings {
 	 * @param {Array<string>} json.visibleColumns
 	 * @returns {SpendingTableSettings}
 	 */
-	static fromJson({ visibleColumns }) {
+	static fromJson({ visibleColumns } = {
+		visibleColumns: SpendingTableColumn.ALL,
+	}) {
 		visibleColumns = visibleColumns.map(SpendingTableColumn.fromName).filter(c => c);
 		return new SpendingTableSettings(visibleColumns);
 	}
