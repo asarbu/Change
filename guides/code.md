@@ -70,6 +70,9 @@ Every change in the state of the application should lead to the creation of an i
 Other layers / components should subscribe to the events (change, create, edit, delete, etc) by passing an event handler to the **on<event><objectName>** function. This new function might receive the new immutable entity.
 In case the event does not alter the state of the model but requries feedback (e.g display a modal when a button is clicked), no new entities should be created.
 
+## Creating arrays
+When you need to create arrays of a predefined size, use the `Array(n).fill(undefined)` function to return an iterable array, as the default Array object is not iterable.
+
 ### Recommended Event verbs
 
 Use **change** verb when you replace/swap one object with another
