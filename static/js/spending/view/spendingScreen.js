@@ -182,7 +182,7 @@ export default class SpendingScreen {
 	onClickEdit = () => {
 		// Disable sliding effects to avoid listener conflicts.
 		this.gfx.pause();
-		this.#drawnTables.get(this.#month).editMode();
+		this.#drawnTables[this.#month].editMode();
 
 		this.editMode = true;
 	}
