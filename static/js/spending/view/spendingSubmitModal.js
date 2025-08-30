@@ -8,13 +8,7 @@ export default class SpendingSubmitModal extends Modal {
 	/** @type {SpendingCategoryModal} */
 	#categoryModal = undefined;
 
-	#onInsertHandler = undefined;
-
-	#onEditHandler = undefined;
-
-	#spending = undefined;
-
-	#editMode = false;
+	#onSubmitHandler = undefined;
 
 	/** @type {Dom} */
 	#dateInput = new Dom();
@@ -76,10 +70,7 @@ export default class SpendingSubmitModal extends Modal {
 	}
 
 	editMode(spending) {
-		this.#editMode = true;
 		this.header(new Dom('h2').text('Edit Spending'));
-		this.#spending = spending;
-		this.#spending.edited = true;
 
 		this.#dateInput.toHtml().valueAsDate = spending.spentOn;
 		this.#descriptionInput.toHtml().value = spending.description;
@@ -90,10 +81,7 @@ export default class SpendingSubmitModal extends Modal {
 	}
 
 	insertMode() {
-		this.#editMode = false;
-
 		this.header(new Dom('h2').text('Insert Spending'));
-		this.#spending = new Spending(new Date().getTime());
 
 		this.#descriptionInput.toHtml().value = '';
 		this.#categoryInput.toHtml().value = '';
@@ -101,35 +89,26 @@ export default class SpendingSubmitModal extends Modal {
 		return this;
 	}
 
-	onEditSpending(handler) {
-		this.#onEditHandler = handler;
-		return this;
-	}
-
-	onInsertSpending(handler) {
-		this.#onInsertHandler = handler;
+	onSubmit(handler) {
+		this.#onSubmitHandler = handler;
 		return this;
 	}
 
 	#onClickedSave = (event) => {
 		event.preventDefault();
-		this.#spending.spentOn = this.#dateInput.toHtml().valueAsDate;
-		this.#spending.description = this.#descriptionInput.toHtml().value;
-		this.#spending.price = +(this.#priceInput.toHtml().value);
-		this.#spending.category = this.#categoryInput.toHtml().value;
+		const spending = new Spending(new Date().getTime());
+		spending.spentOn = this.#dateInput.toHtml().valueAsDate;
+		spending.description = this.#descriptionInput.toHtml().value;
+		spending.price = +(this.#priceInput.toHtml().value);
+		spending.category = this.#categoryInput.toHtml().value;
 
-		if (!this.#spending.price) {
+		if (!spending.price) {
 			this.#priceInput.toHtml().focus();
 			return;
 		}
 
 		this.close();
-
-		if (this.#editMode && this.#onEditHandler) {
-			this.#onEditHandler(this.#spending);
-		} else if (this.#onInsertHandler) {
-			this.#onInsertHandler(this.#spending);
-		}
+		this.#onSubmitHandler?.(spending);
 	};
 
 	#onClickedCategory = (event) => {
