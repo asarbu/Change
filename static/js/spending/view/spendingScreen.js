@@ -108,7 +108,7 @@ export default class SpendingScreen {
 		if (!spendingsTable) {
 			spendingsTable = new SpendingCategoryTable(this.#settings.spendingTableSettings().visibleColumns());
 			
-			this.section.clear().append(
+			this.section.append(
 				new Dom('div').id(`slice_${month}`).cls('slice').userData(spendingsTable).append(
 					new Dom('h1').text(`${Utils.MONTH_NAMES[month]} spending`),
 				).append(spendingsTable)
@@ -206,10 +206,11 @@ export default class SpendingScreen {
 		const day = today.getFullYear() === this.#year && today.getMonth() === this.#month ? today.getDate() : 1;
 		new SpendingSubmitModal(this.#availableCategories[this.#month], this.#year, this.#month, day)
 			.insertMode()
-			.onInsertSpending((spending) => {
+			.onSubmit((spending) => {
 				this.#spendings[this.#month].push(spending);
 				this.refreshMonth(this.#month, this.#spendings[this.#month], this.#availableCategories[this.#month]);
 				this.#onCreateSpendingHandler?.(spending);
+				this.refreshMonth(this.#month, this.#spendings);
 			}).open();
 	}
 
