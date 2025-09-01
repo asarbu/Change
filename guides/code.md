@@ -160,9 +160,11 @@ If the submit button has attached behavior, you must check beforehand if the for
 When using Jest, mock the `checkValidity()` function because the form validation is not implemented in Jest. 
 **Example**
 ```
-new Dom('input').type('submit').attr('form', form-id').onClick(() => {
-  const form = document.getElementById('form-id');
+new Dom('input').type('submit').attr('form', form-id').onClick((event) => {
+  const form = event.target.form;
   if(form && form.checkValidity()) {
+    // Prevent submit refresh behaviour
+    event.preventDefault(); 
     this.doStuff();
     this.close();
   }
