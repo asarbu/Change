@@ -68,8 +68,8 @@ export default class SubmitGoalModal extends Modal {
 			)
 		.footer(
 			new Dom('h3').text('Cancel').onClick(this.close),
-			new Dom('input').id('submit-goal').attr('form', 'goal-submit-modal-form').type('submit').value('Save').onClick(() => {
-				const form = document.getElementById('goal-submit-modal-form');
+			new Dom('input').id('submit-goal').attr('form', 'goal-submit-modal-form').type('submit').value('Save').onClick((event) => {
+				const form = event.target.form;;
 				if(form.checkValidity()) {
 					this.#saveGoal();
 					this.close();
