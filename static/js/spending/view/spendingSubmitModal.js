@@ -32,7 +32,7 @@ export default class SpendingSubmitModal extends Modal {
 		this.header(
 			new Dom('h2').text('Insert Spending'),
 		).body(
-			new Dom('form').append(
+			new Dom('form').id('spending-submit-form').append(
 				new Dom('div').cls('input-field').append(
 					new Dom('input').type('date').attr('required', '').attr('min', minDate).attr('max', maxDate).attr('value', date).cloneTo(this.#dateInput),
 					new Dom('label').text('Date: '),
@@ -54,7 +54,7 @@ export default class SpendingSubmitModal extends Modal {
 			),
 		).footer(
 			new Dom('h3').text('Cancel').onClick(this.close.bind(this)),
-			new Dom('h3').text('Save').onClick(this.#onClickedSave),
+			new Dom('input').id('submit-spending').attr('form', 'spending-submit-form').type('submit').value('Save').onClick(this.#onClickedSave),
 		);
 
 		this.#buildCategoryModal(forCategories);
@@ -95,17 +95,15 @@ export default class SpendingSubmitModal extends Modal {
 	}
 
 	#onClickedSave = (event) => {
+		const form = event.target.form;
+		if(!form.checkValidity()) {	return;	}
+
 		event.preventDefault();
 		const spending = new Spending(new Date().getTime());
 		spending.spentOn = this.#dateInput.toHtml().valueAsDate;
 		spending.description = this.#descriptionInput.toHtml().value;
 		spending.price = +(this.#priceInput.toHtml().value);
 		spending.category = this.#categoryInput.toHtml().value;
-
-		if (!spending.price) {
-			this.#priceInput.toHtml().focus();
-			return;
-		}
 
 		this.close();
 		this.#onSubmitHandler?.(spending);
