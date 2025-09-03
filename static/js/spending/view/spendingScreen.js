@@ -47,7 +47,7 @@ export default class SpendingScreen {
 	/**
 	 * @param {number} defaultYear
 	 * @param {number} defaultMonth
-	 * @param {Array<SpendingReport>} spendings
+	 * @param {Array<Spending[]>} spendings
 	 */
 	constructor(defaultYear, defaultMonth, spendings, availableCategories, settings = new SettingsController().currentSettings()) {
 		this.#year = defaultYear;
