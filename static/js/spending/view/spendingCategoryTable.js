@@ -19,6 +19,9 @@ export default class SpendingCategoryTable extends TableDom {
 	/** @type {Array<string>} */
 	#availableCategories = undefined;
 
+	/** @type {number} */
+	#month = undefined;
+
 	/**
 	 * 
 	 * @param {number} month 
@@ -31,7 +34,7 @@ export default class SpendingCategoryTable extends TableDom {
 		this.#visibleColumns = visibleColumns;
 	}
 
-	refresh(month, spendings, availableCategories) {
+	refresh(month = this.#month, spendings = this.#spendings, availableCategories = this.#availableCategories) {
 		if(!spendings || spendings.length === 0 || !this.#visibleColumns || this.#visibleColumns.length === 0) {
 			return this.clear();
 		}
