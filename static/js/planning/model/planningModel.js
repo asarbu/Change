@@ -184,6 +184,10 @@ export default class Planning {
 			.reduce((categories, statement) => categories.concat(...statement.categories), []);
 	}
 
+	readAllCategories() {
+		return this.statements.flatMap((statement) => statement.categories);
+	}
+
 	readGoals(forStatementType = Statement.EXPENSE) {
 		const categories = this.readCategories(forStatementType);
 		return categories.reduce((accumulator, current) => accumulator.concat(current.goals), []);
