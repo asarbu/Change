@@ -30,28 +30,24 @@ export default class SpendingPersistence {
 	 * @returns {Promise<Spending[]>}
 	 */
 	async readFromCache(forMonth) {
-		const spendings = await this.#spendingCache.readAllForMonth(forMonth);
-		const spendingReport = new Spending[](this.#year, forMonth);
-		spendingReport.updateAll(spendings);
-		return spendingReport;
+		return await this.#spendingCache.readAllForMonth(forMonth);
 	}
 
 	/**
 	 * @returns {Promise<Array<Spending[]>>}
 	 */
 	async readAllFromCache() {
-		const reports = [];
+		const yearlySpendings = new Array(12).fill(undefined);
 		const spendings = await this.#spendingCache.readAll();
 		for (let index = 0; index < spendings.length; index += 1) {
 			const spending = spendings[index];
 			const month = spending.spentOn.getMonth();
-			if (!reports[month]) {
-				const newReport = new Spending[](this.#year, month);
-				reports[month] = newReport;
+			if (!yearlySpendings[month]) {
+				yearlySpendings[month] = [];
 			}
-			reports[month].appendSpending(spending);
+			yearlySpendings[month].push(spending);
 		}
-		return reports;
+		return yearlySpendings;
 	}
 
 	/**
@@ -96,9 +92,7 @@ export default class SpendingPersistence {
 					await this.#spendingCache.deleteAll(deletedGDriveSpendings);
 				}
 				await this.#spendingCache.storeAll(gDriveSpendings);
-				const monthlyReport = new Spending[](this.#year, forMonth);
-				monthlyReport.updateAll(gDriveSpendings);
-				return monthlyReport;
+				return gDriveSpendings;
 			}
 		}
 		return undefined;
