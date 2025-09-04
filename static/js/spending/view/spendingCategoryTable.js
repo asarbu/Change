@@ -78,8 +78,7 @@ export default class SpendingCategoryTable extends TableDom {
 			'delete-spending-modal',
 			'Are you sure you want to delete this month\'s spendings?',
 			() => {
-				this.#spendings.forEach((spending) => spending.deleted = true);
-				this.#spendings = [];
+				this.#spendings.length = 0;
 				this.refresh();
 			},
 		).open();
@@ -90,7 +89,6 @@ export default class SpendingCategoryTable extends TableDom {
 			'delete-spending-modal',
 			'Are you sure you want to delete this spending?',
 			() => {
-				spending.deleted = true;
 				this.#spendings.splice(this.#spendings.indexOf(spending), 1);
 				this.refresh();
 			},
@@ -112,7 +110,6 @@ export default class SpendingCategoryTable extends TableDom {
 				spending.description = editedSpending.description;
 				spending.price = editedSpending.price;
 				spending.spentOn = editedSpending.spentOn;
-				spending.edited = true;
 			}).onSubmit(() => {
 				this.refresh();
 			}).open();
