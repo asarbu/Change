@@ -68,7 +68,7 @@ export default class SpendingController {
 		}
 
 		const availableYears = await this.#spendingPersistence.availableYears();
-		availableYears.forEach((availableYear) => this.#screen.updateYear(+availableYear));
+		availableYears.forEach((availableYear) => this.#screen.appendYearToNavbar(+availableYear));
 
 		return this.#screen;
 	}
@@ -91,25 +91,14 @@ export default class SpendingController {
 		}
 
 		Alert.show('Google Drive', 'Started synchronization with Google Drive...');
-		this.#spendingPersistence.enableGdrive(gDriveSettings);
-		const gDriveReports = await this.#spendingPersistence.readAllFromGDrive();
-		if (gDriveReports.length === 0) {
-			return undefined;
-		}
-
-		// TODO Remove planning dependency from this class
 		this.#planningPersistence.enableGDrive(gDriveSettings);
-		const gDrivePlannings = await this.#planningPersistence.readAllFromGDrive();
-		gDriveReports.filter((item) => item).forEach((gDriveReport) => {
-			const month = gDriveReport.month();
-			const planning = gDrivePlannings[month];
-			if (planning) {
-				gDriveReport.updatePlanning(planning);
-			}
-			this.#cachedSpendings[month] = gDriveReport;
-		});
+		const plannings = await this.#planningPersistence.readAllFromGDrive();
+		if (!plannings?.length) { return undefined; }
 
-		this.initSpendingScreen(this.#cachedSpendings);
+		this.#spendingPersistence.enableGdrive(gDriveSettings);
+		const yearlySpendings = await this.#spendingPersistence.readAllFromGDrive();
+
+		yearlySpendings.forEach((monthlySpendings, month) => this.#screen.refreshMonth(month, monthlySpendings, plannings[month].readAllCategories()));
 
 		Alert.show('Google Drive', 'Finished synchronization with Google Drive');
 		return this.#screen;
@@ -122,7 +111,7 @@ export default class SpendingController {
 	 * @returns 
 	 */
 	initSpendingScreen(spendings, plannings) {
-		const availableCategories = plannings.map((planning) => planning.statements.flatMap((statement) => statement.categories));
+		const availableCategories = plannings.map((planning) => planning.readAllCategories());
 		const screen = new SpendingScreen(this.#defaultYear, this.#defaultMonth, spendings, availableCategories)
 			.onClickSave(this.onSavedSpendings)
 			.onCreateSpending(this.onCreatedSpending)
