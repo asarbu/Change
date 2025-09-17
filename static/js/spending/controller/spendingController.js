@@ -75,7 +75,7 @@ export default class SpendingController {
 
 	async initScreenFromCache() {
 		const plannings = await this.#planningPersistence.readAllFromCache();
-		if (!plannings?.length) { return undefined; }
+		if (!plannings?.filter(p => p).length) { return undefined; }
 
 		this.#cachedSpendings = await this.#spendingPersistence.readAllFromCache() || [];
 		const screen = this.initSpendingScreen(this.#cachedSpendings, plannings);
@@ -93,7 +93,7 @@ export default class SpendingController {
 		Alert.show('Google Drive', 'Started synchronization with Google Drive...');
 		this.#planningPersistence.enableGDrive(gDriveSettings);
 		const plannings = await this.#planningPersistence.readAllFromGDrive();
-		if (!plannings?.length) { return undefined; }
+		if (!plannings?.filter(p => p).length) { return undefined; }
 
 		this.#spendingPersistence.enableGdrive(gDriveSettings);
 		const yearlySpendings = await this.#spendingPersistence.readAllFromGDrive();
@@ -111,7 +111,7 @@ export default class SpendingController {
 	 * @returns 
 	 */
 	initSpendingScreen(spendings, plannings) {
-		const availableCategories = plannings.map((planning) => planning.readAllCategories());
+		const availableCategories = plannings.map((planning) => planning?.readAllCategories() || []);
 		const screen = new SpendingScreen(this.#defaultYear, this.#defaultMonth, spendings, availableCategories)
 			.onClickSave(this.onSavedSpendings)
 			.onCreateSpending(this.onCreatedSpending)
