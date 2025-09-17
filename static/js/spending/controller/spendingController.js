@@ -44,8 +44,8 @@ export default class SpendingController {
 		const month = Utils.monthForName((urlParams.get('month')));
 		this.#defaultYear = year || now.getFullYear();
 		this.#defaultMonth = month || now.getMonth();
-		this.#planningPersistence = new PlanningPersistence(this.#defaultYear);
-		this.#spendingPersistence = new SpendingPersistence(this.#defaultYear);
+		this.#planningPersistence = new PlanningPersistence(this.#defaultYear, this.#defaultMonth);
+		this.#spendingPersistence = new SpendingPersistence(this.#defaultYear, this.#defaultMonth);
 		this.#routingController = new RoutingController();
 		this.#cachedSpendings = [];
 		this.#settings = settings;
@@ -130,8 +130,8 @@ export default class SpendingController {
 	/**
 	 * @param {Spending[]} spendingReport
 	 */
-	onSavedSpendings = async (spendings) => {
-		await this.#spendingPersistence.updateAll(spendings);
+	onSavedSpendings = async (forMonth, updatedSpendings) => {
+		await this.#spendingPersistence.forMonth(forMonth).updateAll(updatedSpendings);
 	};
 
 	onClickedFetchDefaultPlanning() {

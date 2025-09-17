@@ -7,14 +7,18 @@ export default class SpendingPersistence {
 	/** @type {number} */
 	#year = undefined;
 
+	/** @type {number} */
+	#month = undefined;
+
 	/** @type {SpendingGDrive} */
 	#spendingGDrive = undefined;
 
 	/** @type {SpendingCache} */
 	#spendingCache = undefined;
 
-	constructor(forYear) {
+	constructor(forYear, forMonth) {
 		this.#year = forYear;
+		this.#month = forMonth;
 		this.#spendingCache = SpendingCache.for(forYear);
 	}
 
@@ -26,10 +30,19 @@ export default class SpendingPersistence {
 	}
 
 	/**
+	 * Change default month of the persistence layer
+	 * @param {number} month 
+	 */
+	forMonth(month) {
+		this.#month = month;
+		return this;
+	}
+
+	/**
 	 * @param {number} forMonth
 	 * @returns {Promise<Spending[]>}
 	 */
-	async readFromCache(forMonth) {
+	async readFromCache(forMonth = this.#month) {
 		return await this.#spendingCache.readAllForMonth(forMonth);
 	}
 
@@ -67,7 +80,7 @@ export default class SpendingPersistence {
 	/**
 	 * @param {number} forMonth
 	 */
-	async readFromGDrive(forMonth) {
+	async readFromGDrive(forMonth = this.#month) {
 		const fileExists = await this.#spendingGDrive.fileExists(forMonth);
 		if (!fileExists) {
 			const cachedSpendings = await this.#spendingCache.readAllForMonth(forMonth);
@@ -134,17 +147,17 @@ export default class SpendingPersistence {
 
 	/**
 	 * @param {Spending[]} spendings
+	 * @param {number} forMonth 
 	 */
-	async updateAll(spendings) {
-		const cache = SpendingCache.for(spendings.year());
-		const cachedSpendings = await cache.readAllForMonth(spendings.month());
-		await cache.deleteAll(cachedSpendings);
-		await cache.storeAll(spendings.spendings());
+	async updateAll(spendings, forMonth = this.#month) {
+		const cachedSpendings = await this.#spendingCache.readAllForMonth(forMonth);
+		await this.#spendingCache.deleteAll(cachedSpendings);
+		await this.#spendingCache.storeAll(spendings);
 
 		// TODO update below with factory method
 		if (this.#spendingGDrive) {
-			await this.#spendingGDrive.deleteFile(spendings.month());
-			await this.#spendingGDrive.storeSpendings(spendings.spendings(), spendings.month());
+			await this.#spendingGDrive.deleteFile(forMonth);
+			await this.#spendingGDrive.storeSpendings(spendings.spendings(), forMonth);
 		}
 	}
 

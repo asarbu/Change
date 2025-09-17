@@ -65,7 +65,12 @@ export default class SpendingScreen {
 		const screen = this.buildScreen(this.#spendings, this.#availableCategories);
 		this.gfx = new GraphicEffects();
 		this.gfx.init(screen);
-		this.gfx.onSliceChange(this.navbar.selectMonth.bind(this.navbar));
+		this.gfx.onSliceChange((index) => {
+			this.#month = this.navbar.selectMonth(index);
+		});
+		
+		this.navbar.selectMonth(this.#month);
+		this.navbar.selectYear(this.#year);
 		return this;
 	}
 
@@ -75,14 +80,12 @@ export default class SpendingScreen {
 		eventHandlers.onClickEdit = this.onClickEdit;
 		eventHandlers.onClickSave = this.#onClickedSave;
 		eventHandlers.onClickSummary = this.#onClickedSummary;
-		eventHandlers.onMonthChanged = this.slideToMonth.bind(this, this.#month);
+		eventHandlers.onMonthChanged = this.slideToMonth.bind(this);
 
 		this.navbar = new SpendingNavbar(this.#year, this.#month, eventHandlers);
 		const main = document.getElementById('main');
 		// TODO move append children to the end of init
 		main.appendChild(this.navbar.toHtml());
-		this.navbar.selectMonth(this.#month);
-		this.navbar.selectYear(this.#year);
 	}
 
 	/**
