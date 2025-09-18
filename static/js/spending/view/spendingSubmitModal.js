@@ -80,6 +80,10 @@ export default class SpendingSubmitModal extends Modal {
 		return this;
 	}
 
+	open = () => {
+		return this.#onClickedCategoryInput();
+	};
+
 	insertMode() {
 		this.header(new Dom('h2').text('Insert Spending'));
 
@@ -111,7 +115,7 @@ export default class SpendingSubmitModal extends Modal {
 
 	#onClickedCategory = (event) => {
 		this.#categoryModal.close();
-		this.open();
+		super.open();
 		this.#categoryInput.toHtml().value = event.target.textContent;
 		this.#focusInputField(this.#priceInput.toHtml());
 	}

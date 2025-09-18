@@ -1,6 +1,5 @@
 import SpendingScreen from '../view/spendingScreen.js';
 import Spending from '../model/spending.js';
-import SpendingReport from '../model/spendingReport.js';
 import Utils from '../../common/utils/utils.js';
 import SettingsController from '../../settings/controller/settingsController.js';
 import Alert from '../../common/gui/alert.js';
@@ -8,6 +7,7 @@ import PlanningPersistence from '../../planning/persistence/planningPersistence.
 import SpendingPersistence from '../persistence/spendingPersistence.js';
 import PlanningMissingScreen from '../view/planningMissingScreen.js';
 import RoutingController from '../../common/controller/routingController.js';
+import Planning from '../../planning/model/planningModel.js';
 
 export default class SpendingController {
 	/** @type {PlanningPersistence} */
@@ -25,8 +25,8 @@ export default class SpendingController {
 	/** @type {SpendingScreen} */
 	#screen = undefined;
 
-	/** @type { Array<SpendingReport> } */
-	#cachedReports = undefined;
+	/** @type { Array<Spending[]> } */
+	#cachedSpendings = undefined;
 
 	/** @type {RoutingController} */
 	#routingController = undefined;
@@ -44,10 +44,10 @@ export default class SpendingController {
 		const month = Utils.monthForName((urlParams.get('month')));
 		this.#defaultYear = year || now.getFullYear();
 		this.#defaultMonth = month || now.getMonth();
-		this.#planningPersistence = new PlanningPersistence(this.#defaultYear);
-		this.#spendingPersistence = new SpendingPersistence(this.#defaultYear);
+		this.#planningPersistence = new PlanningPersistence(this.#defaultYear, this.#defaultMonth);
+		this.#spendingPersistence = new SpendingPersistence(this.#defaultYear, this.#defaultMonth);
 		this.#routingController = new RoutingController();
-		this.#cachedReports = [];
+		this.#cachedSpendings = [];
 		this.#settings = settings;
 	}
 
@@ -55,10 +55,10 @@ export default class SpendingController {
 	 * @returns {Promise<SpendingScreen>}
 	 */
 	async init() {
-		const screenFromCache = await this.initScreenFromCache();
-		const screenFromGDrive = await this.initScreenFromGDrive();
+		this.#screen = await this.initScreenFromCache();
+		this.#screen = await this.initScreenFromGDrive() ?? this.#screen;
 
-		if (!screenFromCache && !screenFromGDrive) {
+		if (!this.#screen) {
 			const planningMissingScreen = new PlanningMissingScreen();
 			planningMissingScreen.onClickFetchDefault(this.onClickedFetchDefaultPlanning.bind(this));
 			planningMissingScreen.onClickGoToSettings(this.onClickedGoToSettings.bind(this));
@@ -68,40 +68,18 @@ export default class SpendingController {
 		}
 
 		const availableYears = await this.#spendingPersistence.availableYears();
-		availableYears.forEach((availableYear) => this.#screen.updateYear(+availableYear));
+		availableYears.forEach((availableYear) => this.#screen.appendYearToNavbar(+availableYear));
 
 		return this.#screen;
 	}
 
 	async initScreenFromCache() {
-		const defaultPlanning = await this.#planningPersistence
-			.readFromCache(this.#defaultMonth);
+		const plannings = await this.#planningPersistence.readAllFromCache();
+		if (!plannings?.filter(p => p).length) { return undefined; }
 
-		if (!defaultPlanning) {
-			return undefined;
-		}
-
-		this.#cachedReports = await this.#spendingPersistence.readAllFromCache() || [];
-		if (this.#cachedReports.length === 0 || !this.#cachedReports[this.#defaultMonth]) {
-			this.#cachedReports[this.#defaultMonth] = new SpendingReport(
-				this.#defaultYear,
-				this.#defaultMonth,
-				defaultPlanning,
-			);
-		}
-
-		// TODO Remove planning dependency from spending report. Use the goals from spendings directly
-		const cachedPlannings = await this.#planningPersistence.readAllFromCache();
-		for (let month = 0; month < this.#cachedReports.length; month += 1) {
-			const report = this.#cachedReports[month];
-			if (report) {
-				const planning = cachedPlannings[month] || defaultPlanning;
-				report.updatePlanning(planning);
-			}
-		}
-
-		this.initSpendingScreen(this.#cachedReports);
-		return this.#screen;
+		this.#cachedSpendings = await this.#spendingPersistence.readAllFromCache() || [];
+		const screen = this.initSpendingScreen(this.#cachedSpendings, plannings);
+		return screen;
 	}
 
 	// TODO: Move this to a sepparate file and load it in init(?)
@@ -113,25 +91,14 @@ export default class SpendingController {
 		}
 
 		Alert.show('Google Drive', 'Started synchronization with Google Drive...');
-		this.#spendingPersistence.enableGdrive(gDriveSettings);
-		const gDriveReports = await this.#spendingPersistence.readAllFromGDrive();
-		if (gDriveReports.length === 0) {
-			return undefined;
-		}
-
-		// TODO Remove planning dependency from this class
 		this.#planningPersistence.enableGDrive(gDriveSettings);
-		const gDrivePlannings = await this.#planningPersistence.readAllFromGDrive();
-		gDriveReports.filter((item) => item).forEach((gDriveReport) => {
-			const month = gDriveReport.month();
-			const planning = gDrivePlannings[month];
-			if (planning) {
-				gDriveReport.updatePlanning(planning);
-			}
-			this.#cachedReports[month] = gDriveReport;
-		});
+		const plannings = await this.#planningPersistence.readAllFromGDrive();
+		if (!plannings?.filter(p => p).length) { return undefined; }
 
-		this.initSpendingScreen(this.#cachedReports);
+		this.#spendingPersistence.enableGdrive(gDriveSettings);
+		const yearlySpendings = await this.#spendingPersistence.readAllFromGDrive();
+
+		yearlySpendings.forEach((monthlySpendings, month) => this.#screen.refreshMonth(month, monthlySpendings, plannings[month].readAllCategories()));
 
 		Alert.show('Google Drive', 'Finished synchronization with Google Drive');
 		return this.#screen;
@@ -139,18 +106,18 @@ export default class SpendingController {
 
 	/**
 	 * 
-	 * @param {Array<SpendingReport>} reports 
+	 * @param {Array<Spending[]>} spendings
+	 * @param {Array<Planning>} plannings
 	 * @returns 
 	 */
-	initSpendingScreen(reports) {
-		const spendings = reports.map((report) => report.spendings());
-		const availableCategories = reports.map((report) => report.plannedCategories());
-		this.#screen = new SpendingScreen(this.#defaultYear, this.#defaultMonth, spendings, availableCategories)
-			.onClickSave(this.onSavedReport)
+	initSpendingScreen(spendings, plannings) {
+		const availableCategories = plannings.map((planning) => planning?.readAllCategories() || []);
+		const screen = new SpendingScreen(this.#defaultYear, this.#defaultMonth, spendings, availableCategories)
+			.onClickSave(this.onSavedSpendings)
 			.onCreateSpending(this.onCreatedSpending)
 			.init()
 			.jumpToMonth(this.#defaultMonth);
-		return this.#screen;
+		return screen;
 	}
 
 	/**
@@ -161,10 +128,10 @@ export default class SpendingController {
 	}
 
 	/**
-	 * @param {SpendingReport} spendingReport
+	 * @param {Spending[]} spendingReport
 	 */
-	onSavedReport = async (spendingReport) => {
-		await this.#spendingPersistence.updateAll(spendingReport);
+	onSavedSpendings = async (forMonth, updatedSpendings) => {
+		await this.#spendingPersistence.forMonth(forMonth).updateAll(updatedSpendings);
 	};
 
 	onClickedFetchDefaultPlanning() {

@@ -1,6 +1,5 @@
 import GDriveSettings from '../../settings/model/gDriveSettings.js';
 import Spending from '../model/spending.js';
-import SpendingReport from '../model/spendingReport.js';
 import SpendingCache from './spendingCache.js';
 import SpendingGDrive from './spendingGdrive.js';
 
@@ -8,14 +7,18 @@ export default class SpendingPersistence {
 	/** @type {number} */
 	#year = undefined;
 
+	/** @type {number} */
+	#month = undefined;
+
 	/** @type {SpendingGDrive} */
 	#spendingGDrive = undefined;
 
 	/** @type {SpendingCache} */
 	#spendingCache = undefined;
 
-	constructor(forYear) {
+	constructor(forYear, forMonth) {
 		this.#year = forYear;
+		this.#month = forMonth;
 		this.#spendingCache = SpendingCache.for(forYear);
 	}
 
@@ -27,52 +30,57 @@ export default class SpendingPersistence {
 	}
 
 	/**
-	 * @param {number} forMonth
-	 * @returns {Promise<SpendingReport>}
+	 * Change default month of the persistence layer
+	 * @param {number} month 
 	 */
-	async readFromCache(forMonth) {
-		const spendings = await this.#spendingCache.readAllForMonth(forMonth);
-		const spendingReport = new SpendingReport(this.#year, forMonth);
-		spendingReport.updateAll(spendings);
-		return spendingReport;
+	forMonth(month) {
+		this.#month = month;
+		return this;
 	}
 
 	/**
-	 * @returns {Promise<Array<SpendingReport>>}
+	 * @param {number} forMonth
+	 * @returns {Promise<Spending[]>}
+	 */
+	async readFromCache(forMonth = this.#month) {
+		return await this.#spendingCache.readAllForMonth(forMonth);
+	}
+
+	/**
+	 * @returns {Promise<Array<Spending[]>>}
 	 */
 	async readAllFromCache() {
-		const reports = [];
+		const yearlySpendings = new Array(12).fill(undefined);
 		const spendings = await this.#spendingCache.readAll();
 		for (let index = 0; index < spendings.length; index += 1) {
 			const spending = spendings[index];
 			const month = spending.spentOn.getMonth();
-			if (!reports[month]) {
-				const newReport = new SpendingReport(this.#year, month);
-				reports[month] = newReport;
+			if (!yearlySpendings[month]) {
+				yearlySpendings[month] = [];
 			}
-			reports[month].appendSpending(spending);
+			yearlySpendings[month].push(spending);
 		}
-		return reports;
+		return yearlySpendings;
 	}
 
 	/**
 	 * Returns changed spending reports synchronized from GDrive
-	 * @returns {Promise<Array<SpendingReport>>}
+	 * @returns {Promise<Array<Spending[]>>}
 	 */
 	async readAllFromGDrive() {
-		const spendingReports = [];
+		const spendings = [];
 		// Force initialization beforehand to avoid race conditions in init.
 		await this.#spendingGDrive.init();
 		for (let month = 0; month < 12; month += 1) {
-			spendingReports[month] = this.readFromGDrive(month);
+			spendings[month] = this.readFromGDrive(month);
 		}
-		return Promise.all(spendingReports);
+		return Promise.all(spendings);
 	}
 
 	/**
 	 * @param {number} forMonth
 	 */
-	async readFromGDrive(forMonth) {
+	async readFromGDrive(forMonth = this.#month) {
 		const fileExists = await this.#spendingGDrive.fileExists(forMonth);
 		if (!fileExists) {
 			const cachedSpendings = await this.#spendingCache.readAllForMonth(forMonth);
@@ -97,9 +105,7 @@ export default class SpendingPersistence {
 					await this.#spendingCache.deleteAll(deletedGDriveSpendings);
 				}
 				await this.#spendingCache.storeAll(gDriveSpendings);
-				const monthlyReport = new SpendingReport(this.#year, forMonth);
-				monthlyReport.updateAll(gDriveSpendings);
-				return monthlyReport;
+				return gDriveSpendings;
 			}
 		}
 		return undefined;
@@ -128,7 +134,7 @@ export default class SpendingPersistence {
 	}
 
 	/**
-	 * @param {SpendingReport} fromSpendingReport
+	 * @param {Spending[]} fromSpendingReport
 	 */
 	async deleteAll(fromSpendingReport) {
 		const cache = SpendingCache.for(fromSpendingReport.year());
@@ -140,18 +146,18 @@ export default class SpendingPersistence {
 	}
 
 	/**
-	 * @param {SpendingReport} forReport
+	 * @param {Spending[]} spendings
+	 * @param {number} forMonth 
 	 */
-	async updateAll(forReport) {
-		const cache = SpendingCache.for(forReport.year());
-		const cachedSpendings = await cache.readAllForMonth(forReport.month());
-		await cache.deleteAll(cachedSpendings);
-		await cache.storeAll(forReport.spendings());
+	async updateAll(spendings, forMonth = this.#month) {
+		const cachedSpendings = await this.#spendingCache.readAllForMonth(forMonth);
+		await this.#spendingCache.deleteAll(cachedSpendings);
+		await this.#spendingCache.storeAll(spendings);
 
 		// TODO update below with factory method
 		if (this.#spendingGDrive) {
-			await this.#spendingGDrive.deleteFile(forReport.month());
-			await this.#spendingGDrive.storeSpendings(forReport.spendings(), forReport.month());
+			await this.#spendingGDrive.deleteFile(forMonth);
+			await this.#spendingGDrive.storeSpendings(spendings.spendings(), forMonth);
 		}
 	}
 

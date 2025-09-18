@@ -47,7 +47,7 @@ export default class SpendingScreen {
 	/**
 	 * @param {number} defaultYear
 	 * @param {number} defaultMonth
-	 * @param {Array<SpendingReport>} spendings
+	 * @param {Array<Spending[]>} spendings
 	 */
 	constructor(defaultYear, defaultMonth, spendings, availableCategories, settings = new SettingsController().currentSettings()) {
 		this.#year = defaultYear;
@@ -58,23 +58,19 @@ export default class SpendingScreen {
 	}
 
 	init() {
-		let defaultReport = this.#spendings[this.#month];
-		if (!defaultReport) {
-			defaultReport = new SpendingReport(
-				this.#year,
-				this.#month,
-				new Planning(this.#year, this.#month, []),
-			);
-			this.#spendings.push(defaultReport);
-		}
-
+		this.#spendings = this.#spendings ?? [];
 		document.getElementById('main').replaceChildren();
 
-		this.buildNavbar(defaultReport);
-		const screen = this.buildScreen(defaultReport);
+		this.buildNavbar();
+		const screen = this.buildScreen(this.#spendings, this.#availableCategories);
 		this.gfx = new GraphicEffects();
 		this.gfx.init(screen);
-		this.gfx.onSliceChange(this.navbar.selectMonth.bind(this.navbar));
+		this.gfx.onSliceChange((index) => {
+			this.#month = this.navbar.selectMonth(index);
+		});
+		
+		this.navbar.selectMonth(this.#month);
+		this.navbar.selectYear(this.#year);
 		return this;
 	}
 
@@ -84,14 +80,12 @@ export default class SpendingScreen {
 		eventHandlers.onClickEdit = this.onClickEdit;
 		eventHandlers.onClickSave = this.#onClickedSave;
 		eventHandlers.onClickSummary = this.#onClickedSummary;
-		eventHandlers.onMonthChanged = this.slideToMonth.bind(this, this.#month);
+		eventHandlers.onMonthChanged = this.slideToMonth.bind(this);
 
 		this.navbar = new SpendingNavbar(this.#year, this.#month, eventHandlers);
 		const main = document.getElementById('main');
 		// TODO move append children to the end of init
 		main.appendChild(this.navbar.toHtml());
-		this.navbar.selectMonth(this.#month);
-		this.navbar.selectYear(this.#year);
 	}
 
 	/**
@@ -123,7 +117,7 @@ export default class SpendingScreen {
 	 * Appends a new year to the navbar
 	 * @param {number} year Year to append to the Navbar
 	 */
-	updateYear(year) {
+	appendYearToNavbar(year) {
 		this.navbar.appendYear(year);
 	}
 
@@ -151,7 +145,7 @@ export default class SpendingScreen {
 	/**
 	 * @returns {HTMLElement}
 	 */
-	buildScreen() {
+	buildScreen(spendings, availableCategories) {
 		this.section = new Dom('div').id('spendings-section').cls('section');
 		this.screen = new Dom('div').cls('container').append(
 			this.section,
@@ -160,8 +154,8 @@ export default class SpendingScreen {
 		const main = document.getElementById('main');
 		main.appendChild(this.screen.toHtml());
 
-		for(var index = 0; index < this.#spendings.length; index++) {
-			this.refreshMonth(index, this.#spendings[index], this.#availableCategories[index]);
+		for(var index = 0; index < spendings.length; index++) {
+			this.refreshMonth(index, spendings[index], availableCategories[index]);
 		}
 
 		return this.screen.toHtml();
@@ -183,16 +177,14 @@ export default class SpendingScreen {
 		// Disable sliding effects to avoid listener conflicts.
 		this.gfx.pause();
 		this.#drawnTables[this.#month].editMode();
-
-		this.editMode = true;
 	}
 
 	#onClickedSave = () => {
 		// Resume effects as there will be no listener conflicts anymore.
 		this.gfx.resume();
-		this.editMode = false;
+		this.#drawnTables[this.#month].normalMode();
 
-		this.#onSaveHandler?.(this.#month, this.#spendings.find((report) => report.month() === this.#month));
+		this.#onSaveHandler?.(this.#month, this.#spendings[this.#month]);
 	};
 
 	#onClickedSummary = () => {
