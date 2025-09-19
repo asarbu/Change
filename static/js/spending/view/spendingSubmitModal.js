@@ -34,20 +34,20 @@ export default class SpendingSubmitModal extends Modal {
 		).body(
 			new Dom('form').id('spending-submit-form').append(
 				new Dom('div').cls('input-field').append(
-					new Dom('input').type('date').attr('required', '').attr('min', minDate).attr('max', maxDate).attr('value', date).cloneTo(this.#dateInput),
+					new Dom('input').id('date').type('date').attr('required', '').attr('min', minDate).attr('max', maxDate).attr('value', date).cloneTo(this.#dateInput),
 					new Dom('label').text('Date: '),
 				),
 				new Dom('div').cls('input-field').append(
-					new Dom('input').type('text').attr('required', '').attr('inputmode', 'none').onClick(this.#onClickedCategoryInput).onFocus(this.#onClickedCategoryInput)
+					new Dom('input').id('category').type('text').attr('required', '').attr('inputmode', 'none').onClick(this.#onClickedCategoryInput).onFocus(this.#onClickedCategoryInput)
 						.cloneTo(this.#categoryInput),
 					new Dom('label').text('Category: '),
 				),
 				new Dom('div').cls('input-field').append(
-					new Dom('input').type('number').attr('required', '').attr('step', '0.01').cloneTo(this.#priceInput),
+					new Dom('input').id('price').type('number').attr('required', '').attr('step', '0.01').cloneTo(this.#priceInput),
 					new Dom('label').text('Price: '),
 				),
 				new Dom('div').cls('input-field').append(
-					new Dom('input').type('text').attr('required', '').cloneTo(this.#descriptionInput),
+					new Dom('input').id('description').type('text').attr('required', '').cloneTo(this.#descriptionInput),
 					new Dom('label').text('Description: '),
 				),
 				new Dom('input').type('submit').hide().onClick(this.#onClickedSave),
@@ -72,7 +72,8 @@ export default class SpendingSubmitModal extends Modal {
 	editMode(spending) {
 		this.header(new Dom('h2').text('Edit Spending'));
 
-		this.#dateInput.toHtml().valueAsDate = spending.spentOn;
+		const spent = spending.spentOn;
+		this.#dateInput.toHtml().valueAsDate = new Date(spent.getFullYear(), spent.getMonth(), spent.getDate(), 0, -spent.getTimezoneOffset());
 		this.#descriptionInput.toHtml().value = spending.description;
 		this.#categoryInput.toHtml().value = spending.category;
 		this.#priceInput.toHtml().value = spending.price;
