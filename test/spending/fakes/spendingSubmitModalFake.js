@@ -7,7 +7,8 @@ export default class SpendingSubmitModalFake  extends SpendingSubmitModal {
 
     // Read value from input field by id.
     readInputValue(id) {
-        const input = document.getElementById(id);
+        const modal = this.toHtml();
+        const input = modal.querySelector(`#${id}`);
         if (input) {
             return input.value;
         }

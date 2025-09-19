@@ -3,7 +3,7 @@
  */
 import { describe, it, expect, beforeAll, jest } from "@jest/globals";
 import SpendingsBuilder from "./builders";
-import SpendingSubmitModal from '../../static/js/spending/view/spendingSubmitModal.js';
+import SpendingSubmitModalFake from "./fakes/spendingSubmitModalFake.js";
 
 describe('Spending Submit Modal', () => {
     beforeAll(() => {
@@ -23,11 +23,12 @@ describe('Spending Submit Modal', () => {
         const builder = new SpendingsBuilder();
         const spendings = builder.oneSpending().create();
         const categories = builder.categories();
-        const modal = new SpendingSubmitModalFake(categories, 2001, 1, 1).editMode(spendings[0]);
+        const modal = new SpendingSubmitModalFake(categories, 2001, 1, 1)
+            .editMode(spendings[0]);
 
-        expect(modal.readInputValue('amount')).toBe('10');
         expect(modal.readInputValue('date')).toBe('2001-02-01');
         expect(modal.readInputValue('category')).toBe('Food');
         expect(modal.readInputValue('description')).toBe('Bread');
+        expect(modal.readInputValue('price')).toBe('10');
     });
 })
