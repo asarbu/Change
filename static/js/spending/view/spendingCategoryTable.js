@@ -105,12 +105,11 @@ export default class SpendingCategoryTable extends TableDom {
 		
 		new SpendingSubmitModal(this.#availableCategories)
 			.editMode(spending)
-			.onEditSpending((editedSpending) => {
+			.onSubmit((editedSpending) => {
 				spending.category = editedSpending.category;
 				spending.description = editedSpending.description;
 				spending.price = editedSpending.price;
 				spending.spentOn = editedSpending.spentOn;
-			}).onSubmit(() => {
 				this.refresh();
 			}).open();
 	}
