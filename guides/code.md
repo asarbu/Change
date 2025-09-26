@@ -161,7 +161,7 @@ When using Jest, mock the `checkValidity()` function because the form validation
 **Example**
 ```
 new Dom('input').type('submit').attr('form', form-id').onClick((event) => {
-  const form = event.target.form;
+  const form = this.toHtml().getElementsByTagName('form')[0];
   if(form && form.checkValidity()) {
     // Prevent submit refresh behaviour
     event.preventDefault(); 
