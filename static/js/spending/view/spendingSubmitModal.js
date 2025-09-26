@@ -81,7 +81,7 @@ export default class SpendingSubmitModal extends Modal {
 		return this;
 	}
 
-	open = () => {
+	openCategoryModal = () => {
 		return this.#onClickedCategoryInput();
 	};
 
@@ -100,10 +100,11 @@ export default class SpendingSubmitModal extends Modal {
 	}
 
 	#onClickedSave = (event) => {
-		const form = event.target.form;
-		if(!form.checkValidity()) {	return;	}
+		const form = this.toHtml().getElementsByTagName('form')[0];
+		const isValid = form?.checkValidity();
+		if(!isValid) { return undefined; }
 
-		event.preventDefault();
+		event?.preventDefault();
 		const spending = new Spending(new Date().getTime());
 		spending.spentOn = this.#dateInput.toHtml().valueAsDate;
 		spending.description = this.#descriptionInput.toHtml().value;
@@ -111,7 +112,7 @@ export default class SpendingSubmitModal extends Modal {
 		spending.category = this.#categoryInput.toHtml().value;
 
 		this.close();
-		this.#onSubmitHandler?.(spending);
+		return this.#onSubmitHandler?.(spending);
 	};
 
 	#onClickedCategory = (event) => {
@@ -125,7 +126,7 @@ export default class SpendingSubmitModal extends Modal {
 		if (this.isOpen()) {
 			this.close();
 		}
-		this.#categoryModal.open();
+		return this.#categoryModal.open();
 	};
 
 	#focusInputField(htmlElement) {

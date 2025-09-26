@@ -203,7 +203,7 @@ export default class SpendingScreen {
 				this.refreshMonth(this.#month, this.#spendings[this.#month], this.#availableCategories[this.#month]);
 				this.#onCreateSpendingHandler?.(spending);
 				this.refreshMonth(this.#month, this.#spendings);
-			}).open();
+			}).openCategoryModal();
 	}
 
 	// #endregion

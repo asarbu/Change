@@ -1,12 +1,12 @@
 import Dom from '../../common/gui/dom.js';
 import Modal from '../../common/gui/modal.js';
 
-export default class SpendingCategoryModal {
+export default class SpendingCategoryModal extends Modal {
 	#modalDom = undefined;
 
 	constructor(forCategories, onClickCategoryCallback) {
 		if (!forCategories || forCategories.length === 0) {
-			this.#modalDom = new Modal('categories')
+			super('categories')
 				.header(
 					new Dom('h2').text('Cannot Insert Spending'),
 				).body(
@@ -17,7 +17,7 @@ export default class SpendingCategoryModal {
 
 		const onClickCategoryHeader = SpendingCategoryModal.#onClickCategoryHeader;
 
-		this.#modalDom = new Modal('categories')
+		super('categories')
 			.header(
 				new Dom('h2').text('Insert Spending'),
 			).body(
@@ -37,11 +37,12 @@ export default class SpendingCategoryModal {
 	}
 
 	open() {
-		this.#modalDom.open();
+		super.open();
+		return this;
 	}
 
 	close() {
-		this.#modalDom.close();
+		super.close();
 	}
 
 	static #onClickCategoryHeader(event) {
