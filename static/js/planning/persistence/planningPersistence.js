@@ -41,6 +41,9 @@ export default class PlanningPersistence {
 
 	async readAllFromCache() {
 		const availableMonths = await this.cachedMonths();
+		// TODO Move impure domain logic to controller
+		const currentMonth = new Date().getMonth();
+		availableMonths.includes(currentMonth) || availableMonths.push(currentMonth);
 		const plannings = [];
 		availableMonths.forEach((month) => {
 			plannings[month] = this.readFromCache(month);
