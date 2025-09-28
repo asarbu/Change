@@ -60,6 +60,10 @@ export default class SpendingPersistence {
 			}
 			yearlySpendings[month].push(spending);
 		}
+		const now = new Date();
+		if(yearlySpendings[now.getMonth()] === undefined) {
+			yearlySpendings[now.getMonth()] = [];
+		}
 		return yearlySpendings;
 	}
 
