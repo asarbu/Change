@@ -40,11 +40,6 @@ export default class SpendingCategoryTable extends TableDom {
 			return this;
 		}
 		
-		if(!spendings || spendings.length === 0) {
-			this.tbody();
-			return this;
-		}
-		
 		this.#spendings = spendings;
 		this.#availableCategories = availableCategories;
 
