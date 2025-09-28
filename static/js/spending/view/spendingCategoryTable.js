@@ -35,8 +35,14 @@ export default class SpendingCategoryTable extends TableDom {
 	}
 
 	refresh(month = this.#month, spendings = this.#spendings, availableCategories = this.#availableCategories) {
-		if(!spendings || spendings.length === 0 || !this.#visibleColumns || this.#visibleColumns.length === 0) {
-			return this.clear();
+		if(!this.#visibleColumns || this.#visibleColumns.length === 0) {
+			this.thead();
+			return this;
+		}
+		
+		if(!spendings || spendings.length === 0) {
+			this.tbody();
+			return this;
 		}
 		
 		this.#spendings = spendings;
