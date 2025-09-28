@@ -40,7 +40,7 @@ export default class SpendingCategoryTable extends TableDom {
 			return this;
 		}
 		
-		this.#spendings = spendings;
+		this.#spendings = spendings || [];
 		this.#availableCategories = availableCategories;
 
 		const totalSpending = new Spending(`total-${month}`, '-', '-', '-', 'Total', spendings.reduce((acc, spending) => acc + spending.price, 0));
