@@ -70,6 +70,9 @@ Every change in the state of the application should lead to the creation of an i
 Other layers / components should subscribe to the events (change, create, edit, delete, etc) by passing an event handler to the **on<event><objectName>** function. This new function might receive the new immutable entity.
 In case the event does not alter the state of the model but requries feedback (e.g display a modal when a button is clicked), no new entities should be created.
 
+## Creating arrays
+When you need to create arrays of a predefined size, use the `Array(n).fill(undefined)` function to return an iterable array, as the default Array object is not iterable.
+
 ### Recommended Event verbs
 
 Use **change** verb when you replace/swap one object with another
@@ -86,5 +89,84 @@ Use **<actionVerb><objectName>** when exposing an event publicly.
 **Example**
 1. `clickInsertStatement` for declaring a function that simulates a click on the **insert statement** button.
 
+### DOM event registration
+In Dom.js event methods use event properties instead of using addEventHandler (e.g. `elmt.onclick = handler`). 
+This ensures there is only one handler for a given event, avoids replay errors, and also alows returning values in tests (by calling the `onclick()` function and storing the return value).
+
 ### Grouping handlers together
-Put handler that are related in their own region.
+Put handlers that are related in their own region.
+
+# Testing
+## Testing methods 
+### Mocks
+Mocks verify interactions . They are programmed with expected method calls and arguments. The tests asserts that the calls are made with the right data or the calls return the right data. Mocks should be avoided at all costs (due to coupling implementation details to the test) and mocking should be considered a code smell. 
+Mocks also interfere with mutation testing, so fakes should be considered, instead.
+### Stubs
+Stubs provide predetermined responses. They don't assert interactions, but return dummy values so the test can continue. They are prefferable to mocks. They can be used for calling slow dependencies (e.g. APIs, datbases, etc.).
+### Fakes
+Fakes are lightweight working implementations, but simpler, usually in-memory.
+They can only be used if a dependency is not available, or if a stub is more difficult to implement (e.g. IndexedDB is not available in in Jest, and it is difficult to stub).
+
+**Example** You can consider creating fakes for GUI objects by extending the base component and implementing `clickButton` or `typeInput` to control behavior in base classes.
+
+## Building tests
+Tests should be built using AAA pattern.
+### Arrange
+The tests should not be fragile and they should be resistant to refactoring. To ensure this, the tester should create builders for most common tested objects. This ensures the tests are easy to read, the creation of the elements can be autocompleted and the builder itseld is reusable.
+When the underlying model changes, we only update the builder.
+### Act
+The acting part of the test should be a one liner, testing the operation at hand.
+### Assert
+One may have multiple asserts at the end of the tests, if it makes sense (e.g. to avoid duplication)
+
+**Example** While testing planning operations, we might need multiple types of objects, so the builder might return those common plannings:
+```
+describe('Planning cache', () => {
+  it('stores one empty Planning object', async () => {
+    // Arrange
+    const countBeforeInsert = (await planningCache.count());
+    const planning = planningBuilder.create();
+    
+    // Act
+    await planningCache.create(planning);
+
+    // Assert
+    const countAfterInsert = (await planningCache.count());
+    expect(countAfterInsert - countBeforeInsert).toBe(1);
+  });
+
+  it('stores one complex Planning object', async () => {
+    // Arrange
+    const countBeforeInsert = (await planningCache.count());
+    const planning = planningBuilder
+      .create()
+      .withEmptyStatement()
+      .withLargeStatement();
+    
+    // Act
+    const storedPlanning = await planningCache.create(planning);
+
+    // Assert
+    const countAfterInsert = (await planningCache.count());
+    expect(countAfterInsert - countBeforeInsert).toBe(1);
+    expect(planning).toEqual(storedPlanning);
+  });
+});
+```
+### Input validation
+Always use a submit type input for a form, to ensure that proper form validation is performed (e.g. `required` inputs are not left empty).
+Always return false for `onSubmit()` in forms to avoid page reloads.
+If the submit button has attached behavior, you must check beforehand if the form is valid.
+When using Jest, mock the `checkValidity()` function because the form validation is not implemented in Jest. 
+**Example**
+```
+new Dom('input').type('submit').attr('form', form-id').onClick((event) => {
+  const form = this.toHtml().getElementsByTagName('form')[0];
+  if(form && form.checkValidity()) {
+    // Prevent submit refresh behaviour
+    event.preventDefault(); 
+    this.doStuff();
+    this.close();
+  }
+})
+```

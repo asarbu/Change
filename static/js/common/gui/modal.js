@@ -12,8 +12,7 @@ export default class Modal {
 
 	constructor(id) {
 		this.id = id;
-		const onClose = this.close.bind(this);
-		this.modalBackdrop = new Dom('div').cls('modal').onClick(onClose);
+		this.modalBackdrop = new Dom('div').cls('modal').onClick(this.close);
 		this.content = new Dom('div').cls('modal-content');
 		this.modal = new Dom('div').id(id).append(
 			this.modalBackdrop,
@@ -32,7 +31,7 @@ export default class Modal {
 	static areYouSureModal(id, message, yesCallback) {
 		return new Modal(id).header(
 			new Dom('h1').text(message),
-		).#addCancelYesFooter(yesCallback);
+		).addFooterWithActionButton('Yes', yesCallback);
 	}
 
 	header(...domElements) {
@@ -85,26 +84,20 @@ export default class Modal {
 		this.cancelButtonHtml = this.cancelButton.toHtml();
 
 		this.footer(
-			this.cancelButton.onClick(this.close.bind(this)),
+			this.cancelButton.onClick(this.close),
 		);
 
 		return this;
 	}
 
-	#addCancelYesFooter(yesHandler) {
-		this.cancelButton = new Dom('h3').id(`modal-cancel-${this.id}`)
-			.text('Cancel').onClick(this.close.bind(this));
-		this.cancelButtonHtml = this.cancelButton.toHtml();
-		this.yesButton = new Dom('h3').text('Yes').onClick(() => {
-			yesHandler();
-			this.close();
-		});
-
+	addFooterWithActionButton(actionName, handler) {
 		this.footer(
-			this.cancelButton,
-			this.yesButton,
+			new Dom('h3').text('Cancel').onClick(this.close),
+			new Dom('h3').text(actionName).onClick(() => {
+				handler?.();
+				this.close();
+			}),
 		);
-
 		return this;
 	}
 
@@ -123,31 +116,31 @@ export default class Modal {
 	}
 
 	open() {
+		this.#isOpen = true;
 		const main = document.getElementById('main');
 		main.appendChild(this.modalHtml);
 		requestAnimationFrame(() => {
 			this.modalBackdropHtml.classList.add('show-modal-backdrop');
 			this.contentHtml.classList.add('show-modal-content');
-			this.#isOpen = true;
 		});
 
 		return this;
 	}
 
-	close() {
+	close = () => {
+		this.#isOpen = false;
 		requestAnimationFrame(() => {
 			this.modalBackdropHtml.classList.remove('show-modal-backdrop');
 			this.contentHtml.classList.remove('show-modal-content');
 			this.contentHtml.addEventListener('transitionend', this.closeModalEventListener);
 		});
 		return this;
-	}
+	};
 
 	#closeModal() {
 		this.contentHtml.removeEventListener('transitionend', this.closeModalEventListener);
 		const main = document.getElementById('main');
 		main.removeChild(this.modalHtml);
-		this.#isOpen = false;
 	}
 
 	scrollable() {

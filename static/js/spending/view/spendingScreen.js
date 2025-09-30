@@ -9,26 +9,25 @@ import SpendingNavbar from './spendingNavbar.js';
 import SpendingNavbarEventHandlers from './spendingNavbarHandlers.js';
 import SpendingSummaryModal from './spendingSummaryModal.js';
 import SpendingSubmitModal from './spendingSubmitModal.js';
+import SpendingCategoryTable from './spendingCategoryTable.js';
+import Settings from '../../settings/model/settings.js';
+import SettingsController from '../../settings/controller/settingsController.js';
+import Utils from '../../common/utils/utils.js';
 
 export default class SpendingScreen {
 	/** @type {(spending: Spending) => any} */
-	onCreateSpendingCallback = undefined;
+	#onCreateSpendingHandler = undefined;
 
-	onSaveReportCallback = undefined;
-
-	onDeleteReportCallback = undefined;
+	#onSaveHandler = undefined;
 
 	/** @type {Array<Category>} */
 	categories = undefined;
 
-	/** @type {Map<number, Dom} */
-	#drawnSlices = new Map();
-
-	/** @type {SpendingSubmitModal} */
-	#spendingSubmitModal = undefined;
-
-	/** @type {Modal} */
-	#categoryModal = undefined;
+	/** 
+	 * The 0-based index of the array represents the month of the table
+	 * @type {Array<SpendingCategoryTable>} 
+	 */
+	#drawnTables = Array(12).fill(undefined);
 
 	/** @type {number} */
 	#month = undefined;
@@ -36,99 +35,89 @@ export default class SpendingScreen {
 	/** @type {number} */
 	#year = undefined;
 
+	/** @type {Settings} */
+	#settings = undefined;
+
+	/** @type {Array<Spending>} */
+	#spendings = undefined;
+
+	/** @type {Array<Category>} */
+	#availableCategories = undefined;
+
 	/**
 	 * @param {number} defaultYear
 	 * @param {number} defaultMonth
-	 * @param {Array<SpendingReport>} spendingReports
+	 * @param {Array<Spending[]>} spendings
 	 */
-	constructor(defaultYear, defaultMonth, spendingReports) {
+	constructor(defaultYear, defaultMonth, spendings, availableCategories, settings = new SettingsController().currentSettings()) {
 		this.#year = defaultYear;
 		this.#month = defaultMonth;
-		this.spendingReports = spendingReports;
+		this.#spendings = spendings;
+		this.#availableCategories = availableCategories;
+		this.#settings = settings;
 	}
 
 	init() {
-		let defaultReport = this.spendingReports[this.#month];
-		if (!defaultReport) {
-			defaultReport = new SpendingReport(
-				this.#year,
-				this.#month,
-				new Planning(this.#year, this.#month, []),
-			);
-			this.spendingReports.push(defaultReport);
-		}
-
+		this.#spendings = this.#spendings ?? [];
 		document.getElementById('main').replaceChildren();
 
-		this.buildNavbar(defaultReport);
-		this.buildSubmitSpendingModal(defaultReport.plannedCategories());
-		const screen = this.buildScreen(defaultReport);
+		this.buildNavbar();
+		const screen = this.buildScreen(this.#spendings, this.#availableCategories);
 		this.gfx = new GraphicEffects();
 		this.gfx.init(screen);
-		this.gfx.onSliceChange(this.navbar.selectMonth.bind(this.navbar));
-
-		this.spendingReports.forEach((spendingReport) => this.refreshMonth(spendingReport));
+		this.gfx.onSliceChange((index) => {
+			this.#month = this.navbar.selectMonth(index);
+		});
+		
+		this.navbar.selectMonth(this.#month);
+		this.navbar.selectYear(this.#year);
+		return this;
 	}
 
-	buildNavbar(spendingReport) {
+	buildNavbar() {
 		const eventHandlers = new SpendingNavbarEventHandlers();
-		eventHandlers.onClickAddSpending = this.onClickAddSpending.bind(this);
-		eventHandlers.onClickEdit = this.onClickEdit.bind(this);
-		eventHandlers.onClickSave = this.onClickedSave.bind(this);
-		eventHandlers.onClickSummary = this.onClickedSummary.bind(this);
+		eventHandlers.onClickAddSpending = this.#onClickAddSpending;
+		eventHandlers.onClickEdit = this.onClickEdit;
+		eventHandlers.onClickSave = this.#onClickedSave;
+		eventHandlers.onClickSummary = this.#onClickedSummary;
 		eventHandlers.onMonthChanged = this.slideToMonth.bind(this);
 
-		this.navbar = new SpendingNavbar(this.#year, spendingReport.month(), eventHandlers);
+		this.navbar = new SpendingNavbar(this.#year, this.#month, eventHandlers);
 		const main = document.getElementById('main');
 		// TODO move append children to the end of init
 		main.appendChild(this.navbar.toHtml());
-		this.navbar.selectMonth(this.#month);
-		this.navbar.selectYear(this.#year);
 	}
 
 	/**
-	 * @param {SpendingReport} spendingReport
+	 * @param {number} month
+	 * @param {Array<Spending>} spendings
+	 * @param {Array<string>} categories
 	 */
-	refreshMonth(spendingReport) {
-		let reportSlice = this.#drawnSlices.get(spendingReport.month());
-		const sliceId = `slice_${spendingReport.month()}`;
-		if (!reportSlice) {
-			reportSlice = new Dom('div').id(sliceId).cls('slice').userData(spendingReport).append(
-				new Dom('h1').text(`${spendingReport} spending`),
-			);
-
-			// Insert the slice in calendaristic order
-			const sectionHtml = this.section.toHtml();
-			const slices = Array.from(sectionHtml.children);
-			const insertIndex = slices.findIndex(
-				(slice) => slice.userData && slice.userData.month() > spendingReport.month(),
-			);
-			if (insertIndex === -1) {
-				this.section.append(reportSlice);
-			} else {
-				sectionHtml.insertBefore(reportSlice.toHtml(), slices[insertIndex]);
-			}
-
-			this.navbar.appendMonth(spendingReport.month());
-			// Screen changed, effects need reinitialization
-			this.gfx.init(this.screen.toHtml());
-		} else {
-			const sliceTable = document.getElementById(`table-${spendingReport.month()}`);
-			reportSlice.toHtml().removeChild(sliceTable);
+	refreshMonth(month, spendings, categories) {
+		if (!categories || categories.length === 0) {
+			return;
 		}
 
-		reportSlice.append(
-			this.buildTable(spendingReport),
-		);
-
-		this.#drawnSlices.set(spendingReport.month(), reportSlice);
+		let spendingsTable = this.#drawnTables[month];
+		if (!spendingsTable) {
+			spendingsTable = new SpendingCategoryTable(this.#settings.spendingTableSettings().visibleColumns());
+			
+			this.section.append(
+				new Dom('div').id(`slice_${month}`).cls('slice').userData(spendingsTable).append(
+					new Dom('h1').text(`${Utils.MONTH_NAMES[month]} spending`),
+				).append(spendingsTable)
+			);
+			this.navbar.appendMonth(month);
+			this.#drawnTables[month] = spendingsTable;
+		}
+		spendingsTable.refresh(month, spendings, categories);
 	}
 
 	/**
 	 * Appends a new year to the navbar
 	 * @param {number} year Year to append to the Navbar
 	 */
-	updateYear(year) {
+	appendYearToNavbar(year) {
 		this.navbar.appendYear(year);
 	}
 
@@ -137,12 +126,9 @@ export default class SpendingScreen {
 	 * @param {number} month
 	 */
 	slideToMonth(month) {
-		const reportSlice = this.#drawnSlices.get(month);
-		const sliceIndex = Array.prototype.indexOf.call(
-			this.section.toHtml().childNodes,
-			reportSlice.toHtml(),
-		);
+		const sliceIndex = this.#drawnTables.filter(a => a).indexOf(this.#drawnTables[month]);
 		this.gfx.slideTo(sliceIndex);
+		this.#month = month;
 	}
 
 	/**
@@ -150,18 +136,16 @@ export default class SpendingScreen {
 	 * @param {number} month
 	 */
 	jumpToMonth(month) {
-		const reportSlice = this.#drawnSlices.get(month);
-		const sliceIndex = Array.prototype.indexOf.call(
-			this.section.toHtml().childNodes,
-			reportSlice.toHtml(),
-		);
+		const sliceIndex = this.#drawnTables.filter(a => a).indexOf(this.#drawnTables[month]);
 		this.gfx.jumpTo(sliceIndex);
+		this.#month = month;
+		return this;
 	}
 
 	/**
 	 * @returns {HTMLElement}
 	 */
-	buildScreen() {
+	buildScreen(spendings, availableCategories) {
 		this.section = new Dom('div').id('spendings-section').cls('section');
 		this.screen = new Dom('div').cls('container').append(
 			this.section,
@@ -169,201 +153,57 @@ export default class SpendingScreen {
 
 		const main = document.getElementById('main');
 		main.appendChild(this.screen.toHtml());
-		// main.appendChild(this.buildTable(spendingReport).toHtml());
+
+		for(var index = 0; index < spendings.length; index++) {
+			this.refreshMonth(index, spendings[index], availableCategories[index]);
+		}
 
 		return this.screen.toHtml();
 	}
 
-	/**
-	 * Builds the {Dom} object associated with this report
-	 * @param {SpendingReport} spendingReport
-	 * @returns {Dom}
-	 */
-	buildTable(spendingReport) {
-		const onClickDelete = this.onClickDeleteSlice.bind(this);
-		const buildSpendingRow = this.buildSpendingRow.bind(this);
-		const spendingsDom = new Dom('table').id(`table-${spendingReport.month()}`).append(
-			new Dom('thead').append(
-				new Dom('tr').append(
-					new Dom('th').cls('narrow-col').text('Date'),
-					new Dom('th').text(spendingReport),
-					new Dom('th').cls('normal-col').text('Category'),
-					new Dom('th').cls('normal-col').text('Amount'),
-					new Dom('th').cls('narrow-col').hideable(this.editMode).append(
-						new Dom('button').onClick(onClickDelete).append(
-							new Dom('img').cls('white-fill').text('Delete').attr('alt', 'Delete').attr('src', icons.delete),
-						),
-					),
-				),
-			),
-			new Dom('tbody').append(
-				...spendingReport.spendings().map(buildSpendingRow),
-			),
-			new Dom('tfoot').append(
-				this.buildTotalRow(spendingReport.totalAsSpending()),
-			),
-		).userData(spendingReport);
-		this.spendingsHtml = spendingsDom.toHtml();
-
-		return spendingsDom;
-	}
-
-	buildSubmitSpendingModal(forCategories) {
-		this.#spendingSubmitModal = new SpendingSubmitModal(forCategories);
-		this.#spendingSubmitModal.onInsertSpending(this.onInsertedSpending.bind(this));
-		this.#spendingSubmitModal.onEditSpending(this.onEditedSpending.bind(this));
-
-		return this.#spendingSubmitModal;
-	}
-
-	/**
-	 * Appends a new row with the current spending to the slice table.
-	 * The row is clickable and can be deleted.
-	 * @param {Spending} spending Spending to append
-	 */
-	buildSpendingRow(spending) {
-		const onClickDelete = this.onClickedDeleteSpending.bind(this);
-		const onClickedSpending = this.onClickedSpending.bind(this);
-		const spentOn = spending.spentOn.toLocaleString('en-GB', { day: 'numeric' });
-		const newRow = new Dom('tr').id(spending.id).userData(spending).append(
-			new Dom('td').text(spentOn).onClick(onClickedSpending),
-			new Dom('td').text(spending.description).onClick(onClickedSpending),
-			new Dom('td').text(spending.category).onClick(onClickedSpending),
-			new Dom('td').text(spending.price).onClick(onClickedSpending),
-			new Dom('td').hideable(this.editMode).append(
-				new Dom('button').onClick(onClickDelete).append(
-					new Dom('img').cls('white-fill').text('Delete').attr('alt', 'Delete').attr('src', icons.delete),
-				),
-			),
-		);
-
-		return newRow;
-		// this.spendingsHtml.tBodies[0].appendChild(newRow.toHtml());
-	}
-
-	/**
-	 * Appends a new row with the current spending to the slice table.
-	 * The row cannot be edited nor deleted.
-	 * @param {Spending} total
-	 */
-	buildTotalRow(total) {
-		const spentOn = total.spentOn.toLocaleString('en-GB', { day: 'numeric' });
-		const newRow = new Dom('tr').id(total.id).userData(total).append(
-			new Dom('td').text(spentOn),
-			new Dom('td').text(total.description),
-			new Dom('td').text(total.category),
-			new Dom('td').text(total.price.toFixed(2)),
-			new Dom('td').hideable(this.editMode),
-		);
-		return newRow;
-	}
-
 	// #region event handlers
-	onInsertedSpending(newSpending) {
-		if (this.onCreateSpendingCallback) {
-			this.onCreateSpendingCallback(newSpending);
-		}
+
+	onClickSave(handler) {
+		this.#onSaveHandler = handler;
+		return this;
 	}
 
-	onClickedDeleteSpending(event) {
-		if (!this.editMode) return;
-
-		const row = event.currentTarget.parentNode.parentNode;
-		const tBody = row.parentNode;
-		/** @type {Spending} */
-		const spending = row.userData;
-
-		Modal.areYouSureModal(
-			'delete-spending-modal',
-			'Are you sure you want to delete this spending?',
-			() => {
-				spending.deleted = true;
-				tBody.removeChild(row);
-			},
-		).open();
+	onCreateSpending(handler) {
+		this.#onCreateSpendingHandler = handler;
+		return this;
 	}
 
-	onClickDeleteSlice(event) {
-		if (!this.editMode) return;
-
-		const table = (event.currentTarget.parentNode.parentNode.parentNode.parentNode);
-		const spendingReport = table.userData;
-
-		Modal.areYouSureModal(
-			'delete-report-modal',
-			'Are you sure you want to delete this report?',
-			() => {
-				if (this.onDeleteReportCallback) {
-					this.onDeleteReportCallback(spendingReport);
-				}
-				table.parentNode.removeChild(table);
-			},
-		).open();
-	}
-
-	onClickedSpending(event) {
-		if (!this.editMode) return;
-
-		const cell = event.currentTarget;
-		const row = cell.parentNode;
-		/** @type {Spending} */
-		const spending = row.userData;
-		this.#spendingSubmitModal.open();
-		this.#spendingSubmitModal.editMode(spending);
-	}
-
-	onEditedSpending(spending) {
-		const row = document.getElementById(spending.id);
-		// TODO Extract slice to its own class and get user data directly from it according to month
-		const spendingReport = row.parentNode.parentNode.userData;
-		this.refreshMonth(spendingReport);
-	}
-
-	onClickEdit() {
+	onClickEdit = () => {
 		// Disable sliding effects to avoid listener conflicts.
 		this.gfx.pause();
-		const elements = document.querySelectorAll('[hideable="true"]');
-		for (let i = 0; i < elements.length; i += 1) {
-			elements[i].style.display = '';
-		}
-
-		this.editMode = true;
+		this.#drawnTables[this.#month].editMode();
 	}
 
-	onClickedSave() {
+	#onClickedSave = () => {
 		// Resume effects as there will be no listener conflicts anymore.
 		this.gfx.resume();
-		const hideables = document.querySelectorAll('[hideable="true"]');
-		for (let i = 0; i < hideables.length; i += 1) {
-			hideables[i].style.display = 'none';
-		}
+		this.#drawnTables[this.#month].normalMode();
 
-		this.editMode = false;
+		this.#onSaveHandler?.(this.#month, this.#spendings[this.#month]);
+	};
 
-		this.#drawnSlices.forEach((slice) => {
-			/** @type {SpendingReport} */
-			const spendingReport = slice.toHtml().userData;
-			if (spendingReport) {
-				const reportChanged = spendingReport.applyChanges();
-				// Do not call the handler if the report did not change
-				if (this.onSaveReportCallback && reportChanged) {
-					slice.toHtml().getElementsByTagName('table')[0].tFoot.replaceChildren(
-						this.buildTotalRow(spendingReport.totalAsSpending()).toHtml(),
-					);
-					this.onSaveReportCallback(spendingReport);
-				}
-			}
-		});
+	#onClickedSummary = () => {
+		const selectedSlice = this.gfx.selectedIndex();
+		const spendings = this.#spendings.filter(a => a)[selectedSlice];
+		new SpendingSummaryModal(spendings, this.#availableCategories[this.#month].flatMap((category) => category.goals)).open();
 	}
 
-	onClickedSummary() {
-		const selectedSlice = this.gfx.selectedSlice();
-		new SpendingSummaryModal(selectedSlice.userData).open();
-	}
-
-	onClickAddSpending() {
-		this.#spendingSubmitModal.open();
-		this.#spendingSubmitModal.insertMode();
+	#onClickAddSpending = () => {
+		const today = new Date();
+		const day = today.getFullYear() === this.#year && today.getMonth() === this.#month ? today.getDate() : 1;
+		new SpendingSubmitModal(this.#availableCategories[this.#month], this.#year, this.#month, day)
+			.insertMode()
+			.onSubmit((spending) => {
+				this.#spendings[this.#month].push(spending);
+				this.refreshMonth(this.#month, this.#spendings[this.#month], this.#availableCategories[this.#month]);
+				this.#onCreateSpendingHandler?.(spending);
+				this.refreshMonth(this.#month, this.#spendings);
+			}).openCategoryModal();
 	}
 
 	// #endregion

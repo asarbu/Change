@@ -138,11 +138,11 @@ export default class SpendingNavbar {
 	appendMonth(month) {
 		if (this.#monthsInDropup.has(month)) return;
 
-		const onMonthChanged = this.onMonthChanged.bind(this, month);
+		const onMonthClicked = this.onMonthClicked.bind(this, month);
 		const monthDropupItem = new Dom('div')
 			.cls('accordion-secondary')
 			.text(SpendingNavbar.#MONTH_NAMES[month])
-			.onClick(onMonthChanged);
+			.onClick(onMonthClicked);
 
 		this.#monthsInDropup.set(month, monthDropupItem);
 		// Insert the month in calendaristic order
@@ -162,10 +162,11 @@ export default class SpendingNavbar {
 
 	selectMonth(monthIndex) {
 		const month = Array.from(this.#monthsInDropup.keys())[monthIndex] ?? monthIndex;
-		if (month === this.#selectedMonth) return;
+		if (month === this.#selectedMonth) return month;
 
 		this.#selectedMonth = month;
 		this.updateMonthDropupText();
+		return month;
 	}
 
 	selectYear(year) {
@@ -213,11 +214,11 @@ export default class SpendingNavbar {
 		this.#yearsDropup.open();
 	}
 
-	onMonthChanged(month) {
-		if (this.#eventHandlers.onMonthChanged) {
-			this.#eventHandlers.onMonthChanged(month);
-		}
+	onMonthClicked(month) {
+		this.selectMonth(month);
+		this.#eventHandlers.onMonthChanged?.(month);
 		this.#monthsDropup.close();
+		return month;
 	}
 
 	onYearChanged(year) {

@@ -8,13 +8,7 @@ export default class SpendingSubmitModal extends Modal {
 	/** @type {SpendingCategoryModal} */
 	#categoryModal = undefined;
 
-	#onInsertHandler = undefined;
-
-	#onEditHandler = undefined;
-
-	#spending = undefined;
-
-	#editMode = false;
+	#onSubmitHandler = undefined;
 
 	/** @type {Dom} */
 	#dateInput = new Dom();
@@ -28,37 +22,39 @@ export default class SpendingSubmitModal extends Modal {
 	/** @type {Dom} */
 	#priceInput = new Dom();
 
-	constructor(forCategories) {
+	constructor(forCategories, duringYear, duringMonth, duringDay = 1) {
 		super('spending-submit-modal');
-
-		const onClickCategoryInput = this.#onClickedCategoryInput.bind(this);
+		
+		const minDate = new Date(duringYear, duringMonth, 1).toLocaleDateString("en-CA");
+		const maxDate = new Date(duringYear, duringMonth + 1, 0).toLocaleDateString("en-CA");
+		const date = new Date(duringYear, duringMonth, duringDay).toLocaleDateString("en-CA");
 
 		this.header(
 			new Dom('h2').text('Insert Spending'),
 		).body(
-			new Dom('form').append(
+			new Dom('form').id('spending-submit-form').append(
 				new Dom('div').cls('input-field').append(
-					new Dom('input').type('date').attr('required', '').attr('value', new Date().toISOString().substring(0, 10)).cloneTo(this.#dateInput),
+					new Dom('input').id('date').type('date').attr('required', '').attr('min', minDate).attr('max', maxDate).attr('value', date).cloneTo(this.#dateInput),
 					new Dom('label').text('Date: '),
 				),
 				new Dom('div').cls('input-field').append(
-					new Dom('input').type('text').attr('required', '').attr('inputmode', 'none').onClick(onClickCategoryInput).onFocus(onClickCategoryInput)
+					new Dom('input').id('category').type('text').attr('required', '').attr('inputmode', 'none').onClick(this.#onClickedCategoryInput).onFocus(this.#onClickedCategoryInput)
 						.cloneTo(this.#categoryInput),
 					new Dom('label').text('Category: '),
 				),
 				new Dom('div').cls('input-field').append(
-					new Dom('input').type('number').attr('required', '').attr('step', '0.01').cloneTo(this.#priceInput),
+					new Dom('input').id('price').type('number').attr('required', '').attr('step', '0.01').cloneTo(this.#priceInput),
 					new Dom('label').text('Price: '),
 				),
 				new Dom('div').cls('input-field').append(
-					new Dom('input').type('text').attr('required', '').cloneTo(this.#descriptionInput),
+					new Dom('input').id('description').type('text').attr('required', '').cloneTo(this.#descriptionInput),
 					new Dom('label').text('Description: '),
 				),
-				new Dom('input').type('submit').hide().onClick(this.#onClickedSave.bind(this)),
+				new Dom('input').type('submit').hide().onClick(this.#onClickedSave),
 			),
 		).footer(
 			new Dom('h3').text('Cancel').onClick(this.close.bind(this)),
-			new Dom('h3').text('Save').onClick(this.#onClickedSave.bind(this)),
+			new Dom('input').id('submit-spending').attr('form', 'spending-submit-form').type('submit').value('Save').onClick(this.#onClickedSave),
 		);
 
 		this.#buildCategoryModal(forCategories);
@@ -69,76 +65,69 @@ export default class SpendingSubmitModal extends Modal {
 	 * @returns {Dom}
 	 */
 	#buildCategoryModal(forCategories) {
-		const onClickCategory = this.#onClickedCategory.bind(this);
-		this.#categoryModal = new SpendingCategoryModal(forCategories, onClickCategory);
+		this.#categoryModal = new SpendingCategoryModal(forCategories, this.#onClickedCategory);
 		return this.#categoryModal;
 	}
 
 	editMode(spending) {
-		this.#editMode = true;
 		this.header(new Dom('h2').text('Edit Spending'));
-		this.#spending = spending;
-		this.#spending.edited = true;
 
-		this.#dateInput.toHtml().valueAsDate = spending.spentOn;
+		const spent = spending.spentOn;
+		this.#dateInput.toHtml().valueAsDate = new Date(spent.getFullYear(), spent.getMonth(), spent.getDate(), 0, -spent.getTimezoneOffset());
 		this.#descriptionInput.toHtml().value = spending.description;
 		this.#categoryInput.toHtml().value = spending.category;
 		this.#priceInput.toHtml().value = spending.price;
+
+		return this;
 	}
 
-	insertMode() {
-		this.#editMode = false;
+	openCategoryModal = () => {
+		return this.#onClickedCategoryInput();
+	};
 
+	insertMode() {
 		this.header(new Dom('h2').text('Insert Spending'));
-		this.#spending = new Spending(new Date().getTime());
 
 		this.#descriptionInput.toHtml().value = '';
 		this.#categoryInput.toHtml().value = '';
 		this.#priceInput.toHtml().value = '';
+		return this;
 	}
 
-	onEditSpending(handler) {
-		this.#onEditHandler = handler;
+	onSubmit(handler) {
+		this.#onSubmitHandler = handler;
+		return this;
 	}
 
-	onInsertSpending(handler) {
-		this.#onInsertHandler = handler;
-	}
+	#onClickedSave = (event) => {
+		const form = this.toHtml().getElementsByTagName('form')[0];
+		const isValid = form?.checkValidity();
+		if(!isValid) { return undefined; }
 
-	#onClickedSave(event) {
-		event.preventDefault();
-		this.#spending.spentOn = this.#dateInput.toHtml().valueAsDate;
-		this.#spending.description = this.#descriptionInput.toHtml().value;
-		this.#spending.price = +(this.#priceInput.toHtml().value);
-		this.#spending.category = this.#categoryInput.toHtml().value;
-
-		if (!this.#spending.price) {
-			this.#priceInput.toHtml().focus();
-			return;
-		}
+		event?.preventDefault();
+		const spending = new Spending(new Date().getTime());
+		spending.spentOn = this.#dateInput.toHtml().valueAsDate;
+		spending.description = this.#descriptionInput.toHtml().value;
+		spending.price = +(this.#priceInput.toHtml().value);
+		spending.category = this.#categoryInput.toHtml().value;
 
 		this.close();
+		return this.#onSubmitHandler?.(spending);
+	};
 
-		if (this.#editMode && this.#onEditHandler) {
-			this.#onEditHandler(this.#spending);
-		} else if (this.#onInsertHandler) {
-			this.#onInsertHandler(this.#spending);
-		}
-	}
-
-	#onClickedCategory(event) {
+	#onClickedCategory = (event) => {
 		this.#categoryModal.close();
-		this.open();
+		super.open();
 		this.#categoryInput.toHtml().value = event.target.textContent;
 		this.#focusInputField(this.#priceInput.toHtml());
 	}
 
-	#onClickedCategoryInput() {
+	#onClickedCategoryInput = () => {
 		if (this.isOpen()) {
 			this.close();
 		}
-		this.#categoryModal.open();
-	}
+		return this.#categoryModal.open();
+	};
 
 	#focusInputField(htmlElement) {
 		/* Focus cannot be applied to invisible elements.

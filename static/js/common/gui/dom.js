@@ -17,9 +17,11 @@ export default class Dom {
 	 * @returns {Dom}
 	 */
 	append(...children) {
-		children.forEach((child) => {
-			this.elmt.appendChild(child.toHtml ? child.toHtml() : child);
-		});
+		children
+			.filter((x) => x)
+			.forEach((child) => {
+				this.elmt.appendChild(child?.toHtml ? child.toHtml() : child);
+			});
 		return this;
 	}
 
@@ -43,12 +45,8 @@ export default class Dom {
 		return this;
 	}
 
-	contentEditable(value) {
-		let isEditable = true;
-		if (value !== undefined) {
-			isEditable = value;
-		}
-		this.elmt.setAttribute('contenteditable', isEditable);
+	contentEditable(value = true) {
+		this.elmt.setAttribute('contenteditable', value);
 		return this;
 	}
 
@@ -62,7 +60,7 @@ export default class Dom {
 		return this;
 	}
 
-	hideable(isVisible) {
+	hideable(isVisible = false) {
 		this.elmt.setAttribute('hideable', true);
 		this.elmt.style.display = isVisible ? '' : 'none';
 		return this;
@@ -79,7 +77,7 @@ export default class Dom {
 	}
 
 	onClick(listener) {
-		this.elmt.addEventListener('click', listener);
+		this.elmt.onclick = listener;
 		return this;
 	}
 
@@ -95,6 +93,11 @@ export default class Dom {
 
 	onFocus(listener) {
 		this.elmt.addEventListener('focus', listener, false);
+		return this;
+	}
+
+	onSubmit(listener) {
+		this.elmt.onsubmit = listener;
 		return this;
 	}
 

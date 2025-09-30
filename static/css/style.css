@@ -57,9 +57,11 @@ h2 {
 	padding-bottom: 0.5rem;
 }
 
-h3 {
+h3, input[type=submit] {
 	position: relative;
 	color: rgba(255, 255, 255, 0.5);
+	background: transparent;
+	border: transparent;
 	line-height: 1rem;
 	font-size: 1.25rem;
 	font-weight: normal;
@@ -258,15 +260,15 @@ th:first-child, td:first-child {
 	padding-left: 0.75rem;
 }
 
-.wide-col {
+th.wide {
 	width: 30vw;
 }
 
-.narrow-col {
+th.narrow {
 	width: 11vw;
 }
 
-.normal-col {
+th.normal {
 	width: 21vw;
 }
 
@@ -346,6 +348,7 @@ tfoot {
 	margin: 2.5% 5%;
 	display: flex;
 	justify-content: space-between;
+	align-items: center;
 	bottom: 0;
 	left: 0;
 	right: 0;
@@ -355,7 +358,8 @@ tfoot {
 	display: none;
 }
 
-h3:hover {
+h3:hover,
+input[type=submit]:hover {
 	text-decoration: underline;
 }
 

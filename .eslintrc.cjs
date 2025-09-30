@@ -18,6 +18,7 @@ module.exports = {
 	},
 	rules: {
 		'jsdoc/no-undefined-types': 1,
+		'no-param-reassign': [2, { props: false }],
 		'no-tabs': 0,
 		'no-await-in-loop': 0,
 		'max-len': 1,
