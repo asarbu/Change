@@ -34,11 +34,6 @@
     "rollup": "^4.46.2",
     "uglify-js": "^3.19.3"
   },
-  "devDependencies": {
-    "eslint": "^9.37.0",
-    "eslint-config-airbnb-base": "^15.0.0",
-    "eslint-plugin-jsdoc": "^52.0.4"
-  },
   "jest": {
     "testEnvironment": "jest-environment-node",
     "transform": {},
