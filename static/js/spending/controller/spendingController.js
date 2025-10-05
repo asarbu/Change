@@ -92,13 +92,13 @@ export default class SpendingController {
 
 		Alert.show('Google Drive', 'Started synchronization with Google Drive...');
 		this.#planningPersistence.enableGDrive(gDriveSettings);
+		this.#spendingPersistence.enableGdrive(gDriveSettings);
 		const plannings = await this.#planningPersistence.readAllFromGDrive();
 		if (!plannings?.filter(p => p).length) { return undefined; }
 
-		this.#spendingPersistence.enableGdrive(gDriveSettings);
 		const yearlySpendings = await this.#spendingPersistence.readAllFromGDrive();
 
-		yearlySpendings.forEach((monthlySpendings, month) => this.#screen.refreshMonth(month, monthlySpendings, plannings[month].readAllCategories()));
+		yearlySpendings.forEach((monthlySpendings, month) => this.#screen.refreshMonth(month, monthlySpendings, plannings[month]?.readAllCategories() || []));
 
 		Alert.show('Google Drive', 'Finished synchronization with Google Drive');
 		return this.#screen;
