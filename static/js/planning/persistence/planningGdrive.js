@@ -35,7 +35,7 @@ export default class PlanningGDrive {
 	}
 
 	async init() {
-		const changeAppFolder = await this.#initializeGdriveFileById(GDrive.APP_FOLDER);
+		const changeAppFolder =  this.#initializeGdriveFileById(GDrive.APP_FOLDER);
 		if (!changeAppFolder.gDriveId) {
 			changeAppFolder.gDriveId = await this.#gDrive.findChangeAppFolder();
 			if (!changeAppFolder.gDriveId) {
@@ -45,7 +45,7 @@ export default class PlanningGDrive {
 			this.#localStorage.store(changeAppFolder);
 		}
 
-		const planningFolder = await this.#initializeGdriveFileById('Planning');
+		const planningFolder = this.#initializeGdriveFileById('Planning');
 		if (!planningFolder.gDriveId) {
 			planningFolder.gDriveId = await this.#gDrive.findFolder('Planning', changeAppFolder.gDriveId);
 			if (!planningFolder.gDriveId) {
@@ -57,7 +57,7 @@ export default class PlanningGDrive {
 		this.#planningFolderId = planningFolder.gDriveId;
 
 		const yearLocalStorageId = `Planning_${this.#year}`;
-		const yearFolder = await this.#initializeGdriveFileById(yearLocalStorageId);
+		const yearFolder = this.#initializeGdriveFileById(yearLocalStorageId);
 		if (!yearFolder.gDriveId) {
 			yearFolder.gDriveId = await this.#gDrive.findFolder(`${this.#year}`, planningFolder.gDriveId);
 			if (!yearFolder.gDriveId) {
@@ -215,7 +215,7 @@ export default class PlanningGDrive {
 	 * @param {string} fileName
 	 * @returns {Promise<GDriveFileInfo>}
 	 */
-	async #initializeGdriveFileById(fileName) {
+	#initializeGdriveFileById(fileName) {
 		let localStorageFile = this.#localStorage.readById(fileName);
 		if (!localStorageFile) {
 			localStorageFile = new GDriveFileInfo(fileName, undefined, 0);
