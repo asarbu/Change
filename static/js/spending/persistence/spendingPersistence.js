@@ -161,7 +161,7 @@ export default class SpendingPersistence {
 		// TODO update below with factory method
 		if (this.#spendingGDrive) {
 			await this.#spendingGDrive.deleteFile(forMonth);
-			await this.#spendingGDrive.storeSpendings(spendings.spendings(), forMonth);
+			await this.#spendingGDrive.storeSpendings(spendings, forMonth);
 		}
 	}
 
