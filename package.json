@@ -37,7 +37,7 @@
   "devDependencies": {
     "eslint": "^9.37.0",
     "eslint-config-airbnb-base": "^15.0.0",
-    "eslint-plugin-jsdoc": "^52.0.4",
+    "eslint-plugin-jsdoc": "^52.0.4"
   },
   "jest": {
     "testEnvironment": "jest-environment-node",
