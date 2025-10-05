@@ -231,15 +231,13 @@ export default class SpendingGDrive {
 		if (!this.#gDriveFolderId) throw new Error('Spending Gdrive not properly initialized');
 		const fileName = this.#buildFileName(forMonth);
 		let localStorageFile = this.#localStorage.readById(fileName);
-		if (!localStorageFile || !localStorageFile.gDriveId) {
-			const gDriveId = await this.#gDrive.findFile(fileName, this.#gDriveFolderId);
-			if (gDriveId) {
-				// Store 0 in modified time to force load
-				localStorageFile = new GDriveFileInfo(fileName, gDriveId, 0);
-				this.#localStorage.store(localStorageFile);
-			} else {
-				localStorageFile = new GDriveFileInfo(fileName, undefined, 0, true);
-			}
+		const gDriveId = await this.#gDrive.findFile(fileName, this.#gDriveFolderId);
+		if (gDriveId) {
+			// Store 0 in modified time to force load
+			localStorageFile = new GDriveFileInfo(fileName, gDriveId, 0);
+			this.#localStorage.store(localStorageFile);
+		} else {
+			localStorageFile = new GDriveFileInfo(fileName, undefined, 0, true);
 		}
 		return localStorageFile;
 	}
