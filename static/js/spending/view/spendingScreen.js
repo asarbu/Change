@@ -1,10 +1,7 @@
 import Spending from '../model/spending.js';
-import SpendingReport from '../model/spendingReport.js';
-import Planning, { Category } from '../../planning/model/planningModel.js';
+import { Category } from '../../planning/model/planningModel.js';
 import Dom from '../../common/gui/dom.js';
-import icons from '../../common/gui/icons.js';
 import GraphicEffects from '../../common/gui/effects.js';
-import Modal from '../../common/gui/modal.js';
 import SpendingNavbar from './spendingNavbar.js';
 import SpendingNavbarEventHandlers from './spendingNavbarHandlers.js';
 import SpendingSummaryModal from './spendingSummaryModal.js';
