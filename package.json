@@ -25,9 +25,6 @@
   "homepage": "https://github.com/alexandrusebastian/Change#readme",
   "dependencies": {
     "@jest/globals": "^30.0.5",
-    "eslint": "^9.37.0",
-    "eslint-config-airbnb-base": "^15.0.0",
-    "eslint-plugin-jsdoc": "^52.0.4",
     "fake-indexeddb": "^6.0.1",
     "http-server": "^14.1.1",
     "jest": "^30.0.5",
@@ -36,6 +33,11 @@
     "npm": "^11.5.2",
     "rollup": "^4.46.2",
     "uglify-js": "^3.19.3"
+  },
+  "devDependencies": {
+    "eslint": "^9.37.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-plugin-jsdoc": "^52.0.4",
   },
   "jest": {
     "testEnvironment": "jest-environment-node",
@@ -59,5 +61,6 @@
     "verbose": true
   }
 }
+
 
 
