@@ -30,7 +30,7 @@
     "jest": "^30.0.5",
     "jest-environment-jsdom": "^30.0.5",
     "jsdom": "^26.1.0",
-    "npm": "^11.5.2",
+    "npm": "^11.6.1",
     "rollup": "^4.46.2",
     "uglify-js": "^3.19.3"
   },
