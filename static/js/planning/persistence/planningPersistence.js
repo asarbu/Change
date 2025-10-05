@@ -65,7 +65,7 @@ export default class PlanningPersistence {
 			await this.#planningIdb.store(gDrivePlanning);
 			return gDrivePlanning;
 		}
-		return undefined;
+		return cachedPlanning;
 	}
 
 	async readFromCache(forMonth) {
